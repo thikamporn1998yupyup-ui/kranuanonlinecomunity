@@ -57,18 +57,40 @@ async function importOSM(u){
  return importShops(u,data);
  }finally{importBusy=false}
 }
-function importShops(u,data){
- const osm=Array.isArray(data.elements),rows=osm?data.elements:data.shops;if(!Array.isArray(rows)||rows.length>1000)fail(400,'ใช้ JSON {shops:[...]} หรือ Overpass JSON สูงสุด 1,000 รายการ');
- let added=0,skipped=0;
- transaction(()=>{for(const r of rows){const t=osm?(r.tags||{}):r;const name=text(t['name:th']||t.name);if(!name){skipped++;continue}
- const source=osm?'OpenStreetMap':text(r.source||'manual import'),sourceId=osm?'osm:'+r.type+':'+r.id:text(r.source_id)||('import:'+hash(source+'|'+name+'|'+text(r.address,500))); 
- if(sourceId&&get('SELECT id FROM shops WHERE source_id=?',sourceId)){skipped++;continue}
- const lat=coord(osm?(r.lat??r.center?.lat):r.lat,-90,90),lng=coord(osm?(r.lon??r.center?.lon):r.lng,-180,180);
- const category=osm?(t.amenity==='cafe'?'เครื่องดื่ม':['restaurant','fast_food','food_court'].includes(t.amenity)?'อาหาร':t.craft?'บริการ':'ร้านค้า'):text(r.category||'ร้านค้า');
- if(!['อาหาร','เครื่องดื่ม','บริการ','ร้านค้า'].includes(category))fail(400,'หมวดหมู่ไม่ถูกต้อง');
+function importImage(r,t={}){
+ let v=r.image_url||r.photo_url||r.image||t.image||'';if(Array.isArray(r.images))v=v||r.images[0]?.url||r.images[0]||'';
+ if(!v&&t.wikimedia_commons&&/^File:/i.test(t.wikimedia_commons))v='https://commons.wikimedia.org/wiki/Special:FilePath/'+encodeURIComponent(t.wikimedia_commons.replace(/^File:/i,''))+'?width=960';
+ if(typeof v!=='string')return '';v=v.trim();if(v.startsWith('https://commons.wikimedia.org/wiki/File:'))v='https://commons.wikimedia.org/wiki/Special:FilePath/'+encodeURIComponent(decodeURIComponent(v.split('/wiki/File:')[1]))+'?width=960';
+ try{return imageURL(v)}catch{return ''}
+}
+function importCategory(r,t){
+ const explicit=text(r.category);if(['อาหาร','เครื่องดื่ม','บริการ','ร้านค้า'].includes(explicit))return {category:explicit,category_basis:'หมวดที่ระบุในไฟล์'};
+ const key=String(t.amenity||t.shop||t.craft||explicit).toLowerCase(),name=String(t['name:th']||r.name||t.name||'').toLowerCase();
+ if(t.craft||/repair|hairdresser|beauty|laundry|car_wash|tailor/.test(key)||/ซ่อม|อิเล็คโทรนิค|อิเล็กทรอนิกส์|ทำเล็บ|เสริมสวย|ตัดผม|ซัก|ล้างรถ|การช่าง/.test(name))return {category:'บริการ',category_basis:'ประเภทบริการหรือคำในชื่อร้าน'};
+ if(/cafe|coffee|tea|juice|bubble_tea/.test(key)||/คาเฟ่|คอฟฟี่|กาแฟ|ชานม|ชาไข่มุก|café|cafe|coffee|kaffe/.test(name))return {category:'เครื่องดื่ม',category_basis:'ประเภทต้นทางหรือคำเกี่ยวกับเครื่องดื่ม'};
+ if(/restaurant|fast_food|food_court|bakery|confectionery|deli|ice_cream/.test(key)||/ก๋วยเตี๋ยว|ข้าวมันไก่|ข้าวหมู|กะเพรา|หมูกระทะ|ชาบู|สเต๊ก|steak|ครัว|อาหาร|เบเกอรี่|เบเกอรี|ขนม|หมี่เกี๊ยว/.test(name)||Array.isArray(r.menus)&&r.menus.length)return {category:'อาหาร',category_basis:'ประเภทต้นทาง ชื่อร้าน หรือรายการเมนู'};
+ return {category:'ร้านค้า',category_basis:'หมวดทั่วไป กรุณาตรวจสอบหมวดก่อนใช้งาน'};
+}
+function importPlan(data){
+ const osm=Array.isArray(data.elements);let rows=osm?data.elements:Array.isArray(data)?data:data.shops;
+ if(!rows&&Array.isArray(data.menus)){const s=get('SELECT * FROM shops WHERE id=?',text(data.shop_id));if(!s)fail(400,'เลือกหน้าร้านก่อนนำเข้าไฟล์เมนู');rows=[{...s,menus:data.menus}]}
+ if(!Array.isArray(rows)||rows.length>1000)fail(400,'ใช้ JSON {shops:[...]} หรือ {shop_id,menus:[...]} สูงสุด 1,000 ร้าน');
+ return rows.map((r,index)=>{const t=osm?(r.tags||{}):r,name=text(t['name:th']||t.name);if(!name)return null;
+ const source=osm?'OpenStreetMap':text(r.source||'JSON import'),source_id=osm?'osm:'+r.type+':'+r.id:text(r.source_id)||('import:'+hash(source+'|'+name+'|'+text(r.address,500)));
+ const {category,category_basis}=importCategory(osm?{name}:r,t);
  const address=osm?[t['addr:housenumber'],t['addr:street'],t['addr:subdistrict'],t['addr:district']].filter(Boolean).join(' '):text(r.address,500);
- run('INSERT INTO shops(id,name,category,address,phone,lat,lng,source,source_id,source_url,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)',id(),name,category,address,text(t.phone||t['contact:phone'],30),lat,lng,source,sourceId,osm?'https://www.openstreetmap.org/'+r.type+'/'+r.id:text(r.source_url,500),now());added++;
- }audit(u,'import shops',String(added))});emit();return {added,skipped,total:rows.length,note:'นำเข้าเป็นร้านที่ยังไม่ตรวจสอบทั้งหมด'};
+ const existing=get('SELECT * FROM shops WHERE source_id=?',source_id)||(r.id?get('SELECT * FROM shops WHERE id=?',text(r.id)):null)||get('SELECT * FROM shops WHERE name=? AND address=?',name,address);
+ const menus=Array.isArray(r.menus)?r.menus:[];if(menus.length>100)fail(400,'นำเข้าเมนูได้ไม่เกิน 100 เมนูต่อร้าน');
+ return {index,name,category,category_basis,address,phone:text(t.phone||t['contact:phone'],30),lat:coord(osm?(r.lat??r.center?.lat):r.lat,-90,90),lng:coord(osm?(r.lon??r.center?.lon):r.lng,-180,180),image_url:importImage(r,t),source,source_id,source_url:osm?'https://www.openstreetmap.org/'+r.type+'/'+r.id:text(r.source_url,500),existing_id:existing?.id||null,menus:menus.map(m=>{const price=Number(m.price??(m.price_satang!==undefined?m.price_satang/100:NaN));if(!text(m.name)||!Number.isFinite(price)||price<0||price>10000)fail(400,'เมนูในร้าน '+name+' ต้องมีชื่อและราคา 0–10,000 บาท');return {name:text(m.name),price,image_url:importImage(m)}})}
+ }).filter(Boolean).filter((row,i,rows)=>rows.findIndex(x=>x.source_id===row.source_id)===i);
+}
+function importShops(u,data){
+ const plan=importPlan(data);let added=0,skipped=0,images_added=0,menus_added=0;
+ transaction(()=>{for(const r of plan){let sid=r.existing_id;
+ if(sid){skipped++;const old=get('SELECT * FROM shops WHERE id=?',sid);if(!old.image_url&&r.image_url){run('UPDATE shops SET image_url=?,updated_at=? WHERE id=?',r.image_url,now(),sid);images_added++}}
+ else {sid=id();run('INSERT INTO shops(id,name,category,address,phone,lat,lng,image_url,source,source_id,source_url,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',sid,r.name,r.category,r.address,r.phone,r.lat,r.lng,r.image_url,r.source,r.source_id,r.source_url,now());added++;if(r.image_url)images_added++}
+ for(const m of r.menus){const old=get('SELECT * FROM menus WHERE shop_id=? AND name=?',sid,m.name);if(old){if(!old.image_url&&m.image_url){run('UPDATE menus SET image_url=? WHERE id=?',m.image_url,old.id);images_added++}continue}run('INSERT INTO menus(id,shop_id,name,price_satang,image_url,available) VALUES(?,?,?,?,?,0)',id(),sid,m.name,Math.round(m.price*100),m.image_url);menus_added++;if(m.image_url)images_added++}
+ }audit(u,'import shops and media',String(added))});emit();return {added,skipped,images_added,menus_added,total:plan.length,note:'เติมเฉพาะรูปที่ขาด ไม่เปลี่ยนสถานะร้าน เมนูนำเข้าใหม่พักขายไว้จนกว่าจะตรวจราคาและเปิดขาย'};
 }
 async function api(req,res,url){
  checkOrigin(req);let u=session(req);const method=req.method,p=url.pathname;limit(req,p==='/api/login'?'login':'api:'+(u?.id||'public'),p==='/api/login'?10:240);
@@ -155,6 +177,7 @@ async function api(req,res,url){
  }
  const userReset=p.match(/^\/api\/admin\/users\/([^/]+)\/password$/);
  if(userReset&&method==='POST'){needUser(u,['admin']);const target=get("SELECT * FROM users WHERE id=? AND role<>'customer'",userReset[1]);if(!target)fail(404,'ไม่พบบัญชีทีมงาน');const password=required(b.password,'รหัสผ่านใหม่',200);if(password.length<12)fail(400,'รหัสผ่านอย่างน้อย 12 ตัวอักษร');run('UPDATE users SET password_hash=?,online=0 WHERE id=?',passHash(password),target.id);run('DELETE FROM sessions WHERE user_id=?',target.id);for(const [stream,s]of clients)if(!get('SELECT token_hash FROM sessions WHERE token_hash=?',s.token)){stream.end();clients.delete(stream)}audit(u,'reset password',target.id);return send(res,200,{ok:true})}
+ if(p==='/api/admin/import/preview'&&method==='POST'){needUser(u,['admin']);return send(res,200,{shops:importPlan(b)})}
  if(p==='/api/admin/import'&&method==='POST'){needUser(u,['admin']);return send(res,200,b.osm===true?await importOSM(u):importShops(u,b))}
  if(p==='/api/admin/reports'&&method==='GET'){needUser(u,['admin']);return send(res,200,all('SELECT id,kind,payload,created_at FROM reports ORDER BY created_at DESC LIMIT 100'))}
  fail(404,'ไม่พบ API');
