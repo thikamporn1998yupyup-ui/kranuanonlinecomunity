@@ -1340,5 +1340,27 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   };
 })();
-</script></body>
+</script><!-- ▼▼▼ delivery-fix ▼▼▼ -->
+<script>
+(function(){
+'use strict';
+if(window.__deliveryFixInstalled)return;
+window.__deliveryFixInstalled=true;
+const HOOKS=['onKranuanOrder','publishOrder','placeOrder','sendToRider','postOrder','submitToRider','createRiderOrder','dispatchOrder','pushOrder','syncOrder','saveOrder','submitOrder','addOrder','onNewOrder','notifyRider','broadcastOrder'];
+const NSS=['api','API','KranuanAPI','kranuan','Kranuan','app','App','customer','Customer','store','Store'];
+const MS=['createOrder','placeOrder','addOrder','postOrder','sendOrder','createRiderOrder','publishOrder','submitOrder','saveOrder','pushOrder','createDeliveryOrder','createRideOrder','addDeliveryOrder'];
+function log(l,m,...r){const c={ok:'#0a0',warn:'#c80',error:'#c00',info:'#888'}[l]||'#333';console.log('%c[delivery-fix] '+m,'color:'+c+';font-weight:bold',...r);}
+function fs(){if(window.db&&window.db.collection)return window.db;if(window.firestore&&window.firestore.collection)return window.firestore;if(window.firestoreDb&&window.firestoreDb.collection)return window.firestoreDb;try{if(window.firebase){const d=(window.firebase.firestore&&window.firebase.firestore())||(window.firebase.app&&window.firebase.app().firestore&&window.firebase.app().firestore());if(d&&d.collection)return d;}}catch(e){}return null;}
+async function viaHooks(o){for(const n of HOOKS){if(typeof window[n]!=='function')continue;try{await Promise.resolve(window[n](o));log('ok','via window.'+n);return true;}catch(e){log('warn','window.'+n+': '+(e&&e.message||e));}}return false;}
+async function viaNs(o){for(const ns of NSS){const ob=window[ns];if(!ob||typeof ob!=='object')continue;for(const m of MS){if(typeof ob[m]!=='function')continue;try{await Promise.resolve(ob[m](o));log('ok','via '+ns+'.'+m);return true;}catch(e){log('warn',ns+'.'+m+': '+(e&&e.message||e));}}}return false;}
+async function viaFs(o){const d=fs();if(!d){log('info','ไม่พบ Firestore');return false;}try{await d.collection('orders').add({...o,areaId:o.areaId||(typeof areaId!=='undefined'?areaId:'khon-kaen-kranuan'),createdAt:Date.now(),syncedAt:Date.now(),source:'delivery-web-fallback'});log('ok','via Firestore โดยตรง');return true;}catch(e){log('warn','Firestore: '+(e&&e.message||e));return false;}}
+async function pub(o){log('info','publish '+o.id+' ('+o.type+')');if(await viaHooks(o))return true;if(await viaNs(o))return true;if(await viaFs(o))return true;log('error','ไม่พบช่องทาง publish — พิมพ์ deliveryDiagnostics()');return false;}
+window.publishDeliveryOrder=pub;
+window.deliveryDiagnostics=function(){console.group('%c[delivery-fix] Diagnostics','color:#e95e30;font-weight:bold');console.log('state/areaId:',typeof state!=='undefined'&&typeof areaId!=='undefined');console.log('createOrder source length:',window.createOrder?window.createOrder.toString().length:'missing');console.log('Firestore found:',!!fs());console.log('Hooks:',HOOKS.filter(n=>typeof window[n]==='function'));console.log('Namespaces:',NSS.filter(ns=>window[ns]&&typeof window[ns]==='object').map(ns=>({ns,m:MS.filter(m=>typeof window[ns][m]==='function')})).filter(x=>x.m.length));console.log('Order-related fns:',Object.keys(window).filter(k=>typeof window[k]==='function'&&/order|rider|publish|sync|dispatch/i.test(k)));console.groupEnd();};
+function install(){const local=window.submitRealDelivery;if(typeof local!=='function')return false;window.submitRealDelivery=function(ev){const b=(typeof state!=='undefined'&&state.orders)?state.orders.length:0;local(ev);if(typeof state==='undefined'||!state.orders)return;const o=state.orders[state.orders.length-1];if(!o||state.orders.length===b)return;if(o.type!=='ride'&&o.type!=='market')return;try{document.dispatchEvent(new CustomEvent('kranuan-order',{detail:o}));}catch(e){}try{window.dispatchEvent(new CustomEvent('kranuan-order',{detail:o}));}catch(e){}pub(o);};log('ok','ติดตั้งสำเร็จ — พร้อม sync ขึ้น Firebase');log('info','ถ้าไม่เด้ง พิมพ์: deliveryDiagnostics()');return true;}
+if(!install()){let n=0;const r=()=>{n++;if(install()||n>25)return;setTimeout(r,200);};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',r);else r();}
+})();
+</script>
+<!-- ▲▲▲ delivery-fix ▲▲▲ -->
+</body>
 </html>
