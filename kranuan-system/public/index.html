@@ -87,6 +87,178 @@ p{line-height:1.7}
 .market-body p{font-size:10px;color:#8a7b6b;margin:0;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
 .market-price{font-size:13px;color:#d8592f;font-weight:bold;margin:2px 0}
 
+/* ===== ตลาดคนกระนวน v2 — ใช้ prefix mk- เท่านั้น ไม่แตะ class ของหน้าอื่น ===== */
+.mk-root{display:block;padding-bottom:84px}
+.mk-root *{box-sizing:border-box}
+.mk-root button,.mk-root input,.mk-root select,.mk-root textarea{font-family:inherit}
+.mk-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 12px}
+.mk-head h2{margin:0;font-size:19px}
+.mk-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:12px;padding:11px 14px;font-size:13px;font-weight:bold;background:#e95d2f;color:#fff;text-decoration:none;cursor:pointer;transition:background .2s,transform .1s;line-height:1.2}
+.mk-btn .icon{width:18px;height:18px}
+.mk-btn:hover{background:#c84c23}
+.mk-btn:active{transform:scale(.98)}
+.mk-btn.sec{background:#f4ecd9;color:#554838}
+.mk-btn.sec:hover{background:#ecdfc4}
+.mk-btn.ghost{background:#fff;color:#655444;border:1px solid #ebdcc9}
+.mk-btn.danger{background:#fff;color:#c0392b;border:1px solid #f0c9c3}
+.mk-btn.sm{padding:8px 12px;font-size:12px;border-radius:10px}
+.mk-btn.block{width:100%}
+.mk-btn[disabled],.mk-btn.off{background:#e8e0d4;color:#a39684;cursor:not-allowed;pointer-events:none}
+.mk-tabs{display:grid;grid-template-columns:1fr 1fr;background:#f4ecd9;border-radius:14px;padding:4px;margin-bottom:12px}
+.mk-tabs button{border:0;background:none;border-radius:11px;padding:10px 8px;font-size:13px;font-weight:bold;color:#7a6a58;display:flex;align-items:center;justify-content:center;gap:6px}
+.mk-tabs button .icon{width:18px;height:18px}
+.mk-tabs button[aria-pressed="true"]{background:#fff;color:#d8592f;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.mk-strip{display:flex;align-items:center;gap:10px;background:#e3fcef;border:1px solid #bfeed5;color:#0b6b3d;border-radius:14px;padding:10px 12px;margin-bottom:12px;font-size:12px;cursor:pointer;width:100%;text-align:left}
+.mk-strip .icon{width:22px;height:22px}
+.mk-strip b{display:block;font-size:13px}
+.mk-season{display:flex;align-items:center;gap:12px;background:#fff0cd;border:1px solid #f3dca4;border-radius:16px;padding:12px 14px;margin-bottom:12px;width:100%;text-align:left;cursor:pointer}
+.mk-season .ico{width:40px;height:40px;border-radius:12px;background:#f9d35b;color:#7a4b12;display:grid;place-items:center;flex-shrink:0}
+.mk-season b{display:block;font-size:13px;color:#7a4b12}
+.mk-season span{font-size:11px;color:#8a6a3c;line-height:1.4;display:block}
+.mk-chips{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;margin:0 -2px 4px;scrollbar-width:none}
+.mk-chips::-webkit-scrollbar{display:none}
+.mk-chip{flex:none;display:inline-flex;align-items:center;gap:6px;border:1px solid #ebdcc9;background:#fff;color:#655444;border-radius:999px;padding:8px 13px;font-size:12px;font-weight:bold;white-space:nowrap}
+.mk-chip .icon{width:16px;height:16px}
+.mk-chip[aria-pressed="true"]{background:#e95e30;border-color:#e95e30;color:#fff}
+.mk-sortrow{display:flex;align-items:center;gap:6px;margin:2px 0 12px;font-size:11px;color:#8a7b6b;flex-wrap:wrap}
+.mk-sortrow>.icon{width:18px;height:18px;color:#8a7b6b}
+.mk-sortrow .mk-chip{padding:5px 10px;font-size:11px}
+.mk-count{margin-left:auto;font-size:11px;color:#8a7b6b}
+.mk-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.mk-card{display:flex;flex-direction:column;background:#fff;border:1px solid #eee2d3;border-radius:16px;overflow:hidden;box-shadow:0 3px 10px rgba(0,0,0,.03);cursor:pointer;text-align:left}
+.mk-card:active{transform:scale(.99)}
+.mk-cover{position:relative;aspect-ratio:1/1;background:#e7eadb;display:grid;place-items:center;overflow:hidden}
+.mk-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.mk-cover>svg{width:70%;height:70%}
+.mk-cover.dim img,.mk-cover.dim>svg{opacity:.45}
+.mk-loc{position:absolute;left:8px;top:8px;display:inline-flex;align-items:center;gap:3px;max-width:calc(100% - 16px);background:#ffffffe6;color:#6b5a48;border-radius:999px;padding:3px 8px 3px 6px;font-size:10px;font-weight:bold}
+.mk-loc .icon{width:12px;height:12px;color:#e95d2f}
+.mk-loc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mk-imgcount{position:absolute;right:8px;bottom:8px;display:inline-flex;align-items:center;gap:3px;background:#332e29b8;color:#fff;border-radius:999px;padding:2px 7px;font-size:10px}
+.mk-imgcount .icon{width:12px;height:12px}
+.mk-ribbon{position:absolute;inset:auto 0 0 0;background:#332e29cc;color:#fff;text-align:center;font-size:12px;font-weight:bold;padding:6px}
+.mk-body{display:flex;flex-direction:column;gap:3px;padding:10px 11px 11px;flex:1}
+.mk-stock{align-self:flex-start;font-size:10px;font-weight:bold;border-radius:6px;padding:2px 7px}
+.mk-stock.s-available{background:#e3fcef;color:#0b7a45}
+.mk-stock.s-reserved{background:#fff0cd;color:#a76d2c}
+.mk-stock.s-sold{background:#eee;color:#7b7b7b}
+.mk-title{margin:2px 0 0;font-size:13px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.7em;color:#332e29}
+.mk-price{font-size:17px;font-weight:bold;color:#d8592f;line-height:1.2}
+.mk-price.alt{font-size:13px;color:#0b7a45}
+.mk-seller{display:flex;align-items:center;gap:6px;margin-top:auto;padding-top:6px;font-size:10px;color:#655444;min-width:0}
+.mk-avatar{width:20px;height:20px;border-radius:50%;background:#e95d2f;color:#fff;display:grid;place-items:center;font-size:10px;font-weight:bold;flex-shrink:0;object-fit:cover}
+.mk-seller .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.mk-verified{display:inline-flex;color:#0b9a5a;flex-shrink:0}
+.mk-verified .icon{width:14px;height:14px}
+.mk-time{font-size:10px;color:#a39684}
+.mk-empty{grid-column:1/-1;text-align:center;padding:30px 16px;border:1px dashed #dfcdb6;border-radius:16px;color:#85715e;font-size:13px;background:#fffdf8}
+.mk-empty b{display:block;font-size:14px;color:#554838;margin-bottom:4px}
+.mk-list{display:flex;flex-direction:column;gap:10px}
+.mk-want{background:#fff;border:1px solid #eee2d3;border-radius:16px;padding:14px;cursor:pointer;text-align:left;width:100%}
+.mk-want h3{margin:6px 0 4px;font-size:14px;color:#332e29}
+.mk-want p{margin:0 0 8px;font-size:12px;color:#8a7b6b;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mk-want .row{display:flex;align-items:center;gap:10px;font-size:11px;color:#8a7b6b;flex-wrap:wrap}
+.mk-want .row .icon{width:14px;height:14px;vertical-align:-3px}
+.mk-pill{display:inline-flex;align-items:center;gap:4px;background:#fff0cd;color:#a76d2c;border-radius:999px;padding:3px 9px;font-size:10px;font-weight:bold}
+.mk-pill .icon{width:12px;height:12px}
+.mk-pill.green{background:#e3fcef;color:#0b7a45}
+/* detail */
+.mk-back{display:flex;align-items:center;justify-content:space-between;margin:2px 0 10px}
+.mk-back button{display:inline-flex;align-items:center;gap:4px;border:0;background:none;color:#655444;font-size:13px;font-weight:bold;padding:6px 4px}
+.mk-back .icon{width:20px;height:20px}
+.mk-gallery{position:relative;border-radius:18px;overflow:hidden;background:#e7eadb}
+.mk-gal-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.mk-gal-track::-webkit-scrollbar{display:none}
+.mk-gal-track>*{flex:0 0 100%;scroll-snap-align:center;aspect-ratio:4/3;object-fit:cover;width:100%;display:block}
+.mk-gal-ph{display:grid;place-items:center}
+.mk-gal-ph svg{width:55%;height:55%}
+.mk-gal-count{position:absolute;right:10px;bottom:10px;background:#332e29b8;color:#fff;border-radius:999px;padding:3px 10px;font-size:11px}
+.mk-panel{background:#fff;border:1px solid #eee2d3;border-radius:18px;padding:16px;margin-top:12px}
+.mk-panel h3{margin:0 0 10px;font-size:14px;display:flex;align-items:center;gap:7px;color:#332e29}
+.mk-panel h3 .icon{width:20px;height:20px;color:#e95d2f}
+.mk-d-title{margin:8px 0 2px;font-size:19px;line-height:1.35;color:#332e29}
+.mk-d-price{font-size:24px;font-weight:bold;color:#d8592f}
+.mk-d-price.alt{font-size:18px;color:#0b7a45}
+.mk-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.mk-d-text{font-size:13px;color:#554838;line-height:1.7;margin:10px 0 0;white-space:pre-wrap;word-break:break-word}
+.mk-sellerbox{display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid #f3eadb}
+.mk-sellerbox .mk-avatar{width:38px;height:38px;font-size:15px}
+.mk-sellerbox b{font-size:13px;display:flex;align-items:center;gap:4px}
+.mk-sellerbox small{font-size:11px;color:#8a7b6b}
+.mk-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.mk-actions>*{flex:1 1 0;min-width:96px;padding-left:8px;padding-right:8px}
+.mk-seg{display:grid;gap:8px}
+.mk-seg.two{grid-template-columns:1fr 1fr}
+.mk-opt{display:flex;align-items:flex-start;gap:10px;border:1.5px solid #ebdcc9;background:#faf5ed;border-radius:14px;padding:11px 12px;text-align:left;width:100%;color:#554838}
+.mk-opt .dot{width:18px;height:18px;border-radius:50%;border:2px solid #cdbba3;flex-shrink:0;margin-top:2px;display:grid;place-items:center;background:#fff}
+.mk-opt[aria-pressed="true"]{border-color:#e95e30;background:#fff4ee}
+.mk-opt[aria-pressed="true"] .dot{border-color:#e95e30}
+.mk-opt[aria-pressed="true"] .dot:after{content:"";width:8px;height:8px;border-radius:50%;background:#e95e30}
+.mk-opt b{display:block;font-size:13px;color:#332e29}
+.mk-opt small{display:block;font-size:11px;color:#8a7b6b;line-height:1.4;margin-top:1px}
+.mk-opt[disabled]{opacity:.5;cursor:not-allowed}
+.mk-label{display:block;font-size:12px;font-weight:bold;color:#655444;margin:14px 0 6px}
+.mk-fare{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.mk-fare>div{background:#fff4ee;border:1px solid #f6d9cb;border-radius:14px;padding:10px 12px;text-align:center}
+.mk-fare small{display:block;font-size:11px;color:#8a7b6b}
+.mk-fare b{font-size:20px;color:#d8592f}
+.mk-fare b i{font-style:normal;font-size:12px;color:#8a7b6b;font-weight:normal;margin-left:2px}
+.mk-note{display:flex;gap:8px;align-items:flex-start;font-size:11px;line-height:1.5;color:#7a6a58;background:#faf5ed;border-radius:12px;padding:9px 11px;margin-top:10px}
+.mk-note .icon{width:16px;height:16px;margin-top:1px;color:#a76d2c}
+.mk-note.warn{background:#fdecea;color:#a3382c}
+.mk-note.warn .icon{color:#c0392b}
+.mk-note.ok{background:#e3fcef;color:#0b6b3d}
+.mk-note.ok .icon{color:#0b9a5a}
+.mk-input,.mk-textarea,.mk-select{width:100%;border:1px solid #ebdcc9;background:#faf5ed;border-radius:12px;padding:11px 12px;font-size:14px;color:#332e29;outline:none}
+.mk-textarea{resize:vertical;min-height:76px;line-height:1.5}
+.mk-input:focus,.mk-textarea:focus,.mk-select:focus{border-color:#e95e30;background:#fff}
+.mk-sum{margin-top:12px;border-top:1px dashed #e4d7c6;padding-top:10px}
+.mk-sum .r{display:flex;justify-content:space-between;font-size:13px;color:#655444;padding:3px 0}
+.mk-sum .t{font-size:16px;font-weight:bold;color:#332e29;border-top:1px solid #f0e6d9;margin-top:6px;padding-top:9px}
+.mk-sum .t b{color:#d8592f;font-size:19px}
+.mk-pay .mk-opt{align-items:center}
+.mk-pay .ico{width:36px;height:36px;border-radius:10px;background:#fff;border:1px solid #ebdcc9;display:grid;place-items:center;color:#e95d2f;flex-shrink:0}
+.mk-pay .ico .icon{width:20px;height:20px}
+.mk-cta{display:grid;gap:8px;margin-top:14px}
+.mk-cta .mk-btn{padding:14px;font-size:14px}
+.mk-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px}
+.mk-step{text-align:center;position:relative;font-size:10px;color:#a39684;line-height:1.35}
+.mk-step .c{width:30px;height:30px;border-radius:50%;margin:0 auto 6px;display:grid;place-items:center;background:#f0e8db;color:#a39684;font-weight:bold;font-size:12px;position:relative;z-index:1}
+.mk-step .c .icon{width:16px;height:16px;stroke-width:2.4}
+.mk-step:not(:last-child):after{content:"";position:absolute;top:14px;left:calc(50% + 17px);right:calc(-50% + 17px);height:2px;background:#f0e8db}
+.mk-step.done .c{background:#0b9a5a;color:#fff}
+.mk-step.done:not(:last-child):after{background:#0b9a5a}
+.mk-step.now .c{background:#e95d2f;color:#fff;box-shadow:0 0 0 5px #e95d2f26}
+.mk-step.now,.mk-step.done{color:#554838;font-weight:bold}
+.mk-owner .mk-actions>*{min-width:0}
+.mk-photos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mk-thumb{position:relative;aspect-ratio:1/1;border-radius:12px;overflow:hidden;background:#f4ecd9}
+.mk-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.mk-thumb button{position:absolute;right:4px;top:4px;width:24px;height:24px;border-radius:50%;border:0;background:#332e29cc;color:#fff;display:grid;place-items:center;padding:0}
+.mk-thumb button .icon{width:14px;height:14px;stroke-width:2.4}
+.mk-addph{aspect-ratio:1/1;border:1.5px dashed #d9c6ab;border-radius:12px;background:#faf5ed;color:#a76d2c;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px;font-weight:bold}
+.mk-addph .icon{width:24px;height:24px}
+.mk-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mk-check{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:#554838;margin-top:12px;line-height:1.45}
+.mk-check input{width:18px;height:18px;margin-top:1px;accent-color:#e95d2f;flex-shrink:0}
+.mk-check small{display:block;color:#8a7b6b;font-size:11px}
+.mk-ptype{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.mk-ptype label{position:relative}
+.mk-ptype input{position:absolute;opacity:0;inset:0}
+.mk-ptype span{display:block;text-align:center;border:1.5px solid #ebdcc9;background:#faf5ed;border-radius:12px;padding:9px 4px;font-size:12px;font-weight:bold;color:#655444}
+.mk-ptype input:checked+span{border-color:#e95e30;background:#fff4ee;color:#d8592f}
+.mk-ptype input:focus-visible+span{outline:2px solid #e95e30}
+.mk-err{color:#c0392b;font-size:12px;margin-top:10px;min-height:0}
+.mk-cmt{display:flex;gap:10px;padding:10px 0;border-top:1px solid #f3eadb}
+.mk-cmt:first-of-type{border-top:0}
+.mk-cmt .mk-avatar{width:30px;height:30px;font-size:12px}
+.mk-cmt b{font-size:12px}
+.mk-cmt small{color:#a39684;font-size:10px;margin-left:6px}
+.mk-cmt p{margin:2px 0 0;font-size:13px;color:#554838;white-space:pre-wrap;word-break:break-word}
+.mk-cmtbox{display:flex;gap:8px;margin-top:10px}
+.mk-cmtbox .mk-input{flex:1}
+@media(min-width:560px){.mk-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
 .modern-btn{border:0;border-radius:8px;background:#e95d2f;color:white;padding:7px 10px;font-size:10px;font-weight:bold;width:100%;margin-top:4px;cursor:pointer;text-align:center}
 .modern-btn.secondary{background:#f4ecd9;color:#554838}
 .modern-btn:hover{opacity:0.9}
@@ -1216,7 +1388,7 @@ function render(){
   if(view==='ร้านค้า'){
     h+=communityHome();
   } else if(view==='ตลาด'){
-    h+='<div class="sectionhead"><h2>ตลาดของคนกระนวน</h2><button class="modern-btn" style="width:auto;padding:8px 14px;" onclick="listingForm()">ลงประกาศขาย</button></div><p class="resultnote" style="font-size:11px;color:#8a7b6b;margin-bottom:12px;">ของใหม่หรือมือสอง ลงขายกันเองในชุมชน</p><div id="marketForm"></div><div id="marketResults" class="market-grid"></div>';
+    h+='<div id="mkRoot"></div>';
   } else if(view==='ส่งของ'){
     h+=deliveryFormHtml();
   } else if(view==='ออเดอร์ของฉัน' || view==='ร้านรับงาน'){
@@ -1250,19 +1422,548 @@ function objectArt(type){
   return '<svg viewBox="0 0 180 140" aria-hidden="true"><ellipse cx="90" cy="115" rx="56" ry="9" fill="#724e2d" opacity=".1"/>'+(type==='market'?'<path d="M49 51h82v56H49z" fill="#c88d50"/><path d="m49 51 41-22 41 22-41 22Z" fill="#e7b77a"/><path d="M90 73v34" stroke="#aa713c" stroke-width="3"/>':'<circle cx="90" cy="72" r="43" fill="#f6d49e"/>')+'</svg>'
 }
 
-function marketResults(){
-  const mrEl = document.getElementById('marketResults');
-  if(!mrEl) return;
-  mrEl.innerHTML=state.listings.filter(l=>l.areaId===areaId&&l.status==='approved'&&l.title.includes(query)).map(l=>{
-    const posterName = l.poster?.name || 'คนในชุมชน';
-    return '<article class="market-card">'+
-           '<div class="poster-info"><div class="poster-avatar">'+escapeHtml(posterName.charAt(0))+'</div><div class="poster-name">'+escapeHtml(posterName)+'</div></div>'+
-           '<div class="market-cover"><span class="sampletag">ประกาศชุมชน</span>'+objectArt('market')+'</div>'+
-           '<div class="market-body"><div><p>'+escapeHtml(l.condition)+'</p><h3>'+escapeHtml(l.title)+'</h3><span class="market-price">'+Number(l.price).toLocaleString('th-TH')+' ฿</span>'+(l.phone?'<p style="font-size:9px;color:#7a6b5c"> '+escapeHtml(l.phone)+'</p>':'')+'</div>'+
-           '<div><button class="modern-btn secondary" onclick="alert(\'ติดต่อผู้ขายเบอร์: '+(l.phone||'-')+'\')">ติดต่อผู้ขาย</button>'+
-           '<button class="modern-btn" onclick="requestMarketDelivery(\''+escapeHtml(l.id)+'\')">ส่งของชิ้นนี้</button></div></div></article>';
-  }).join('')||'<p class="empty">ยังไม่มีประกาศในตลาด</p>';
+/* =====================================================================
+   ตลาดคนกระนวน v2
+   - ใช้ชื่อเดิม marketResults() เป็นจุดเข้า (render() และช่องค้นหาด้านบนเรียกอยู่แล้ว)
+   - ข้อมูลเก็บใน state.listings เดิม เพิ่มฟิลด์ใหม่แบบ optional (ประกาศเก่ายังแสดงได้)
+   - ออเดอร์ส่งของสร้างใน state.orders รูปแบบเดิม (type:'market', status:'seller')
+   ===================================================================== */
+Object.assign(paths,{
+  phone:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A15 15 0 0 1 3 6a2 2 0 0 1 2-2Z"/>',
+  chat:'<path d="M4 5h16v11H9l-5 4V5Z"/><path d="M8 9.5h8M8 12.5h5"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  close:'<path d="m6 6 12 12M18 6 6 18"/>',
+  sort:'<path d="M4 7h10M4 12h7M4 17h4M17 6v12M17 18l-3-3M17 18l3-3"/>',
+  bump:'<circle cx="12" cy="12" r="9"/><path d="M12 16V9M8.5 12.5 12 9l3.5 3.5"/>',
+  trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/>',
+  leaf:'<path d="M5 19c0-8 5-13 15-14 0 9-5 14-13 14"/><path d="M5 19c2-4 5-7 9-9"/>',
+  gift:'<rect x="3.5" y="9" width="17" height="4" rx="1"/><path d="M5 13v7h14v-7M12 9v11M12 9c-1-3-5-4-5-1.5S10 9 12 9Zm0 0c1-3 5-4 5-1.5S14 9 12 9Z"/>',
+  image:'<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m4 17 5-4.5 3.5 3 3-2.5 4.5 4"/>',
+  alert:'<circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.4h.01"/>',
+  qr:'<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2.5v2.5H14zM19.5 14v.01M14 19.5v.01M17.5 19.5H20V17"/>',
+  cash:'<rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="12" cy="12" r="2.4"/><path d="M6.5 12h.01M17.5 12h.01"/>',
+  seed:'<path d="M12 21v-9"/><path d="M12 12c0-4-3-6-7-6 0 4 3 6 7 6Zm0 2c0-3 2.5-5 6-5 0 3-2.5 5-6 5Z"/>'
+});
+
+const MK_CATS=['ของกิน/อาหารสด','ของใช้/มือสอง','ผลผลิตเกษตร','บริการ/รับจ้าง','ฝากร้าน/แจกฟรี'];
+const MK_CAT_ICON={'ของกิน/อาหารสด':'food','ของใช้/มือสอง':'crate','ผลผลิตเกษตร':'leaf','บริการ/รับจ้าง':'service','ฝากร้าน/แจกฟรี':'gift'};
+const MK_STOCK={available:'มีของพร้อมส่ง',reserved:'ติดจอง',sold:'ขายแล้ว'};
+const MK_REPORT_REASONS=['สินค้าผิดกฎหมาย','หลอกลวง','โพสต์ก่อกวน','อื่น ๆ'];
+const MK_HIDE_AT=3;      /* ถูกรายงานครบกี่ครั้งให้ซ่อนจากฟีดรอแอดมินตรวจ */
+const MK_MAX_PHOTOS=5;
+/* แถบตลาดนัดตามฤดูกาล: แก้/เพิ่มรายการได้ที่นี่ (from/to รูปแบบ เดือน-วัน) */
+const MK_SEASONS=[
+  {from:'10-15',to:'12-15',title:'ผลผลิตปลายฝน ต้นหนาว',text:'ข้าว ผัก และผลผลิตจากสวนคนกระนวน ช่วยกันอุดหนุนเกษตรกรใกล้บ้าน',category:'ผลผลิตเกษตร'}
+];
+
+let mk={screen:'feed',tab:'sell',cat:'ทั้งหมด',sort:'new',open:null,lastQ:'',dl:null,form:null,gpsOk:false,reportOpen:false};
+
+const mkE=s=>escapeHtml(s==null?'':s);
+function mkMe(){
+  const u=state.currentUser;
+  if(u&&(u.userId||u.name))return u.userId||u.name;
+  if(!state.marketDevice)state.marketDevice='D'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  return state.marketDevice;
 }
+function mkNorm(l){
+  const m=/^L(\d+)$/.exec(String(l.id||''));
+  return Object.assign({},l,{
+    kind:l.kind||'sell',
+    category:l.category||'ของใช้/มือสอง',
+    stock:l.stock||'available',
+    priceType:l.priceType||'fixed',
+    images:Array.isArray(l.images)?l.images:[],
+    area:l.area||'อ.กระนวน',
+    acceptsDelivery:l.acceptsDelivery!==false,
+    comments:Array.isArray(l.comments)?l.comments:[],
+    reports:Array.isArray(l.reports)?l.reports:[],
+    createdAt:l.createdAt||(m?+m[1]:0),
+    poster:l.poster||{name:'คนในชุมชน'}
+  });
+}
+function mkRaw(id){return (state.listings||[]).find(l=>l.id===id)}
+function mkFind(id){const r=mkRaw(id);return r?mkNorm(r):null}
+function mkVisible(l){return l.areaId===areaId&&l.status==='approved'&&l.reports.length<MK_HIDE_AT}
+function mkStamp(l){return l.bumpedAt||l.createdAt||0}
+function mkAgo(ts){
+  if(!ts)return '';
+  const m=Math.floor((Date.now()-ts)/60000);
+  if(m<1)return 'เมื่อสักครู่';
+  if(m<60)return m+' นาทีที่แล้ว';
+  const h=Math.floor(m/60);
+  if(h<24)return h+' ชั่วโมงที่แล้ว';
+  return Math.floor(h/24)+' วันที่แล้ว';
+}
+function mkKm(a,b){
+  const R=6371,r=x=>x*Math.PI/180,dLa=r(b.lat-a.lat),dLo=r(b.lng-a.lng);
+  const h=Math.sin(dLa/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dLo/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+function mkHasPin(l){return !!(l.pickup&&isFinite(l.pickup.lat)&&isFinite(l.pickup.lng))}
+function mkPriceText(l){
+  if(l.priceType==='free')return 'ฟรี';
+  if(l.priceType==='ask')return 'ทักมาคุยราคา';
+  return Number(l.price||0).toLocaleString('th-TH')+' ฿';
+}
+function mkItemPrice(l){return l.priceType==='fixed'?Number(l.price||0):(l.priceType==='free'?0:null)}
+function mkNotice(t){const n=document.getElementById('notice');if(n)n.textContent=t}
+function mkTop(){window.scrollTo({top:0,behavior:'smooth'})}
+function mkAvatarHtml(p,cls){
+  const name=(p&&p.name)||'คนในชุมชน';
+  return (p&&p.avatar)?'<img class="mk-avatar" src="'+mkE(p.avatar)+'" alt="">':'<span class="mk-avatar">'+mkE(name.charAt(0))+'</span>';
+}
+function mkVerified(l){return l.verified?'<span class="mk-verified" title="ผู้ขายในอำเภอที่ยืนยันแล้ว">'+icon('shield')+'</span>':''}
+function mkSeasonNow(){
+  const d=new Date(),k=String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  return MK_SEASONS.find(s=>s.from<=s.to?(k>=s.from&&k<=s.to):(k>=s.from||k<=s.to))||null;
+}
+function mkActiveOrders(){return (state.orders||[]).filter(o=>o.areaId===areaId&&o.listingId&&!['done','cancelled'].includes(o.status))}
+function mkOrderFor(id){
+  const a=(state.orders||[]).filter(o=>o.areaId===areaId&&o.listingId===id);
+  return a.length?a[a.length-1]:null;
+}
+
+/* ---------- ทางเข้า / สลับหน้า ---------- */
+function marketResults(){
+  if(query!==mk.lastQ){mk.lastQ=query;if(mk.screen!=='feed')mk.screen='feed'}
+  mkRender();
+}
+function mkRender(){
+  const r=document.getElementById('mkRoot');
+  if(!r)return;
+  if(mk.screen==='form'){r.innerHTML=mkFormHtml();mkFormInit();return}
+  if(mk.screen==='detail'){
+    const l=mkFind(mk.open);
+    if(l&&mkVisible(l)){r.innerHTML=mkDetailHtml(l);return}
+    mk.screen='feed';
+  }
+  r.innerHTML=mkFeedHtml();
+}
+function mkSetTab(t){mk.tab=t;mk.cat='ทั้งหมด';mkRender()}
+function mkSetCat(c){mk.cat=c;mkRender()}
+function mkSetSort(s){mk.sort=s;mkRender()}
+function mkOpen(id){mk.open=id;mk.screen='detail';mk.dl=null;mk.reportOpen=false;mkRender();mkTop()}
+function mkBack(){mk.screen='feed';mk.form=null;mkRender();mkTop()}
+
+/* ---------- ฟีดหลัก ---------- */
+function mkFeedHtml(){
+  const all=(state.listings||[]).map(mkNorm).filter(mkVisible);
+  const q=String(query||'').trim().toLowerCase();
+  let list=all.filter(l=>l.kind===mk.tab&&(mk.cat==='ทั้งหมด'||l.category===mk.cat)&&(!q||[l.title,l.detail,l.area].join(' ').toLowerCase().includes(q)));
+  const near=l=>mkHasPin(l)?mkKm(userLiveLocation,l.pickup):Infinity;
+  const cheap=l=>l.priceType==='free'?0:(l.priceType==='ask'?Infinity:Number(l.price||0));
+  if(mk.tab==='sell'&&mk.sort==='near')list.sort((a,b)=>near(a)-near(b)||mkStamp(b)-mkStamp(a));
+  else if(mk.tab==='sell'&&mk.sort==='cheap')list.sort((a,b)=>cheap(a)-cheap(b)||mkStamp(b)-mkStamp(a));
+  else list.sort((a,b)=>mkStamp(b)-mkStamp(a));
+
+  const act=mkActiveOrders().filter(o=>mkFind(o.listingId));
+  const season=mk.tab==='sell'?mkSeasonNow():null;
+  const cats=['ทั้งหมด'].concat(MK_CATS);
+
+  let h='<div class="mk-root">';
+  h+='<div class="mk-head"><h2>ตลาดของคนกระนวน</h2><button type="button" class="mk-btn sm" onclick="mkOpenForm()">'+icon('plus')+'ลงประกาศ</button></div>';
+  h+='<div class="mk-tabs" role="tablist">'+
+     '<button type="button" role="tab" aria-pressed="'+(mk.tab==='sell')+'" onclick="mkSetTab(\'sell\')">'+icon('market')+'ประกาศขาย</button>'+
+     '<button type="button" role="tab" aria-pressed="'+(mk.tab==='wanted')+'" onclick="mkSetTab(\'wanted\')">'+icon('search')+'ตามหาของ</button></div>';
+  if(act.length){
+    const o=act[act.length-1];
+    h+='<button type="button" class="mk-strip" onclick="mkOpen(\''+mkE(o.listingId)+'\')">'+icon('rider')+'<span><b>มีออเดอร์ตลาดที่กำลังดำเนินการ ('+act.length+')</b>'+mkE(o.item)+' · '+mkE(statuses[o.status]||'')+'</span></button>';
+  }
+  if(season){
+    h+='<button type="button" class="mk-season" onclick="mkSetCat(\''+mkE(season.category)+'\')"><span class="ico">'+icon('seed')+'</span><span><b>'+mkE(season.title)+'</b><span>'+mkE(season.text)+'</span></span></button>';
+  }
+  h+='<div class="mk-chips" role="group" aria-label="ประเภทสินค้า">'+cats.map(c=>'<button type="button" class="mk-chip" aria-pressed="'+(mk.cat===c)+'" onclick="mkSetCat(\''+mkE(c)+'\')">'+(MK_CAT_ICON[c]?icon(MK_CAT_ICON[c]):'')+mkE(c)+'</button>').join('')+'</div>';
+  h+='<div class="mk-sortrow">';
+  if(mk.tab==='sell'){
+    h+=icon('sort')+[['new','ล่าสุด'],['near','ใกล้ฉันที่สุด'],['cheap','ราคาย่อมเยา']].map(([k,t])=>'<button type="button" class="mk-chip" aria-pressed="'+(mk.sort===k)+'" onclick="mkSetSort(\''+k+'\')">'+t+'</button>').join('');
+  }
+  h+='<span class="mk-count">'+list.length+' รายการ</span></div>';
+
+  if(mk.tab==='sell'){
+    h+='<div class="mk-grid">'+(list.map(mkCard).join('')||mkEmpty(all.filter(l=>l.kind==='sell').length))+'</div>';
+  }else{
+    h+='<div class="mk-list">'+(list.map(mkWantCard).join('')||mkEmpty(all.filter(l=>l.kind==='wanted').length,true))+'</div>';
+  }
+  return h+'</div>';
+}
+function mkEmpty(total,wanted){
+  return '<div class="mk-empty"><b>'+(total?'ไม่พบรายการที่ตรงกับตัวกรอง':(wanted?'ยังไม่มีใครตามหาของ':'ยังไม่มีประกาศในตลาด'))+'</b>'+(total?'ลองเปลี่ยนประเภทสินค้า หรือค้นหาด้วยคำอื่น':'กด “ลงประกาศ” เพื่อเป็นคนแรกได้เลย')+'</div>';
+}
+function mkCard(l){
+  const id=mkE(l.id),img=l.images[0],off=l.stock!=='available';
+  return '<article class="mk-card" role="button" tabindex="0" onclick="mkOpen(\''+id+'\')" onkeydown="if(event.key===\'Enter\')mkOpen(\''+id+'\')">'+
+    '<div class="mk-cover'+(off?' dim':'')+'">'+(img?'<img src="'+img+'" alt="'+mkE(l.title)+'" loading="lazy">':objectArt('market'))+
+      '<span class="mk-loc">'+icon('pin')+mkE(l.area)+'</span>'+
+      (l.images.length>1?'<span class="mk-imgcount">'+icon('image')+l.images.length+'</span>':'')+
+      (off?'<span class="mk-ribbon">'+MK_STOCK[l.stock]+'</span>':'')+
+    '</div>'+
+    '<div class="mk-body">'+
+      '<span class="mk-stock s-'+l.stock+'">'+MK_STOCK[l.stock]+'</span>'+
+      '<h3 class="mk-title">'+mkE(l.title)+'</h3>'+
+      '<span class="mk-price'+(l.priceType==='fixed'?'':' alt')+'">'+mkPriceText(l)+'</span>'+
+      '<div class="mk-seller">'+mkAvatarHtml(l.poster)+'<span class="nm">'+mkE(l.poster.name||'คนในชุมชน')+'</span>'+mkVerified(l)+'</div>'+
+      '<span class="mk-time">'+(l.isSample?'ประกาศตัวอย่าง':mkAgo(mkStamp(l)))+'</span>'+
+    '</div></article>';
+}
+function mkWantCard(l){
+  const id=mkE(l.id);
+  return '<article class="mk-want" role="button" tabindex="0" onclick="mkOpen(\''+id+'\')" onkeydown="if(event.key===\'Enter\')mkOpen(\''+id+'\')">'+
+    '<span class="mk-pill">'+icon('search')+'ตามหา</span>'+
+    '<h3>'+mkE(l.title)+'</h3>'+(l.detail?'<p>'+mkE(l.detail)+'</p>':'')+
+    '<div class="row"><span>'+icon('pin')+' '+mkE(l.area)+'</span><span>'+icon('chat')+' '+l.comments.length+' ความเห็น</span><span>'+mkE(mkAgo(mkStamp(l)))+'</span></div></article>';
+}
+
+/* ---------- หน้ารายละเอียดประกาศ ---------- */
+function mkContactButtons(l){
+  const tel=String(l.phone||'').replace(/[^0-9+]/g,'');
+  let line='';
+  if(l.lineId){
+    const id=String(l.lineId).trim();
+    line=id.startsWith('@')?'https://line.me/R/ti/p/'+encodeURIComponent(id):'https://line.me/ti/p/~'+encodeURIComponent(id);
+  }
+  const map=mkHasPin(l)?'https://www.google.com/maps/search/?api=1&query='+l.pickup.lat+','+l.pickup.lng:'';
+  let h='';
+  if(tel)h+='<a class="mk-btn sec" href="tel:'+mkE(tel)+'">'+icon('phone')+'โทรหาผู้ขาย</a>';
+  if(line)h+='<a class="mk-btn sec" href="'+mkE(line)+'" target="_blank" rel="noopener">'+icon('chat')+'แชต/ทัก Line</a>';
+  if(map)h+='<a class="mk-btn sec" href="'+mkE(map)+'" target="_blank" rel="noopener">'+icon('pin')+'ดูแผนที่นัดรับ</a>';
+  return h?'<div class="mk-actions">'+h+'</div>':'';
+}
+function mkGalScroll(el){
+  const n=el.children.length,i=Math.round(el.scrollLeft/Math.max(1,el.clientWidth))+1,c=document.getElementById('mkGalCount');
+  if(c)c.textContent=Math.min(i,n)+'/'+n;
+}
+function mkDetailHtml(l){
+  const mine=l.ownerId&&l.ownerId===mkMe();
+  let h='<div class="mk-root">';
+  h+='<div class="mk-back"><button type="button" onclick="mkBack()">'+icon('back')+'กลับตลาด</button>'+
+     (mine?'':'<button type="button" onclick="mkToggleReport()" aria-label="รายงานโพสต์">'+icon('flag')+'รายงาน</button>')+'</div>';
+  if(l.kind==='sell'){
+    h+='<div class="mk-gallery">'+(l.images.length?
+      '<div class="mk-gal-track" onscroll="mkGalScroll(this)">'+l.images.map((s,i)=>'<img src="'+s+'" alt="'+mkE(l.title)+' รูปที่ '+(i+1)+'">').join('')+'</div>'+(l.images.length>1?'<span class="mk-gal-count" id="mkGalCount">1/'+l.images.length+'</span>':''):
+      '<div class="mk-gal-track"><div class="mk-gal-ph">'+objectArt('market')+'</div></div>')+'</div>';
+  }
+  h+='<div class="mk-panel" style="margin-top:12px">';
+  h+='<div class="mk-badges" style="margin:0 0 8px">'+
+     (l.kind==='sell'?'<span class="mk-stock s-'+l.stock+'">'+MK_STOCK[l.stock]+'</span>':'<span class="mk-pill">'+icon('search')+'ตามหา</span>')+
+     '<span class="mk-pill">'+icon('pin')+mkE(l.area)+'</span>'+
+     '<span class="mk-pill">'+icon(MK_CAT_ICON[l.category]||'market')+mkE(l.category)+'</span>'+
+     (l.verified?'<span class="mk-pill green">'+icon('shield')+'ผู้ขายยืนยันแล้ว</span>':'')+'</div>';
+  h+='<h2 class="mk-d-title">'+mkE(l.title)+'</h2>';
+  if(l.kind==='sell')h+='<div class="mk-d-price'+(l.priceType==='fixed'?'':' alt')+'">'+mkPriceText(l)+'</div>';
+  if(l.detail)h+='<p class="mk-d-text">'+mkE(l.detail)+'</p>';
+  h+='<div class="mk-sellerbox">'+mkAvatarHtml(l.poster)+'<div><b>'+mkE(l.poster.name||'คนในชุมชน')+mkVerified(l)+'</b><small>'+(l.isSample?'ประกาศตัวอย่าง':'ลงเมื่อ '+mkE(mkAgo(mkStamp(l))))+'</small></div></div>';
+  h+=mkContactButtons(l);
+  h+='</div>';
+  if(mk.reportOpen)h+=mkReportHtml(l);
+  if(mine)h+=mkOwnerHtml(l);
+  if(l.kind==='wanted')h+=mkCommentsHtml(l);
+  else{
+    h+='<div id="mkTrack">'+mkTrackHtml(l)+'</div>';
+    h+='<div id="mkDelivery">'+mkDeliveryHtml(l)+'</div>';
+  }
+  return h+'</div>';
+}
+function mkReportHtml(l){
+  const done=l.reports.some(r=>r.by===mkMe());
+  return '<div class="mk-panel"><h3>'+icon('flag')+'รายงานโพสต์นี้</h3>'+(done?'<div class="mk-note ok">'+icon('check')+'<span>คุณรายงานโพสต์นี้แล้ว ขอบคุณที่ช่วยดูแลตลาด</span></div>':
+    '<div class="mk-seg">'+MK_REPORT_REASONS.map(r=>'<button type="button" class="mk-opt" onclick="mkReport(\''+mkE(l.id)+'\',\''+mkE(r)+'\')"><span class="dot"></span><span><b>'+r+'</b></span></button>').join('')+'</div>'+
+    '<div class="mk-note">'+icon('alert')+'<span>โพสต์ที่ถูกรายงานครบ '+MK_HIDE_AT+' ครั้งจะถูกซ่อนจากตลาดเพื่อรอแอดมินอำเภอตรวจสอบ</span></div>')+'</div>';
+}
+function mkToggleReport(){mk.reportOpen=!mk.reportOpen;mkRender()}
+function mkReport(id,reason){
+  const r=mkRaw(id);if(!r)return;
+  r.reports=Array.isArray(r.reports)?r.reports:[];
+  if(r.reports.some(x=>x.by===mkMe()))return;
+  r.reports.push({by:mkMe(),reason,at:Date.now()});
+  if(r.reports.length>=MK_HIDE_AT){mk.screen='feed';mkNotice('ขอบคุณ โพสต์นี้ถูกซ่อนและส่งให้แอดมินตรวจสอบแล้ว')}
+  else mkNotice('ขอบคุณ ส่งรายงานให้แอดมินแล้ว');
+  save();
+}
+function mkOwnerHtml(l){
+  const bumped=l.bumpedAt&&new Date(l.bumpedAt).toDateString()===new Date().toDateString();
+  const id=mkE(l.id);
+  let h='<div class="mk-panel mk-owner"><h3>'+icon('user')+'จัดการประกาศของฉัน</h3>';
+  if(l.kind==='sell'){
+    h+='<div class="mk-seg" style="grid-template-columns:repeat(3,1fr)">'+Object.keys(MK_STOCK).map(k=>'<button type="button" class="mk-opt" style="padding:10px 8px;justify-content:center;text-align:center" aria-pressed="'+(l.stock===k)+'" onclick="mkSetStock(\''+id+'\',\''+k+'\')"><span><b style="font-size:12px">'+MK_STOCK[k]+'</b></span></button>').join('')+'</div>';
+    h+='<label class="mk-check"><input type="checkbox" '+(l.acceptsDelivery?'checked':'')+' onchange="mkToggleDelivery(\''+id+'\')"><span>เปิดรับเดลิเวอรี่ (ให้ผู้ซื้อเรียกรถมารับของ)<small>ปิดไว้เมื่อไม่อยู่บ้านหรือไม่พร้อมให้ไรเดอร์มารับ</small></span></label>';
+  }
+  h+='<div class="mk-actions">'+
+     '<button type="button" class="mk-btn sec'+(bumped?' off':'')+'" onclick="mkBump(\''+id+'\')">'+icon('bump')+(bumped?'ดันโพสต์แล้ววันนี้':'ดันโพสต์ขึ้นบน')+'</button>'+
+     '<button type="button" class="mk-btn danger" onclick="mkDelete(\''+id+'\')">'+icon('trash')+'ลบประกาศ</button></div>';
+  if(!bumped)h+='<div class="mk-note">'+icon('clock')+'<span>ดันโพสต์ได้วันละ 1 ครั้ง ประกาศจะกลับขึ้นไปอยู่ลำดับบนของตลาด</span></div>';
+  return h+'</div>';
+}
+function mkSetStock(id,s){const r=mkRaw(id);if(r){r.stock=s;save()}}
+function mkToggleDelivery(id){const r=mkRaw(id);if(r){r.acceptsDelivery=!(r.acceptsDelivery!==false);save()}}
+function mkBump(id){
+  const r=mkRaw(id);if(!r)return;
+  if(r.bumpedAt&&new Date(r.bumpedAt).toDateString()===new Date().toDateString())return;
+  r.bumpedAt=Date.now();mkNotice('ดันโพสต์เรียบร้อย');save();
+}
+function mkDelete(id){
+  if(!confirm('ลบประกาศนี้ใช่หรือไม่?'))return;
+  state.listings=state.listings.filter(l=>l.id!==id);
+  mk.screen='feed';mkNotice('ลบประกาศแล้ว');save();
+}
+
+/* ---------- ตามหาของ: ความเห็น ---------- */
+function mkCommentsHtml(l){
+  return '<div class="mk-panel"><h3>'+icon('chat')+'ความเห็น ('+l.comments.length+')</h3>'+
+    (l.comments.map(c=>'<div class="mk-cmt">'+mkAvatarHtml({name:c.name,avatar:c.avatar})+'<div><b>'+mkE(c.name||'คนในชุมชน')+'</b><small>'+mkE(mkAgo(c.at))+'</small><p>'+mkE(c.text)+'</p></div></div>').join('')||'<div class="mk-note">'+icon('chat')+'<span>ยังไม่มีใครตอบ เป็นคนแรกที่ช่วยตอบได้เลย</span></div>')+
+    '<div class="mk-cmtbox"><input id="mkCmt" class="mk-input" maxlength="300" placeholder="พิมพ์ตอบ เช่น บ้านนี้มีขาย ทักมาได้เลย" onkeydown="if(event.key===\'Enter\')mkComment(\''+mkE(l.id)+'\')"><button type="button" class="mk-btn" onclick="mkComment(\''+mkE(l.id)+'\')">ส่ง</button></div></div>';
+}
+function mkComment(id){
+  const i=document.getElementById('mkCmt'),t=i?i.value.trim():'';
+  const r=mkRaw(id);if(!t||!r)return;
+  r.comments=Array.isArray(r.comments)?r.comments:[];
+  const u=state.currentUser||{};
+  r.comments.push({name:u.name||'คนในชุมชน',avatar:u.avatar||'',text:t,at:Date.now()});
+  save();
+}
+
+/* ---------- กล่องคำนวณการจัดส่ง + สรุปยอด + ชำระเงิน ---------- */
+function mkDl(l){
+  if(!mk.dl||mk.dl.id!==l.id)mk.dl={id:l.id,method:l.acceptsDelivery&&l.stock==='available'?'delivery':'self',drop:'gps',note:'',pay:'qr'};
+  return mk.dl;
+}
+function mkQuote(l,dl){
+  const pin=mkHasPin(l),pickup=pin?{lat:l.pickup.lat,lng:l.pickup.lng}:SERVICE_CENTER;
+  const drop=(dl.drop==='home'&&state.marketHome)?state.marketHome:userLiveLocation;
+  const km=mkKm(pickup,drop);
+  let fee=25;try{fee=KranuanPricing.quote(km).total}catch(e){}
+  return {pickup,drop,km,fee,approx:!pin,out:mkKm(SERVICE_CENTER,drop)>SERVICE_RADIUS_KM};
+}
+const MK_STEPS=['รอร้านค้ายืนยัน','กำลังหาไรเดอร์','ไรเดอร์กำลังไปรับของ','กำลังนำของมาส่ง'];
+function mkTrackHtml(l){
+  const o=mkOrderFor(l.id);if(!o)return '';
+  const idx={seller:0,waiting:0,ready:1,assigned:2,picked:3,done:4}[o.status];
+  let h='<div class="mk-panel"><h3>'+icon('route')+'สถานะการสั่งซื้อ</h3>';
+  if(o.status==='cancelled'){
+    return h+'<div class="mk-note warn">'+icon('alert')+'<span>ออเดอร์นี้ถูกยกเลิกแล้ว</span></div></div>';
+  }
+  h+='<div class="mk-steps">'+MK_STEPS.map((t,i)=>'<div class="mk-step '+(i<idx?'done':(i===idx?'now':''))+'"><div class="c">'+(i<idx?icon('check'):(i+1))+'</div>'+t+'</div>').join('')+'</div>';
+  if(o.status==='done')h+='<div class="mk-note ok">'+icon('check')+'<span>ส่งของสำเร็จแล้ว</span></div>';
+  if(['assigned','picked'].includes(o.status)){
+    const tel=o.rider&&o.rider.phone?String(o.rider.phone).replace(/[^0-9+]/g,''):'';
+    const d=o.coordinates&&o.coordinates.drop;
+    h+='<div class="mk-actions">'+
+      (tel?'<a class="mk-btn sec" href="tel:'+mkE(tel)+'">'+icon('phone')+'โทรหาไรเดอร์</a>':'<span class="mk-btn sec off">'+icon('phone')+'ยังไม่มีเบอร์ไรเดอร์</span>')+
+      (d?'<a class="mk-btn sec" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+d.lat+','+d.lng+'&travelmode=driving">'+icon('pin')+'ดูพิกัดบนแผนที่</a>':'')+'</div>';
+  }
+  if(['seller','waiting','ready'].includes(o.status))h+='<div class="mk-actions"><button type="button" class="mk-btn danger" onclick="advance(\''+mkE(o.id)+'\',\'cancelled\')">ยกเลิกคำขอ</button></div>';
+  return h+'</div>';
+}
+function mkOptBtn(on,onclick,title,sub,dis){
+  return '<button type="button" class="mk-opt" aria-pressed="'+on+'" '+(dis?'disabled ':'')+'onclick="'+onclick+'"><span class="dot"></span><span><b>'+title+'</b>'+(sub?'<small>'+sub+'</small>':'')+'</span></button>';
+}
+function mkDeliveryHtml(l){
+  if(l.kind!=='sell')return '';
+  const dl=mkDl(l),id=mkE(l.id),canDel=l.acceptsDelivery&&l.stock==='available';
+  const order=mkOrderFor(l.id),active=order&&!['done','cancelled'].includes(order.status);
+  if(dl.method==='delivery'&&!canDel)dl.method='self';
+  const q=mkQuote(l,dl),item=mkItemPrice(l),total=(item||0)+q.fee,delivering=dl.method==='delivery';
+  let h='<div class="mk-panel"><h3>'+icon('rider')+'เลือกวิธีรับของ</h3>';
+  h+='<div class="mk-seg">'+
+    mkOptBtn(delivering,"mkSetDl('method','delivery')",'ให้รถไปรับมาส่งที่บ้าน','ไรเดอร์ไปรับจากผู้ขายแล้วนำมาส่งถึงที่',!canDel)+
+    mkOptBtn(!delivering,"mkSetDl('method','self')",'นัดรับเอง','ไปรับของกับผู้ขายด้วยตัวเอง',false)+'</div>';
+  if(!l.acceptsDelivery)h+='<div class="mk-note warn">'+icon('alert')+'<span>ผู้ขายปิดรับเดลิเวอรี่อยู่ในขณะนี้ ติดต่อผู้ขายเพื่อนัดรับเองได้</span></div>';
+  else if(l.stock!=='available')h+='<div class="mk-note warn">'+icon('alert')+'<span>สินค้านี้'+MK_STOCK[l.stock]+' จึงยังเรียกรถไปรับไม่ได้</span></div>';
+  if(!delivering){
+    h+='<div class="mk-note">'+icon('pin')+'<span>จุดนัดรับ: '+mkE(l.pickupLabel||(l.pickup&&l.pickup.label)||l.area)+(mkHasPin(l)?' (กดปุ่ม “ดูแผนที่นัดรับ” ด้านบนเพื่อเปิดแผนที่)':'')+'</span></div></div>';
+    return h+mkContactCta(l);
+  }
+  h+='<label class="mk-label">จุดส่งสินค้า</label><div class="mk-seg">'+
+    mkOptBtn(dl.drop==='gps',"mkSetDl('drop','gps')",'ตำแหน่งปัจจุบันของฉัน',mk.gpsOk?'ดึงจาก GPS แล้ว':'ยังเป็นตำแหน่งโดยประมาณ กดอัปเดตเพื่อความแม่นยำ',false)+
+    mkOptBtn(dl.drop==='home',"mkSetDl('drop','home')",'หมุดบ้านที่บันทึกไว้',state.marketHome?'ใช้หมุดบ้านที่บันทึกไว้':'ยังไม่ได้บันทึกหมุดบ้าน',!state.marketHome)+'</div>';
+  h+='<div class="mk-actions" style="margin-top:8px"><button type="button" class="mk-btn ghost sm" onclick="mkGps()">'+icon('crosshair')+'อัปเดตตำแหน่งปัจจุบัน</button><button type="button" class="mk-btn ghost sm" onclick="mkSaveHome()">'+icon('home')+'บันทึกตำแหน่งนี้เป็นหมุดบ้าน</button></div>';
+  h+='<div class="mk-fare"><div><small>ระยะทางจริง</small><b>'+q.km.toFixed(1)+'<i>กม.</i></b></div><div><small>ค่ารถไปรับ-ส่ง</small><b>'+q.fee+'<i>บาท</i></b></div></div>';
+  if(q.approx)h+='<div class="mk-note">'+icon('alert')+'<span>ผู้ขายยังไม่ได้ปักหมุดจุดรับของ ระยะทางนี้คำนวณจากศูนย์กลางอำเภอ ค่าส่งจริงอาจต่างไปเล็กน้อย</span></div>';
+  if(q.out)h+='<div class="mk-note warn">'+icon('alert')+'<span>จุดส่งอยู่นอกพื้นที่ให้บริการ ('+SERVICE_RADIUS_KM+' กม. จากศูนย์กลางอำเภอ)</span></div>';
+  h+='<label class="mk-label" for="mkRiderNote">โน้ตถึงไรเดอร์</label><textarea id="mkRiderNote" class="mk-textarea" maxlength="200" placeholder="เช่น รับของกับยายมี บ้านสีฟ้าข้างวัด" oninput="mk.dl.note=this.value">'+mkE(dl.note)+'</textarea></div>';
+
+  h+='<div class="mk-panel"><h3>'+icon('orders')+'สรุปยอดและการชำระเงิน</h3><div class="mk-sum" style="margin-top:0;border-top:0;padding-top:0">'+
+    '<div class="r"><span>ค่าสินค้า</span><span>'+(item===null?'ตกลงกับผู้ขาย':item.toLocaleString('th-TH')+' บาท')+'</span></div>'+
+    '<div class="r"><span>ค่ารถไปรับ-ส่ง</span><span>'+q.fee+' บาท</span></div>'+
+    '<div class="r t"><span>ราคารวมทั้งหมด</span><b>'+total.toLocaleString('th-TH')+' บาท</b></div></div>';
+  if(item===null)h+='<div class="mk-note">'+icon('chat')+'<span>สินค้านี้ราคาตกลงกับผู้ขาย ยอดด้านบนจึงเป็นค่ารถอย่างเดียว</span></div>';
+  h+='<label class="mk-label">ช่องทางชำระเงิน</label><div class="mk-seg mk-pay">'+
+    '<button type="button" class="mk-opt" aria-pressed="'+(dl.pay==='qr')+'" onclick="mkSetDl(\'pay\',\'qr\')"><span class="ico">'+icon('qr')+'</span><span><b>สแกน QR PromptPay</b><small>ชำระรวมทั้งหมด</small></span></button>'+
+    '<button type="button" class="mk-opt" aria-pressed="'+(dl.pay==='cod')+'" onclick="mkSetDl(\'pay\',\'cod\')"><span class="ico">'+icon('cash')+'</span><span><b>จ่ายเงินสดปลายทาง (COD)</b><small>ชำระให้ไรเดอร์ตอนรับของ</small></span></button></div>';
+  const can=!q.out&&!active;
+  h+='<div class="mk-cta"><button type="button" class="mk-btn block'+(can?'':' off')+'" '+(can?'':'disabled ')+'onclick="mkOrder(\''+id+'\')">'+icon('rider')+(active?'สั่งซื้อสินค้านี้แล้ว':'สั่งซื้อ + เรียกรถไปรับของ')+'</button>'+
+    mkContactCtaBtn(l)+'</div></div>';
+  return h;
+}
+function mkContactCtaBtn(l){
+  const tel=String(l.phone||'').replace(/[^0-9+]/g,'');
+  return tel?'<a class="mk-btn sec block" href="tel:'+mkE(tel)+'">'+icon('phone')+'ติดต่อผู้ขายโดยตรง</a>':'';
+}
+function mkContactCta(l){const b=mkContactCtaBtn(l);return b?'<div class="mk-panel" style="margin-top:12px">'+b+'</div>':''}
+function mkRenderDelivery(){
+  const l=mkFind(mk.open),el=document.getElementById('mkDelivery');
+  if(l&&el)el.innerHTML=mkDeliveryHtml(l);
+}
+function mkSetDl(k,v){if(!mk.dl)return;mk.dl[k]=v;mkRenderDelivery()}
+function mkGps(){
+  const done=p=>{userLiveLocation={lat:p.lat,lng:p.lng};mkRenderDelivery()};
+  if(!navigator.geolocation){mkNotice('อุปกรณ์นี้ไม่รองรับการระบุตำแหน่ง');return}
+  navigator.geolocation.getCurrentPosition(pos=>{mk.gpsOk=true;done({lat:pos.coords.latitude,lng:pos.coords.longitude})},()=>mkNotice('ดึงตำแหน่งไม่ได้ กรุณาอนุญาตการเข้าถึงตำแหน่งในเบราว์เซอร์'),{enableHighAccuracy:true,timeout:8000,maximumAge:0});
+}
+function mkSaveHome(){
+  state.marketHome={lat:userLiveLocation.lat,lng:userLiveLocation.lng};
+  if(mk.dl)mk.dl.drop='home';
+  mkNotice('บันทึกหมุดบ้านแล้ว');save();
+}
+function mkOrder(id){
+  const l=mkFind(id);if(!l||l.kind!=='sell')return;
+  const dl=mkDl(l);
+  if(dl.method!=='delivery'||!l.acceptsDelivery||l.stock!=='available')return;
+  const prev=mkOrderFor(id);if(prev&&!['done','cancelled'].includes(prev.status))return;
+  const q=mkQuote(l,dl);if(q.out)return;
+  const item=mkItemPrice(l);
+  state.orders.push({
+    id:Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),
+    areaId,status:'seller',type:'market',listingId:l.id,item:l.title,
+    itemPrice:item,deliveryFee:q.fee,total:(item||0)+q.fee,paymentMethod:dl.pay,
+    note:(dl.note||'').trim(),
+    pickupInfo:{address:l.pickupLabel||(l.pickup&&l.pickup.label)||l.area,note:''},
+    coordinates:{pickup:q.pickup,drop:q.drop,isSample:false},
+    createdAt:Date.now()
+  });
+  mkNotice('ส่งคำสั่งซื้อแล้ว รอผู้ขายยืนยัน');
+  save();
+}
+
+/* ---------- ฟอร์มลงประกาศ ---------- */
+function mkEmptyForm(kind){
+  return {kind,title:'',detail:'',category:kind==='sell'?'ของใช้/มือสอง':'ผลผลิตเกษตร',priceType:'fixed',price:'',area:'',pickupLabel:'',phone:'',lineId:'',acceptsDelivery:true,images:[],pickup:null};
+}
+function mkOpenForm(){mk.form=mkEmptyForm(mk.tab);mk.screen='form';mkRender();mkTop()}
+function mkFormHtml(){
+  if(!mk.form)mk.form=mkEmptyForm(mk.tab);
+  const f=mk.form,sell=f.kind==='sell',v=n=>mkE(f[n]||'');
+  let h='<div class="mk-root"><div class="mk-back"><button type="button" onclick="mkBack()">'+icon('back')+'ยกเลิก</button></div>';
+  h+='<form id="mkForm" novalidate>';
+  h+='<div class="mk-panel" style="margin-top:0"><h3>'+icon(sell?'market':'search')+(sell?'ลงประกาศขาย':'โพสต์ตามหาของ')+'</h3>';
+  h+='<div class="mk-tabs" style="margin-bottom:0"><button type="button" aria-pressed="'+sell+'" onclick="mkFormKind(\'sell\')">'+icon('market')+'ขายของ</button><button type="button" aria-pressed="'+!sell+'" onclick="mkFormKind(\'wanted\')">'+icon('search')+'ตามหาของ</button></div></div>';
+  if(sell){
+    h+='<div class="mk-panel"><h3>'+icon('camera')+'รูปสินค้า</h3><div class="mk-photos" id="mkThumbs"></div><input id="mkFile" type="file" accept="image/*" multiple hidden onchange="mkAddPhotos(this)"><div class="mk-note">'+icon('image')+'<span>ใส่ได้สูงสุด '+MK_MAX_PHOTOS+' รูป ระบบย่อรูปให้อัตโนมัติ (ยังไม่รองรับวิดีโอ)</span></div></div>';
+  }
+  h+='<div class="mk-panel"><h3>'+icon('orders')+'รายละเอียด</h3>'+
+    '<label class="mk-label" style="margin-top:0" for="mkTitle">'+(sell?'ชื่อสินค้า / รายการ':'ตามหาอะไร')+'</label><input id="mkTitle" class="mk-input" name="title" required maxlength="80" placeholder="'+(sell?'เช่น ไข่ไก่สด, โต๊ะไม้, รับซ่อมพัดลม':'เช่น หาช่างซ่อมพัดลม, มีใครขายไข่มดแดงบ้าง')+'" value="'+v('title')+'">'+
+    '<label class="mk-label" for="mkCat">ประเภท</label><select id="mkCat" class="mk-select" name="category">'+MK_CATS.map(c=>'<option'+(f.category===c?' selected':'')+'>'+c+'</option>').join('')+'</select>';
+  if(sell){
+    h+='<label class="mk-label">ราคา</label><div class="mk-ptype">'+[['fixed','กำหนดราคา'],['free','ฟรี'],['ask','ทักมาคุยราคา']].map(([k,t])=>'<label><input type="radio" name="priceType" value="'+k+'"'+(f.priceType===k?' checked':'')+'><span>'+t+'</span></label>').join('')+'</div>'+
+      '<div id="mkPriceWrap" style="margin-top:8px;'+(f.priceType==='fixed'?'':'display:none')+'"><input class="mk-input" name="price" type="number" inputmode="numeric" min="0" step="1" placeholder="ราคา (บาท)" value="'+v('price')+'"></div>';
+  }
+  h+='<label class="mk-label" for="mkDetail">ข้อความอธิบาย</label><textarea id="mkDetail" class="mk-textarea" name="detail" maxlength="600" placeholder="'+(sell?'อธิบายสินค้า สภาพ จำนวน ฯลฯ':'อธิบายสิ่งที่ต้องการ เช่น แถวตำบลไหน ต้องการเมื่อไหร่')+'">'+v('detail')+'</textarea></div>';
+  h+='<div class="mk-panel"><h3>'+icon('pin')+(sell?'พื้นที่และจุดนัดรับ':'พื้นที่')+'</h3>'+
+    '<label class="mk-label" style="margin-top:0" for="mkArea">ตำบล / หมู่บ้าน (แสดงเป็นแท็กพื้นที่)</label><input id="mkArea" class="mk-input" name="area" required maxlength="40" placeholder="เช่น ต.ในเมือง หรือ หมู่ 3 บ้านโนน..." value="'+v('area')+'">';
+  if(sell){
+    h+='<label class="mk-label" for="mkPLabel">นัดรับเองที่</label><input id="mkPLabel" class="mk-input" name="pickupLabel" maxlength="80" placeholder="เช่น หน้าบ้าน ข้างวัด" value="'+v('pickupLabel')+'">'+
+      '<div class="mk-actions" style="margin-top:8px"><button type="button" class="mk-btn ghost sm" onclick="mkFormPin()">'+icon('crosshair')+'ปักหมุดตำแหน่งปัจจุบัน</button></div><div id="mkPinState"></div>'+
+      '<label class="mk-check"><input type="checkbox" name="acceptsDelivery"'+(f.acceptsDelivery?' checked':'')+'><span>มีบริการส่งในอำเภอ<small>ผู้ซื้อกดเรียกรถมารับของที่จุดที่ปักหมุดไว้ได้</small></span></label>';
+  }
+  h+='</div>';
+  h+='<div class="mk-panel"><h3>'+icon('phone')+'ช่องทางติดต่อ</h3><div class="mk-note">'+icon('shield')+'<span>ไม่ต้องพิมพ์เบอร์ในข้อความ ระบบจะแสดงเป็นปุ่มกดใต้โพสต์ให้</span></div>'+
+    '<label class="mk-label" for="mkPhone">เบอร์โทรศัพท์'+(sell?'':' (ไม่บังคับ)')+'</label><input id="mkPhone" class="mk-input" name="phone" type="tel" inputmode="numeric" maxlength="10" pattern="[0-9]{9,10}"'+(sell?' required':'')+' placeholder="เช่น 0812345678" value="'+v('phone')+'">'+
+    '<label class="mk-label" for="mkLine">Line ID (ไม่บังคับ)</label><input id="mkLine" class="mk-input" name="lineId" maxlength="40" placeholder="เช่น mylineid หรือ @shopname" value="'+v('lineId')+'"></div>';
+  h+='<div class="mk-err" id="mkFormErr" role="alert"></div><div class="mk-cta"><button type="submit" class="mk-btn block">'+icon('check')+'โพสต์ประกาศ</button></div></form></div>';
+  return h;
+}
+function mkFormInit(){
+  const form=document.getElementById('mkForm');if(!form)return;
+  form.addEventListener('input',mkFormSync);
+  form.addEventListener('change',mkFormSync);
+  form.addEventListener('submit',mkFormSubmit);
+  mkRenderThumbs();mkRefreshPin();
+}
+function mkFormSync(e){
+  const t=e.target;if(!t||!t.name||!mk.form)return;
+  mk.form[t.name]=t.type==='checkbox'?t.checked:t.value;
+  if(t.name==='priceType'){const w=document.getElementById('mkPriceWrap');if(w)w.style.display=t.value==='fixed'?'':'none'}
+}
+function mkFormKind(k){if(!mk.form)return;const old=mk.form;mk.form=Object.assign(mkEmptyForm(k),{title:old.title,detail:old.detail,area:old.area,phone:old.phone,lineId:old.lineId});mkRender()}
+function mkRenderThumbs(){
+  const el=document.getElementById('mkThumbs');if(!el||!mk.form)return;
+  const imgs=mk.form.images;
+  el.innerHTML=imgs.map((s,i)=>'<div class="mk-thumb"><img src="'+s+'" alt="รูปที่ '+(i+1)+'"><button type="button" aria-label="ลบรูป" onclick="mkRemovePhoto('+i+')">'+icon('close')+'</button></div>').join('')+
+    (imgs.length<MK_MAX_PHOTOS?'<button type="button" class="mk-addph" onclick="document.getElementById(\'mkFile\').click()">'+icon('camera')+'เพิ่มรูป ('+imgs.length+'/'+MK_MAX_PHOTOS+')</button>':'');
+}
+function mkRemovePhoto(i){mk.form.images.splice(i,1);mkRenderThumbs()}
+function mkCompress(file){
+  return new Promise((res,rej)=>{
+    const fr=new FileReader();
+    fr.onerror=rej;
+    fr.onload=()=>{
+      const im=new Image();
+      im.onerror=rej;
+      im.onload=()=>{
+        const M=720,s=Math.min(1,M/Math.max(im.width,im.height)),c=document.createElement('canvas');
+        c.width=Math.max(1,Math.round(im.width*s));c.height=Math.max(1,Math.round(im.height*s));
+        c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+        res(c.toDataURL('image/jpeg',.68));
+      };
+      im.src=fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+async function mkAddPhotos(input){
+  const f=mk.form;if(!f)return;
+  const files=[...input.files].slice(0,MK_MAX_PHOTOS-f.images.length);
+  for(const file of files){try{f.images.push(await mkCompress(file))}catch(e){}}
+  input.value='';mkRenderThumbs();
+}
+function mkRefreshPin(){
+  const el=document.getElementById('mkPinState');if(!el||!mk.form)return;
+  const p=mk.form.pickup;
+  el.innerHTML=p?'<div class="mk-note ok">'+icon('check')+'<span>ปักหมุดแล้ว ('+p.lat.toFixed(4)+', '+p.lng.toFixed(4)+')</span></div>':'<div class="mk-note">'+icon('pin')+'<span>ยังไม่ได้ปักหมุด (จำเป็นถ้าเปิดบริการส่ง)</span></div>';
+}
+function mkFormPin(){
+  if(!mk.form)return;
+  const set=p=>{mk.form.pickup={lat:p.lat,lng:p.lng};mkRefreshPin()};
+  if(!navigator.geolocation){set(userLiveLocation);return}
+  navigator.geolocation.getCurrentPosition(pos=>{userLiveLocation={lat:pos.coords.latitude,lng:pos.coords.longitude};mk.gpsOk=true;set(userLiveLocation)},()=>{set(userLiveLocation);const e=document.getElementById('mkFormErr');if(e)e.textContent='ดึงตำแหน่งจริงไม่ได้ ใช้ตำแหน่งโดยประมาณแทน กรุณาอนุญาตการเข้าถึงตำแหน่งแล้วกดปักหมุดอีกครั้ง'},{enableHighAccuracy:true,timeout:8000,maximumAge:0});
+}
+function mkFormSubmit(e){
+  e.preventDefault();
+  const f=mk.form,err=document.getElementById('mkFormErr'),sell=f.kind==='sell';
+  const fail=m=>{if(err)err.textContent=m;return false};
+  const title=String(f.title||'').trim(),area=String(f.area||'').trim(),phone=String(f.phone||'').trim();
+  if(!title)return fail(sell?'กรุณากรอกชื่อสินค้า':'กรุณากรอกว่าต้องการตามหาอะไร');
+  if(!area)return fail('กรุณากรอกตำบล/หมู่บ้าน');
+  if(sell&&f.priceType==='fixed'&&!(Number(f.price)>=0&&String(f.price)!==''))return fail('กรุณาใส่ราคา หรือเลือก ฟรี / ทักมาคุยราคา');
+  if(sell&&!/^[0-9]{9,10}$/.test(phone))return fail('กรุณากรอกเบอร์โทร 9-10 หลัก');
+  if(!sell&&phone&&!/^[0-9]{9,10}$/.test(phone))return fail('เบอร์โทรต้องเป็นตัวเลข 9-10 หลัก');
+  if(sell&&f.acceptsDelivery&&!f.pickup)return fail('เปิดบริการส่งแล้ว กรุณาปักหมุดจุดรับของก่อน');
+  const u=state.currentUser||{};
+  const rec={
+    id:'L'+Date.now(),areaId,kind:f.kind,title,detail:String(f.detail||'').trim(),category:f.category,
+    condition:f.category,price:sell&&f.priceType==='fixed'?Number(f.price):0,priceType:sell?f.priceType:'ask',
+    phone,lineId:String(f.lineId||'').trim(),area,
+    pickupLabel:sell?String(f.pickupLabel||'').trim():'',
+    pickup:sell&&f.pickup?{lat:f.pickup.lat,lng:f.pickup.lng,label:String(f.pickupLabel||'').trim()}:null,
+    acceptsDelivery:sell?!!f.acceptsDelivery:false,stock:'available',images:sell?f.images.slice():[],
+    status:'approved',isSample:false,verified:!!u.verified,ownerId:mkMe(),createdAt:Date.now(),
+    comments:[],reports:[],poster:{name:u.name||'คนในชุมชน',avatar:u.avatar||''}
+  };
+  state.listings.push(rec);
+  try{localStorage.setItem(key,JSON.stringify(state))}catch(x){
+    state.listings.pop();
+    return fail('พื้นที่เก็บข้อมูลในเครื่องเต็ม ลองลดจำนวนรูป หรือลบประกาศเก่า');
+  }
+  mk.form=null;mk.screen='feed';mk.tab=rec.kind;mk.cat='ทั้งหมด';
+  save();mkNotice('ลงประกาศสำเร็จ');mkTop();
+}
+
+/* กดเมนู “ตลาด” แล้วกลับมาหน้าฟีดเสมอ (ครอบฟังก์ชันเดิม ไม่แก้ logic ของหน้าอื่น) */
+(function(){
+  const g=go,sc=setCategory;
+  go=function(v){if(v==='ตลาด'){mk.screen='feed';mk.form=null}return g.apply(this,arguments)};
+  setCategory=function(c){if(c==='ตลาด'){mk.screen='feed';mk.form=null}return sc.apply(this,arguments)};
+})();
+
 
 function requestMarketDelivery(id){
   const l=state.listings.find(l=>l.id===id);
