@@ -280,6 +280,7 @@ p{line-height:1.7}
 .mode-btn{border:0;background:none;border-radius:14px;padding:11px 8px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:700;color:#7a6b5c;transition:background .2s,color .2s,box-shadow .2s}
 .mode-btn .icon{width:20px;height:20px}
 .mode-btn.active{background:#e95e30;color:#fff;box-shadow:0 4px 12px rgba(233,94,48,.28)}
+form.route-card .kr-foreign{display:none!important}
 </style>
 <!-- แผนที่ในแอป: Leaflet + OpenStreetMap -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
@@ -666,21 +667,37 @@ function setMode(m) {
   render();
 }
 
-/* กวาดช่องที่ไม่ใช่ของฟอร์มนี้ (เช่นที่สคริปต์ภายนอกแทรกเข้ามา) ออกจากฟอร์มเรียกไรเดอร์ */
+/* ช่องที่สคริปต์หน้าร้านแทรกไว้ ต้องคงไว้เพื่อยิงหาไรเดอร์ — ซ่อนอย่างเดียว ไม่ลบ และไม่เปลี่ยนค่าที่ผู้ใช้กรอก */
 const FORM_KEEP = '.section-title-deliv,.loc-input-group,.quick-row,.route-empty,.route-map-wrap,.route-stats,.policy-box,#submitDeliveryBtn,input[type=hidden],[data-keep]';
 const FORM_MINE = '.loc-field,.loc-input-group,.policy-box,.section-title-deliv,[data-keep],.route-empty,.route-map-wrap,.quick-row';
 function purgeForeignFields() {
   document.querySelectorAll('form.route-card').forEach(f => {
-    [...f.childNodes].forEach(n => {
-      if (n.nodeType === 3 && n.textContent.trim()) n.remove();
-      else if (n.nodeType === 1 && !n.matches(FORM_KEEP)) n.remove();
+    [...f.children].forEach(n => {
+      if (n.nodeType !== 1 || n.matches(FORM_KEEP) || n.classList.contains('kr-foreign')) return;
+      n.classList.add('kr-foreign');
+      n.hidden = true;
     });
-    f.querySelectorAll('input:not([type=hidden]):not([type=file]):not([type=checkbox])').forEach(inp => {
-      if (!inp.isConnected || inp.closest('.loc-field')) return;
-      let el = inp;
-      while (el.parentElement && el.parentElement !== f && !el.parentElement.querySelector(FORM_MINE)) el = el.parentElement;
-      el.remove();
-    });
+    fillForeignFromDraft(f);
+  });
+}
+function fillForeignFromDraft(form) {
+  if (!form || !deliveryDraft) return;
+  const d = deliveryDraft;
+  const pickup = d.pickup && d.pickup.address || '';
+  const drop = d.drop && d.drop.address || '';
+  form.querySelectorAll('.kr-foreign input, .kr-foreign textarea, .kr-foreign select').forEach(el => {
+    if (el.type === 'file' || el.type === 'checkbox' || el.type === 'hidden') return;
+    const key = ((el.name || '') + ' ' + (el.id || '') + ' ' + (el.placeholder || '') + ' ' + (el.getAttribute('aria-label') || '')).toLowerCase();
+    let next = null;
+    if (/pickup|origin|จาก|รับของ|จุดรับ|ต้นทาง/.test(key) && pickup) next = pickup;
+    else if (/drop|dest|dropoff|ไป|ส่งของ|จุดส่ง|ปลายทาง/.test(key) && drop) next = drop;
+    else if (/phone|tel|เบอร์/.test(key) && d.receiverPhone) next = d.receiverPhone;
+    else if (/name|ชื่อ/.test(key) && d.receiverName && !/shop|ร้าน/.test(key)) next = d.receiverName;
+    else if (/note|หมายเหตุ|รายละเอียด|item|สิ่งของ|ของ/.test(key)) {
+      const text = d.mode === 'ride' ? (d.itemNote || '') : [d.itemDesc, d.itemNote].filter(Boolean).join(' · ');
+      if (text) next = text;
+    }
+    if (next != null && el.value !== next) el.value = next;
   });
 }
 window.addEventListener('DOMContentLoaded', () => {
@@ -944,16 +961,21 @@ function closeMapPicker() {
   document.body.style.overflow = '';
 }
 
-/* ---------- ส่งคำขอเรียกไรเดอร์ ---------- */
+/* ---------- ส่งคำขอเรียกไรเดอร์ ----------
+   ก้อนงานยังเป็นชุดเดิมทุกฟิลด์ (จุดรับ จุดส่ง ชื่อ เบอร์ รูป ค่าส่ง)
+   แค่ไม่ลบหน้าทิ้งทันที เพื่อให้สคริปต์ตัวเดียวกับหน้าสั่งอาหารยิงก้อนนี้ไปหาไรเดอร์ได้
+*/
 function submitRealDelivery(e) {
   e.preventDefault();
   const d = deliveryDraft, est = estimate(), ride = d.mode === 'ride';
   if (!d.pickup || !d.drop || !est) { setNotice(ride ? 'กรุณาเลือกจุดรับและจุดหมายบนแผนที่ก่อน' : 'กรุณาเลือกจุดรับของและจุดส่งของบนแผนที่ก่อน'); return; }
+  const form = e.target && e.target.tagName === 'FORM' ? e.target : document.querySelector('form.route-card');
+  if (form) fillForeignFromDraft(form);
   const sizeLabel = (PARCEL_SIZES.find(s => s[0] === d.size) || [])[1] || '';
   const notes = ride
     ? [d.itemNote, d.pickup.note && ('จุดสังเกตจุดรับ: ' + d.pickup.note), d.drop.note && ('จุดสังเกตจุดหมาย: ' + d.drop.note)]
     : [d.itemNote, d.drop.note && ('จุดสังเกตปลายทาง: ' + d.drop.note), d.pickup.note && ('จุดสังเกตต้นทาง: ' + d.pickup.note)];
-  state.orders.push({
+  const order = {
     id: Date.now().toString(36),
     areaId,
     status: 'ready',
@@ -968,12 +990,18 @@ function submitRealDelivery(e) {
     pickupInfo: { address: d.pickup.address, note: d.pickup.note },
     dropInfo: { address: d.drop.address, note: d.drop.note },
     coordinates: { pickup: { lat: d.pickup.lat, lng: d.pickup.lng }, drop: { lat: d.drop.lat, lng: d.drop.lng }, isSample: false }
-  });
-  insideBoxImageBase64 = '';
-  houseImageBase64 = '';
-  deliveryDraft = emptyDraft(d.mode);
-  view = 'ออเดอร์ของฉัน'; save();
-  document.getElementById('notice').textContent = ride ? 'เรียกไรเดอร์เรียบร้อย! ไรเดอร์กำลังเตรียมมารับคุณ' : 'สร้างงานส่งของเรียบร้อย! ไรเดอร์กำลังเตรียมมารับสิ่งของ';
+  };
+  state.orders.push(order);
+  document.dispatchEvent(new CustomEvent('kranuan-order', { detail: order }));
+  setTimeout(() => {
+    insideBoxImageBase64 = '';
+    houseImageBase64 = '';
+    deliveryDraft = emptyDraft(d.mode);
+    view = 'ออเดอร์ของฉัน';
+    save();
+    const n = document.getElementById('notice');
+    if (n) n.textContent = ride ? 'เรียกไรเดอร์เรียบร้อย! ไรเดอร์กำลังเตรียมมารับคุณ' : 'สร้างงานส่งของเรียบร้อย! ไรเดอร์กำลังเตรียมมารับสิ่งของ';
+  }, 0);
 }
 /* 2. แก้ไขเฉพาะฟอร์มลงประกาศหน้าตลาดตามสั่ง */
 function listingForm(){
@@ -1283,5 +1311,34 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 <script src="/api.js"></script><script src="/customer.js"></script>
-<script src="/commerce-media.js?v=20261027"></script><script src="/commerce-customer.js?v=20261027"></script></body>
+<script src="/commerce-media.js?v=20261027"></script><script src="/commerce-customer.js?v=20261027"></script>
+<script>
+/* ส่งก้อนงานฝากส่งของ/ส่งคนเข้าฟังก์ชันเดียวกับออเดอร์อาหาร ถ้าสคริปต์หน้าร้านมีให้เรียก — ไม่ได้แปลงฟิลด์ */
+(function () {
+  const local = window.submitRealDelivery;
+  if (typeof local !== 'function') return;
+  window.submitRealDelivery = function (ev) {
+    const before = (state.orders || []).length;
+    local(ev);
+    const order = state.orders && state.orders[state.orders.length - 1];
+    if (!order || state.orders.length === before) return;
+    if (order.type !== 'ride' && order.type !== 'market') return;
+    const hooks = ['onKranuanOrder', 'publishOrder', 'placeOrder', 'sendToRider', 'postOrder', 'submitToRider'];
+    hooks.forEach(name => {
+      if (typeof window[name] === 'function') {
+        try { window[name](order); } catch (e) { console.warn(name, e); }
+      }
+    });
+    ['api', 'API'].forEach(ns => {
+      const obj = window[ns];
+      if (!obj) return;
+      ['createOrder', 'placeOrder', 'addOrder', 'postOrder', 'sendOrder'].forEach(m => {
+        if (typeof obj[m] === 'function') {
+          try { obj[m](order); } catch (e) { console.warn(ns + '.' + m, e); }
+        }
+      });
+    });
+  };
+})();
+</script></body>
 </html>
