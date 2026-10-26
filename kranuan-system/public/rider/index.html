@@ -593,18 +593,17 @@ document.addEventListener('change',async e=>{
   render();
 });
 async function loadProfile(){try{const r=await DB.getProfile();if(!r)return;Object.keys(r).forEach(k=>{if(r[k]!=null&&k in prof)prof[k]=r[k]});if(!Array.isArray(prof.photos)||prof.photos.length!==4)prof.photos=[null,null,null,null];normProf();applyTheme();render()}catch(e){}}
-
 /* ============ แผนที่และ GPS ============ */
 let map,pin;
 function initMap(){
   if(map||!window.L)return;
   map=L.map('realMap',{zoomControl:false,attributionControl:false,dragging:!L.Browser.mobile,tap:false}).setView([16.706,103.078],15);
   
-  // ใช้ CartoDB Dark Matter (แผนที่โทนสีมืด เข้ากับแอป และโหลดเสถียร ไม่ติดบล็อก)
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19,
+  // ใช้ Stamen Toner (โทนขาวดำเข้มข้น ไม่ติด API Key และไม่โดนบล็อก 403)
+  L.tileLayer('https://stamen-tiles.a.ssl.fastly.net/toner/{z}/{x}/{y}{r}.png', {
+    maxZoom: 20,
     subdomains: 'abcd',
-    attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+    attribution: 'Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under ODbL.'
   }).addTo(map);
 
   pin=L.marker([16.706,103.078],{icon:L.divIcon({className:'',html:'<div style="background:var(--ac);width:24px;height:24px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 12px var(--ac)"></div>',iconSize:[24,24],iconAnchor:[12,12]})}).addTo(map);
