@@ -1316,7 +1316,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
 
-<!-- ▼▼▼ delivery-fix-v13 ▼▼▼ -->
+<!-- ▼▼▼ delivery-fix-v14 ▼▼▼ -->
 <script>
 window.forceSubmitDelivery = async function(e) {
     if(e && e.preventDefault) e.preventDefault();
@@ -1324,19 +1324,15 @@ window.forceSubmitDelivery = async function(e) {
     if(!btn || btn.disabled) return;
 
     const d = typeof deliveryDraft !== 'undefined' ? deliveryDraft : null;
-    if(!d || !d.pickup || !d.drop) {
-        alert('กรุณาเลือกจุดรับและจุดหมายก่อนครับ'); return;
-    }
+    if(!d || !d.pickup || !d.drop) { alert('กรุณาเลือกจุดรับและจุดหมายก่อนครับ'); return; }
 
     btn.disabled = true;
-    const oldText = btn.innerHTML;
     btn.innerHTML = '⏳ กำลังส่งเข้าระบบ...';
 
-    // 1. จัดรูปแบบข้อมูลให้เหมือนกับที่ระบบอาหารส่งเป๊ะๆ
     const payload = {
         areaId: typeof areaId !== 'undefined' ? areaId : 'khon-kaen-kranuan',
         type: d.mode === 'ride' ? 'ride' : 'delivery',
-        status: 'waiting', // ใช้สถานะ waiting เพื่อให้ไรเดอร์มองเห็น
+        status: 'waiting',
         customer_name: d.receiverName || 'ลูกค้า',
         phone: d.receiverPhone || '0000000000',
         item: d.mode === 'ride' ? 'ส่งคน' : (d.itemDesc || 'ส่งของ'),
@@ -1344,44 +1340,43 @@ window.forceSubmitDelivery = async function(e) {
         pickup: d.pickup,
         drop: d.drop,
         deliveryFee: 30,
-        coordinates: { 
-            pickup: { lat: d.pickup.lat, lng: d.pickup.lng }, 
-            drop: { lat: d.drop.lat, lng: d.drop.lng } 
-        }
+        coordinates: { pickup: { lat: d.pickup.lat, lng: d.pickup.lng }, drop: { lat: d.drop.lat, lng: d.drop.lng } }
     };
 
-    // 2. ยิงตรงไปที่ API แบบไม่ผ่านฟอร์ม
     try {
+        // 🔑 ส่ง Cookie (Session) ไปกับ Request ด้วย
         const res = await fetch('/api/orders', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include', 
             body: JSON.stringify(payload)
         });
 
+        const data = await res.json();
+
         if (res.ok) {
-            alert('🎉 ส่งข้อมูลเข้าระบบหลังบ้านสำเร็จ! ไรเดอร์จะเห็นงานนี้แล้วครับ');
-            
-            // ล้างข้อมูลและกลับหน้าออเดอร์
-            if(typeof deliveryDraft !== 'undefined' && typeof emptyDraft === 'function') {
-                deliveryDraft = emptyDraft(d.mode);
-            }
+            alert('🎉 ส่งข้อมูลเข้าระบบหลังบ้านสำเร็จ! ไรเดอร์จะเห็นงานแล้วครับ');
             if(typeof go === 'function') go('ออเดอร์ของฉัน');
             else location.reload();
-
         } else {
-            const errorText = await res.text();
-            alert('❌ หลังบ้านปฏิเสธข้อมูล:\n' + errorText + '\n\n(อาจจะติด 429 ให้รอ 1 นาทีแล้วลองใหม่ครับ)');
-            btn.disabled = false;
-            btn.innerHTML = oldText;
+            // ถ้าเซิร์ฟเวอร์บอกให้โหลดหน้าใหม่ (Session หมดอายุ)
+            if (data.error && data.error.includes('เซสชัน')) {
+                alert('⚠️ เซสชันหมดอายุ (เพราะเปิดหน้านาน)\nระบบจะรีเฟรชหน้าใหม่ให้ กรุณากดส่งอีกครั้งครับ');
+                location.reload();
+            } else {
+                alert('❌ หลังบ้านปฏิเสธ: ' + (data.error || 'ไม่ทราบสาเหตุ'));
+                btn.disabled = false;
+                btn.innerHTML = 'ยืนยันเรียกไรเดอร์';
+            }
         }
     } catch (err) {
         alert('❌ การเชื่อมต่อล้มเหลว: ' + err.message);
         btn.disabled = false;
-        btn.innerHTML = oldText;
+        btn.innerHTML = 'ยืนยันเรียกไรเดอร์';
     }
 };
-console.log('%c[fix-v13] ติดตั้งสำเร็จ (ยิง API ตรง)', 'color:#0a0;font-weight:bold');
+console.log('%c[fix-v14] ติดตั้งสำเร็จ', 'color:#0a0;font-weight:bold');
 </script>
-<!-- ▲▲▲ delivery-fix-v13 ▲▲▲ -->
+<!-- ▲▲▲ delivery-fix-v14 ▲▲▲ -->
 </body>
 </html>
