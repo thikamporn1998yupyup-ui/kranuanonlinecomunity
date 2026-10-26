@@ -3,219 +3,264 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>กระนวนไรเดอร์ — VeloSync Edition</title>
+<title>กระนวนไรเดอร์ — VeloSync Premium</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
+/* 🔒 คงฟอนต์ดั้งเดิมไว้ 100% ห้ามแก้ */
 @font-face{font-family:Seed;src:url("../assets/fonts/LINESeedSansTH_W_Rg.woff2") format("woff2");font-weight:400}
 @font-face{font-family:Seed;src:url("../assets/fonts/LINESeedSansTH_W_Bd.woff2") format("woff2");font-weight:700}
 :root{
-  --ac:#e95f2b;
-  --rgb:233,95,43;
-  --ac2:#ff8a5c;
-  --s0:#08090a;
-  --s1:#17181b;
-  --s2:#111215;
-  --bg:#08090a;
-  --top:#17181b;
-  --tx:#f0f2f5;
-  --tx2:#9da4b0;
-  --ln:#26282d;
-  --ln2:#30333a;
-  --chip:rgba(23,24,27,.9);
-  --btn:#1f2024;
-  --navbg:#17181b;
-  --navtx:#9da4b0;
-  --navon:#e95f2b;
-  --navtile:rgba(233,95,43,.12);
-  --tilebg:rgba(233,95,43,.08);
-  --tileln:rgba(233,95,43,.2);
-  --ok:#00e676;
-  --okrgb:0,230,118;
-  --warn:#ffb74d
+  --ac:#ff5722; --rgb:255,87,34; --ac2:#ff8a5c;
+  --s0:#0a0a0c; --s1:rgba(20,20,24,0.85); --s2:#121216; --bg:#0a0a0c; --top:#121216;
+  --tx:#ffffff; --tx2:#8b94a5; --ln:rgba(255,255,255,0.06); --ln2:rgba(255,255,255,0.12);
+  --chip:rgba(18,19,23,.85); --btn:#1f2024; --navbg:rgba(18,19,23,.9); --navtx:#8b94a5; --navon:#ff5722; --navtile:rgba(255,87,34,.15);
+  --tilebg:rgba(255,87,34,.1); --tileln:rgba(255,87,34,.25); --ok:#00e676; --okrgb:0,230,118; --warn:#ffb74d;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--tx);font:400 14px/1.6 Seed,"Noto Sans Thai",Tahoma,sans-serif;-webkit-font-smoothing:antialiased}
-button,input,select{font:inherit}button{cursor:pointer}
-button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+body{margin:0;background:var(--bg);color:var(--tx);font:400 14px/1.6 Seed,"Noto Sans Thai",Tahoma,sans-serif;-webkit-font-smoothing:antialiased;background-image: radial-gradient(circle at 50% 0%, rgba(255,87,34,0.08) 0%, transparent 40%);}
 
-.app{max-width:480px;background:var(--s0);min-height:100vh;margin:auto;padding-bottom:110px;position:relative;box-shadow:0 0 50px rgba(0,0,0,.8)}
+.app{max-width:480px;background:transparent;min-height:100vh;margin:auto;padding-bottom:110px;position:relative;box-shadow:0 0 50px rgba(0,0,0,.8)}
 
-/* Topbar VeloSync Style */
-.topbar{padding:20px 20px 18px;background:var(--top);display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--ln)}
-.topbar strong{font-size:20px;font-weight:700;line-height:1.2;display:block;color:var(--tx);letter-spacing:-0.5px}
-.topbar small{display:block;color:var(--tx2);font-size:10px;letter-spacing:.2em;font-weight:700;margin-bottom:2px}
-.topbar-right{display:flex;align-items:center;gap:10px}
-.rider-mini-avatar{width:36px;height:36px;border-radius:50%;background:var(--ac);display:grid;place-items:center;color:#fff;flex:none;font-weight:700;font-size:15px;overflow:hidden;border:2px solid rgba(255,255,255,.1)}
-.rider-mini-avatar img{width:100%;height:100%;object-fit:cover}
-.online-status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--tx2);background:rgba(255,255,255,.04);padding:4px 10px;border-radius:20px;border:1px solid var(--ln)}
-.online-status i{width:6px;height:6px;border-radius:50%;background:var(--tx2)}
-.online-status.on{color:var(--ok);border-color:rgba(0,230,118,.3)}.online-status.on i{background:var(--ok);box-shadow:0 0 8px var(--ok)}
-
-/* Map & GPS Container */
-#realMapContainer{height:clamp(280px,44vh,420px);position:relative;background:var(--s2);margin:16px;border-radius:24px;overflow:hidden;border:1px solid var(--ln);box-shadow:0 12px 30px rgba(0,0,0,.4)}
+/* Map: Edge-to-Edge Design */
+#realMapContainer{height:clamp(320px,50vh,450px);position:relative;background:var(--s2);margin:0;border-radius:0;overflow:hidden;border-bottom:1px solid var(--ln2);z-index:1}
 #realMap{height:100%;width:100%}
-:root[data-mode=dark] .dark-map-tiles{filter:brightness(.5) invert(1) contrast(3) hue-rotate(200deg) saturate(.25)}
-:root[data-mode=light] .dark-map-tiles{filter:saturate(.85) sepia(.12)}
-.maptop{position:absolute;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;gap:8px;z-index:1000}
-.chip{display:inline-flex;align-items:center;gap:6px;background:var(--chip);backdrop-filter:blur(8px);padding:6px 12px;border-radius:12px;font-size:11px;border:1px solid var(--ln);font-weight:700;color:var(--tx);box-shadow:0 4px 12px rgba(0,0,0,.3)}
+#realMapContainer::after{content:'';position:absolute;bottom:0;left:0;right:0;height:120px;background:linear-gradient(to top, var(--bg) 0%, transparent 100%);z-index:390;pointer-events:none}
+
+/* Topbar Overlay (Floating) */
+.topbar{padding:calc(16px + env(safe-area-inset-top, 0px)) 20px 16px;background:linear-gradient(to bottom, rgba(10,10,12,0.95) 0%, rgba(10,10,12,0.6) 60%, transparent 100%);display:flex;align-items:center;justify-content:space-between;gap:12px;position:absolute;top:0;left:0;right:0;z-index:500;pointer-events:none}
+.topbar > * {pointer-events:auto}
+.topbar strong{font-size:20px;font-weight:700;line-height:1.2;display:block;color:var(--tx);letter-spacing:-0.5px;display:flex;align-items:center;gap:8px}
+.topbar small{display:block;color:var(--ac);font-size:10px;letter-spacing:.15em;font-weight:700;margin-bottom:4px;text-transform:uppercase}
+.topbar-right{display:flex;align-items:center;gap:10px}
+
+/* Profile Pill */
+.mepill{display:flex;align-items:center;gap:8px;background:rgba(20,20,24,0.6);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.1);border-radius:30px;padding:4px 14px 4px 4px;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.rider-mini-avatar{width:32px;height:32px;border-radius:50%;background:var(--ac);display:grid;place-items:center;color:#fff;flex:none;font-weight:700;font-size:14px;overflow:hidden}
+.rider-mini-avatar img{width:100%;height:100%;object-fit:cover}
+.online-status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--tx2);font-weight:600}
+.online-status i{width:6px;height:6px;border-radius:50%;background:var(--tx2);transition:all .3s}
+.online-status.on{color:var(--ok)}.online-status.on i{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+
+/* SOS Button */
+.sosbtn{display:inline-flex;align-items:center;gap:6px;background:rgba(217,48,37,0.9);backdrop-filter:blur(10px);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:30px;padding:8px 14px;font-size:12px;font-weight:700;box-shadow:0 4px 15px rgba(217,48,37,.3);transition:all .2s}
+.sosbtn:hover{transform:scale(1.05);background:#d93025}
+.sosbtn .ic{width:16px;height:16px}
+
+/* XP Bar & Level */
+.xp-container{position:absolute;bottom:0;left:0;right:0;height:2px;background:rgba(255,255,255,0.05);z-index:600}
+.xp-fill{height:100%;background:linear-gradient(90deg, #ffb74d, var(--ac));width:0%;transition:width 0.5s;box-shadow:0 0 10px var(--ac)}
+.level-badge{background:linear-gradient(135deg, rgba(255,87,34,0.2), rgba(255,87,34,0.05));color:var(--ac2);border:1px solid rgba(255,87,34,0.3);font-size:10px;font-weight:900;padding:2px 8px;border-radius:20px;letter-spacing:0.5px}
+
+/* Map Top Chips */
+.maptop{position:absolute;top:calc(80px + env(safe-area-inset-top, 0px));left:16px;right:16px;display:flex;justify-content:space-between;gap:8px;z-index:400}
+.chip{display:inline-flex;align-items:center;gap:6px;background:rgba(18,19,23,0.7);backdrop-filter:blur(12px);padding:6px 12px;border-radius:20px;font-size:11px;border:1px solid rgba(255,255,255,.08);font-weight:600;color:var(--tx);box-shadow:0 4px 12px rgba(0,0,0,.3)}
 .chip .ic{width:14px;height:14px;color:var(--ac)}
-.mapstats{position:absolute;left:0;right:0;bottom:0;z-index:1000;padding:50px 16px 16px;background:linear-gradient(to top,rgba(8,9,10,.96) 0%,rgba(8,9,10,.82) 50%,rgba(8,9,10,0) 100%);display:grid;grid-template-columns:repeat(3,1fr);gap:10px;pointer-events:none}
-.mapstats span{display:block;font-size:10px;color:var(--tx2);text-shadow:0 1px 3px #000;text-transform:uppercase;letter-spacing:.05em}
-.mapstats strong{display:block;font-size:18px;line-height:1.3;color:#fff;text-shadow:0 1px 4px #000;font-weight:700}
+
+/* Map Stats Overlay */
+.mapstats{position:absolute;left:0;right:0;bottom:0;z-index:400;padding:60px 20px 20px;background:linear-gradient(to top,var(--bg) 0%,rgba(10,10,12,0.8) 40%,rgba(10,10,12,0) 100%);display:grid;grid-template-columns:repeat(3,1fr);gap:12px;pointer-events:none}
+.mapstats span{display:block;font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em}
+.mapstats strong{display:block;font-size:20px;line-height:1.3;color:#fff;font-weight:800;letter-spacing:-0.5px}
 .mapstats div:first-child strong{color:var(--ac2)}
 
-/* Content & Layout */
-.content{padding:0 16px 24px}
-.sectiontitle{display:flex;justify-content:space-between;align-items:center;margin:20px 0 14px}
-.sectiontitle h1{font-size:22px;font-weight:700;margin:0;color:var(--tx);letter-spacing:-0.5px}
-.pill{font-size:10px;padding:5px 12px;border-radius:20px;background:rgba(var(--rgb),.15);color:var(--ac);border:1px solid rgba(var(--rgb),.3);font-weight:700}
+/* Content Area */
+.content{padding:0 20px 24px;position:relative;z-index:10;margin-top:-10px}
+.sectiontitle{display:flex;justify-content:space-between;align-items:center;margin:20px 0 16px}
+.sectiontitle h1{font-size:22px;font-weight:800;margin:0;color:var(--tx);letter-spacing:-0.5px}
+.pill{font-size:10px;padding:6px 14px;border-radius:20px;background:rgba(255,255,255,.05);color:var(--tx2);border:1px solid rgba(255,255,255,.1);font-weight:700}
 
-.card{padding:18px;background:var(--s1);border:1px solid var(--ln);border-radius:22px;margin:14px 0;box-shadow:0 8px 24px rgba(0,0,0,.25)}
-.jobhead{display:flex;align-items:center;gap:12px}
-.avatar{display:grid;place-items:center;width:48px;height:48px;border-radius:16px;background:var(--tilebg);border:1px solid var(--tileln);color:var(--ac);flex:none}
-.jobhead strong{display:block;font-size:16px;color:var(--tx);font-weight:700}
-.muted{color:var(--tx2);font-size:12px}
-.amount{font-weight:700;font-size:22px;margin-left:auto;color:var(--ac2);letter-spacing:-0.5px}
+/* Premium Goal HUD */
+.goal-hud{display:flex;align-items:center;gap:12px;background:var(--s1);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.08);border-radius:24px;padding:16px;margin:16px 0;box-shadow:0 10px 30px rgba(0,0,0,0.4);position:relative;overflow:hidden}
+.goal-hud::before{content:'';position:absolute;top:0;left:0;bottom:0;width:3px;background:var(--ac);box-shadow:0 0 15px var(--ac);border-radius:3px 0 0 3px}
+.ring-svg{width:66px;height:66px;flex:none;transform:rotate(-90deg)}
+.ring-svg circle{fill:none;stroke-width:6;stroke-linecap:round}
+.ring-bg{stroke:rgba(255,255,255,0.05)}
+.ring-fill{stroke:url(#gradient);stroke-dasharray:201;stroke-dashoffset:201;transition:stroke-dashoffset 1s ease-out;filter:drop-shadow(0 0 6px rgba(255,87,34,0.4))}
+.goal-txt{flex:1}
+.goal-txt h3{margin:0 0 4px;font-size:13px;font-weight:700;color:var(--tx);display:flex;align-items:center;gap:6px}
+.goal-txt h3 .ic{width:14px;height:14px;color:var(--ac)}
+.goal-txt p{margin:0;font-size:17px;color:var(--tx);font-weight:800;letter-spacing:-0.5px}
+.goal-txt small{display:block;font-size:11px;color:var(--tx2);margin-top:2px;font-weight:500}
+.goal-txt .pct{color:var(--ac2);font-weight:700}
 
-.timeline{margin:18px 0 14px;padding-left:10px}
-.stop{border-left:2px dashed var(--ln2);padding:0 0 20px 20px;position:relative;font-size:13px;color:var(--tx);font-weight:500}
+/* 🏃‍♂️ Mascot Animation */
+.mascot-box{position:relative;width:64px;height:72px;display:flex;align-items:flex-end;justify-content:center;margin-left:auto;flex:none}
+.mascot{width:100%;height:100%;transition:all 0.5s ease;transform-origin:bottom center;}
+.mascot path,.mascot rect,.mascot circle{transition:all 0.5s ease;}
+.sweat-drop{opacity:0;transition:opacity 0.5s}
+.smile{opacity:0;transition:opacity 0.5s}
+.crown{opacity:0;transition:opacity 0.5s}
+
+/* State: Tired (0-30%) */
+.state-tired .mascot{animation:breathe 2s infinite ease-in-out}
+.state-tired .arm-left{transform:rotate(10deg)}
+.state-tired .arm-right{transform:rotate(-10deg)}
+.state-tired .sweat-drop{opacity:1;animation:drip 1.5s infinite}
+.state-tired .head{transform:translateY(3px)}
+
+/* State: Normal (31-70%) */
+.state-normal .mascot{animation:walk 1s infinite ease-in-out}
+.state-normal .arm-left{transform:rotate(-20deg)}
+.state-normal .arm-right{transform:rotate(20deg)}
+
+/* State: Excited (71-99%) */
+.state-excited .mascot{animation:jump 0.6s infinite ease-in-out}
+.state-excited .arm-left{transform:rotate(-140deg);transform-origin:top right}
+.state-excited .arm-right{transform:rotate(140deg);transform-origin:top left}
+.state-excited .smile{opacity:1}
+.state-excited .head{transform:translateY(-2px)}
+
+/* State: Win (100%) */
+.state-win .mascot{animation:jump 0.4s infinite ease-in-out}
+.state-win .arm-left{transform:rotate(-160deg);transform-origin:top right}
+.state-win .arm-right{transform:rotate(160deg);transform-origin:top left}
+.state-win .smile{opacity:1}
+.state-win .crown{opacity:1;transform:translateY(-3px);animation:crownGlow 1s infinite alternate}
+.state-win .head{transform:translateY(-2px)}
+
+@keyframes breathe{0%,100%{transform:scaleY(0.98) translateY(1px)}50%{transform:scaleY(1.02)}}
+@keyframes walk{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes jump{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(-10px) scaleY(1.05)}}
+@keyframes drip{0%{transform:translateY(0);opacity:1}100%{transform:translateY(8px);opacity:0}}
+@keyframes crownGlow{from{filter:drop-shadow(0 0 2px gold)}to{filter:drop-shadow(0 0 6px gold)}}
+
+/* Stat Cards */
+.dash-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}
+.dash-stats button{background:var(--s1);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:18px 10px;color:var(--tx);transition:all .3s;box-shadow:0 4px 15px rgba(0,0,0,.2);text-align:left}
+.dash-stats button:hover{border-color:rgba(255,255,255,0.15);transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,0,0,.4)}
+.dash-stats strong{display:block;font-size:26px;color:var(--tx);font-weight:800;letter-spacing:-1px;margin-bottom:2px}
+.dash-stats span{font-size:11px;color:var(--tx2);display:block;font-weight:600}
+
+/* Job Cards */
+.card{padding:20px;background:var(--s1);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.06);border-radius:24px;margin:14px 0;box-shadow:0 10px 30px rgba(0,0,0,.3);position:relative}
+.jobhead{display:flex;align-items:center;gap:14px}
+.avatar{display:grid;place-items:center;width:48px;height:48px;border-radius:16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--tx);flex:none}
+.jobhead strong{display:block;font-size:16px;color:var(--tx);font-weight:700;display:flex;align-items:center;gap:6px}
+.muted{color:var(--tx2);font-size:12px;margin-top:2px;display:block}
+.amount{font-weight:800;font-size:22px;margin-left:auto;color:var(--tx);letter-spacing:-0.5px}
+.urgent-badge{background:rgba(255,23,68,0.15);color:#ff1744;border:1px solid rgba(255,23,68,0.3);font-size:9px;padding:2px 6px;border-radius:6px;font-weight:700}
+
+/* Timeline */
+.timeline{margin:20px 0 16px;padding-left:10px}
+.stop{border-left:2px dashed rgba(255,255,255,0.15);padding:0 0 20px 20px;position:relative;font-size:14px;color:var(--tx);font-weight:600}
 .stop:last-child{border-left-color:transparent;padding-bottom:0}
-.stop:before{content:"";width:10px;height:10px;border-radius:50%;background:var(--tx2);position:absolute;left:-6px;top:4px;border:2px solid var(--s1)}
-.stop:last-child:before{border-radius:3px;background:var(--ac);box-shadow:0 0 8px var(--ac)}
-.stop small{display:block;font-size:11px;color:var(--tx2);margin-top:2px}
+.stop:before{content:"";width:12px;height:12px;border-radius:50%;background:var(--s2);position:absolute;left:-7px;top:4px;border:2px solid var(--tx2)}
+.stop:last-child:before{border-radius:3px;background:var(--ac);border-color:var(--ac);box-shadow:0 0 8px var(--ac)}
+.stop small{display:block;font-size:11px;color:var(--tx2);margin-top:4px;font-weight:500}
 
+/* Buttons */
+.primary{background:var(--ac);color:#fff;border:0;border-radius:14px;padding:14px 16px;font-size:14px;font-weight:700;box-shadow:0 4px 16px rgba(255,87,34,.3);transition:all .2s;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.primary:hover{filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 6px 20px rgba(255,87,34,.4)}
+.secondary{border:1px solid rgba(255,255,255,0.12);color:var(--tx);background:rgba(255,255,255,0.03);border-radius:14px;padding:14px 16px;font-size:14px;text-decoration:none;font-weight:700;transition:all .2s;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.secondary:hover{background:rgba(255,255,255,0.08)}
+.icon-btn{display:grid;place-items:center;width:48px;height:48px;border-radius:14px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.03);color:var(--tx);flex:none;transition:all .2s}
+.icon-btn:hover{background:rgba(255,255,255,0.08)}
 .row{display:flex;gap:10px;align-items:center}.row>*{min-width:0;flex:1}
-.primary,.secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:14px;padding:12px 16px;font-size:13px;text-decoration:none;font-weight:700;transition:all .2s ease}
-.primary{background:var(--ac);color:#fff;box-shadow:0 4px 16px rgba(var(--rgb),.35)}
-.primary:hover{opacity:.92;transform:translateY(-1px)}
-.secondary{border:1px solid var(--ln2);color:var(--tx);background:var(--btn)}
-.secondary:hover{background:var(--ln)}
-button:disabled{opacity:.45;cursor:default;transform:none!important}
 .full{width:100%}
 
-.state{font-size:12px;background:var(--s2);padding:12px 14px;border-radius:14px;margin-bottom:14px;color:var(--warn);border:1px solid var(--ln)}
-label{display:block;font-size:12px;margin:12px 0 6px;color:var(--tx2);font-weight:600}
-input,select{width:100%;padding:12px 14px;border:1px solid var(--ln);border-radius:14px;background:var(--s2);color:var(--tx);font-size:13px;outline:none;transition:border-color .2s}
+/* Utility */
+.ic{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.state{font-size:12px;background:rgba(255,255,255,0.03);padding:14px;border-radius:14px;margin-bottom:14px;color:var(--tx2);border:1px solid rgba(255,255,255,0.08)}
+.empty{text-align:center;padding:40px 16px;color:var(--tx2);font-size:13px;background:rgba(255,255,255,0.02);border-radius:24px;border:1px dashed rgba(255,255,255,0.1)}
+#notice:empty{display:none}#notice{font-size:12px;padding:14px 16px;background:rgba(255,255,255,0.05);color:var(--tx);border-radius:16px;margin-bottom:16px;border:1px solid rgba(255,255,255,0.1);font-weight:500}
+.switch{margin:16px 0;display:flex;align-items:center;justify-content:space-between;background:var(--s1);padding:16px 20px;border-radius:20px;border:1px solid rgba(255,255,255,0.06)}
+.switch span{font-weight:600;color:var(--tx);font-size:14px}
+.switch button{border-radius:30px;padding:8px 16px;background:rgba(var(--okrgb),0.1);color:var(--ok);font-size:12px;font-weight:700;border:1px solid rgba(var(--okrgb),0.2);display:inline-flex;align-items:center;gap:6px;transition:all .3s}
+.switch button.off{background:rgba(255,255,255,0.05);color:var(--tx2);border-color:rgba(255,255,255,0.1)}
+.switch button i{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+/* Settings Form */
+label{display:block;font-size:12px;margin:16px 0 8px;color:var(--tx2);font-weight:600}
+input,select,textarea{width:100%;padding:14px;border:1px solid rgba(255,255,255,0.1);border-radius:14px;background:rgba(255,255,255,0.03);color:var(--tx);font-size:14px;outline:none;transition:border-color .2s}
 input:focus,select:focus,textarea:focus{border-color:var(--ac)}
-#notice:empty{display:none}#notice{font-size:12px;padding:12px 16px;background:rgba(255,183,77,.1);color:#ffd54f;border-radius:14px;margin-bottom:14px;border:1px solid rgba(255,183,77,.3);font-weight:500}
-.empty{text-align:center;padding:32px 16px;color:var(--tx2);font-size:13px;background:var(--s1);border-radius:20px;border:1px dashed var(--ln)}
-
-.switch{margin:14px 0;display:flex;align-items:center;justify-content:space-between;background:var(--s1);padding:14px 18px;border-radius:18px;border:1px solid var(--ln)}
-.switch span{font-weight:600;color:var(--tx)}
-.switch button{border-radius:30px;padding:8px 16px;background:rgba(var(--okrgb),.15);color:var(--ok);font-size:12px;font-weight:700;border:1px solid rgba(var(--okrgb),.3);display:inline-flex;align-items:center}
-.switch button.off{background:var(--s2);color:var(--tx2);border-color:var(--ln2)}
-
-.dash-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}
-.dash-stats button{background:var(--s1);border:1px solid var(--ln);border-radius:20px;padding:18px 8px;color:var(--tx);transition:all .2s;box-shadow:0 6px 20px rgba(0,0,0,.2)}
-.dash-stats button:hover{border-color:var(--ac);transform:translateY(-2px)}
-.dash-stats strong{display:block;font-size:24px;color:var(--ac);font-weight:700;letter-spacing:-0.5px}
-.dash-stats span{font-size:11px;color:var(--tx2);margin-top:2px;display:block}
-
-.hist{display:flex;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--ln);font-size:13px}
-.hist:last-child{border-bottom:0}.hist b{color:var(--ac2);white-space:nowrap;font-size:15px}
-details{margin-top:14px}summary{cursor:pointer;font-size:12px;color:var(--tx2)}
-pre{white-space:pre-wrap;font-size:10px;background:var(--s2);padding:12px;border-radius:12px;color:var(--tx2);overflow-x:auto;border:1px solid var(--ln)}
-
-/* VeloSync Floating Bottom Navigation */
-.nav{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);width:min(calc(100% - 32px),450px);display:flex;background:rgba(23,24,27,.92);backdrop-filter:blur(16px);border-radius:28px;padding:8px;z-index:1000;border:1px solid rgba(255,255,255,.08);box-shadow:0 16px 40px rgba(0,0,0,.6)}
-.nav button{flex:1;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--navtx);font-size:10px;font-weight:600;padding:8px 4px;border-radius:20px;transition:all .2s}
-.nav button.active{color:var(--navon);font-weight:700}
-.ic{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
-.tile{display:grid;place-items:center;width:38px;height:32px;border-radius:16px;border:1px solid transparent;color:var(--navtx);transition:all .2s}
-.nav .ic{width:20px;height:20px}
-.nav button.active .tile{background:var(--navtile);color:var(--navon);border-color:rgba(var(--rgb),.3)}
-
-.dot{width:8px;height:8px;border-radius:50%;background:currentColor;margin-right:7px}
-textarea{width:100%;padding:12px 14px;border:1px solid var(--ln);border-radius:14px;background:var(--s2);color:var(--tx);font-size:13px;resize:vertical;outline:none}
-textarea:focus{border-color:var(--ac)}
-
-.card h2{display:flex;align-items:center;gap:10px;font-size:16px;margin:0 0 14px;color:var(--tx);font-weight:700}.card h2 .ic{width:20px;height:20px;color:var(--ac)}
-.profhead{display:flex;align-items:center;gap:16px}.profhead strong{display:block;color:var(--tx);font-size:16px}
-.bigav{position:relative;width:76px;height:76px;border-radius:24px;background:rgba(var(--rgb),.15);border:1px solid rgba(var(--rgb),.3);display:grid;place-items:center;color:var(--ac);flex:none;overflow:hidden}
+.card h2{display:flex;align-items:center;gap:10px;font-size:16px;margin:0 0 16px;color:var(--tx);font-weight:700}
+.card h2 .ic{width:20px;height:20px;color:var(--ac)}
+.profhead{display:flex;align-items:center;gap:16px}
+.profhead strong{display:block;color:var(--tx);font-size:16px}
+.bigav{position:relative;width:72px;height:72px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);display:grid;place-items:center;color:var(--tx2);flex:none;overflow:hidden}
 .bigav img{width:100%;height:100%;object-fit:cover}
-.camera{position:absolute;right:-4px;bottom:-4px;margin:0;width:30px;height:30px;border-radius:50%;background:var(--ac);color:#fff;display:grid;place-items:center;cursor:pointer;border:2px solid var(--s1);box-shadow:0 4px 10px rgba(0,0,0,.4)}.camera .ic{width:15px;height:15px}
-
-.gal{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.slotw{position:relative}
-.slot{display:grid;place-items:center;aspect-ratio:1;margin:0;border-radius:16px;border:2px dashed rgba(var(--rgb),.35);background:rgba(var(--rgb),.06);color:var(--ac);overflow:hidden;cursor:pointer;transition:all .2s}
-.slot:hover{border-color:var(--ac);background:rgba(var(--rgb),.12)}
+.camera{position:absolute;right:-4px;bottom:-4px;width:28px;height:28px;border-radius:50%;background:var(--ac);color:#fff;display:grid;place-items:center;cursor:pointer;border:2px solid var(--s1)}
+.camera .ic{width:14px;height:14px}
+.gal{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.slotw{position:relative}
+.slot{display:grid;place-items:center;aspect-ratio:1;margin:0;border-radius:16px;border:1px dashed rgba(255,255,255,0.2);background:rgba(255,255,255,0.02);color:var(--tx2);overflow:hidden;cursor:pointer;transition:all .2s}
+.slot:hover{border-color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.05)}
 .slot img{width:100%;height:100%;object-fit:cover}
-.slotw .x{position:absolute;top:-6px;right:-6px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(0,0,0,.8);color:#fff;display:grid;place-items:center;padding:0;box-shadow:0 2px 8px rgba(0,0,0,.5)}.x .ic{width:12px;height:12px}
+.slotw .x{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(0,0,0,.8);color:#fff;display:grid;place-items:center;padding:0;cursor:pointer;font-size:12px}
+.hist{display:flex;justify-content:space-between;gap:12px;padding:16px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:14px}
+.hist:last-child{border-bottom:0;padding-bottom:0}
+.hist b{color:var(--tx);white-space:nowrap;font-size:15px}
 
-.swatches{display:flex;gap:12px;margin:10px 0 16px;flex-wrap:wrap}
-.sw{width:38px;height:38px;border-radius:50%;border:2px solid transparent;padding:0;cursor:pointer;transition:transform .2s}
-.sw:hover{transform:scale(1.1)}
-.sw[aria-pressed=true]{border-color:#fff;box-shadow:0 0 0 3px var(--ac)}
-.opt{padding:10px 16px;border-radius:14px;border:1px solid var(--ln);background:var(--s2);color:var(--tx);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
-.opt[aria-pressed=true]{border-color:var(--ac);color:#fff;background:rgba(var(--rgb),.18);box-shadow:0 4px 12px rgba(var(--rgb),.2)}
+/* Bottom Nav */
+.nav{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);width:min(calc(100% - 32px),450px);display:flex;background:var(--navbg);backdrop-filter:blur(20px);border-radius:30px;padding:8px;z-index:1000;border:1px solid rgba(255,255,255,.08);box-shadow:0 16px 40px rgba(0,0,0,.6)}
+.nav button{flex:1;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--navtx);font-size:10px;font-weight:600;padding:8px 4px;border-radius:24px;transition:all .2s}
+.nav button.active{color:var(--navon);font-weight:700}
+.nav .ic{width:22px;height:22px}
+.nav button.active .tile{background:var(--navtile);color:var(--navon)}
+.tile{display:grid;place-items:center;width:40px;height:32px;border-radius:16px;border:1px solid transparent;transition:all .2s}
 
-#alert{position:fixed;inset:0;transform:none;width:100%;height:100vh;padding:16px;display:flex;align-items:center;justify-content:center;background:rgba(6,7,9,.85);backdrop-filter:blur(8px);overscroll-behavior:contain;z-index:3000}
+/* Job Alert Modal */
+#alert{position:fixed;inset:0;width:100%;height:100vh;padding:16px;display:flex;align-items:center;justify-content:center;background:rgba(10,10,12,.9);backdrop-filter:blur(12px);overscroll-behavior:contain;z-index:3000}
 #alert:empty{display:none}
-.alertcard{width:min(100%,460px);max-height:92vh;display:flex;flex-direction:column;padding:0;overflow:hidden;border-radius:28px;background:var(--s1);border:1px solid rgba(var(--rgb),.4);box-shadow:0 24px 80px rgba(0,0,0,.8),0 0 0 1px rgba(var(--rgb),.2);animation:jobIn .3s cubic-bezier(.2,1.2,.4,1)}
+.alertcard{width:min(100%,460px);max-height:92vh;display:flex;flex-direction:column;padding:0;overflow:hidden;border-radius:28px;background:var(--s2);border:1px solid rgba(255,255,255,0.1);box-shadow:0 24px 80px rgba(0,0,0,.9);animation:jobIn .3s cubic-bezier(.2,1.2,.4,1)}
 .alertscroll{overflow:auto;min-height:0;overscroll-behavior:contain}
-.alerthead{padding:20px 20px 14px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--ln)}
-.alerthead .avatar{width:44px;height:44px;border-radius:16px}
-.alertheading{min-width:0;flex:1}.alertheading h2{font-size:20px;line-height:1.3;margin:0;font-weight:700}.alertheading small{font-size:11px;color:var(--tx2)}
-.alertfee{text-align:right;flex:none}.alertfee small{display:block;font-size:10px;color:var(--tx2);text-transform:uppercase}.alertfee strong{font-size:28px;color:var(--ac2);line-height:1.1;font-weight:700}
+.alerthead{padding:24px 20px;display:flex;align-items:center;gap:16px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.alerthead .avatar{width:48px;height:48px;border-radius:16px;background:rgba(255,87,34,0.15);color:var(--ac);border-color:rgba(255,87,34,0.3)}
+.alertheading{min-width:0;flex:1}
+.alertheading h2{font-size:20px;line-height:1.3;margin:0;font-weight:800;color:var(--tx);display:flex;align-items:center;gap:8px}
+.alertheading h2 .ic{width:20px;height:20px;color:var(--ac)}
+.alertheading small{font-size:12px;color:var(--tx2);margin-top:2px;display:block}
+.alertfee{text-align:right;flex:none}
+.alertfee small{display:block;font-size:10px;color:var(--tx2);text-transform:uppercase;font-weight:700}
+.alertfee strong{font-size:28px;color:var(--ac);line-height:1.1;font-weight:900;letter-spacing:-0.5px}
 
-.alertphoto{position:relative;margin:14px;aspect-ratio:16/9;background:var(--s2);border-radius:18px;overflow:hidden;border:1px solid var(--ln)}
+.alertphoto{position:relative;margin:20px;aspect-ratio:16/9;background:var(--s1);border-radius:20px;overflow:hidden;border:1px solid rgba(255,255,255,0.05)}
 .alertphoto img{display:block;width:100%;height:100%;object-fit:cover}
-.alertphoto figcaption{position:absolute;inset:auto 0 0;padding:30px 16px 14px;background:linear-gradient(transparent,rgba(0,0,0,.85));color:#fff;font-size:18px;font-weight:700;overflow-wrap:anywhere}
-.photochip{position:absolute;top:12px;left:12px;padding:4px 10px;border-radius:10px;background:rgba(22,25,28,.85);backdrop-filter:blur(6px);color:#fff;font-size:10px;font-weight:700;border:1px solid rgba(255,255,255,.1)}
+.alertphoto figcaption{position:absolute;inset:auto 0 0;padding:30px 20px 16px;background:linear-gradient(transparent,rgba(0,0,0,.9));color:#fff;font-size:18px;font-weight:700}
+.photochip{position:absolute;top:12px;left:12px;padding:4px 10px;border-radius:8px;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);color:#fff;font-size:10px;font-weight:700;border:1px solid rgba(255,255,255,0.2)}
 
-.alertbody{padding:0 20px 16px}
-.admincheer{display:flex;gap:12px;align-items:flex-start;margin-bottom:16px}
-.adminav{width:38px;height:38px;border-radius:14px;display:grid;place-items:center;background:rgba(var(--rgb),.15);color:var(--ac2);flex:none;border:1px solid rgba(var(--rgb),.3)}
-.adminbubble{flex:1;min-width:0;background:var(--s2);border:1px solid var(--ln);border-radius:0 18px 18px 18px;padding:12px 16px}
-.adminbubble small{display:block;font-size:10px;color:var(--tx2);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
-.adminbubble p{font-size:16px;font-weight:700;line-height:1.5;margin:4px 0 0;color:var(--tx);overflow-wrap:anywhere}
-.alertbody .timeline{margin:12px 0 0}
-.alertbody .stop{font-size:14px;padding-bottom:14px;overflow-wrap:anywhere}
-.alertbody .stop:last-child{padding-bottom:0}
-.alertbody .stop small{font-size:11px}
+.alertbody{padding:0 20px 20px}
+.admincheer{display:flex;gap:12px;align-items:flex-start;margin-bottom:20px}
+.adminav{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,0.05);color:var(--tx2);flex:none;border:1px solid rgba(255,255,255,0.1)}
+.adminbubble{flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:0 16px 16px 16px;padding:14px 16px}
+.adminbubble small{display:block;font-size:10px;color:var(--tx2);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.adminbubble p{font-size:14px;font-weight:500;line-height:1.5;margin:0;color:var(--tx)}
 
-.alertfooter{flex:none;padding:16px 20px 20px;background:var(--s1);border-top:1px solid var(--ln)}
+.alertfooter{flex:none;padding:20px;background:var(--s2);border-top:1px solid rgba(255,255,255,0.06)}
 .alertfooter .row{display:grid;grid-template-columns:1fr 1.8fr;gap:12px}
-.alertfooter button{min-height:50px;font-size:15px}
-.alertfooter p{margin:10px 0 0;font-size:10px;color:var(--tx2);text-align:center;font-weight:500}
-.alertclock{display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);margin-bottom:10px;font-weight:600}
+.alertfooter button{min-height:52px;font-size:15px;border-radius:16px}
+.alertfooter p{margin:14px 0 0;font-size:11px;color:var(--tx2);text-align:center;font-weight:500}
+.alertclock{display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);margin-bottom:12px;font-weight:600}
 .alertclock strong{color:var(--ac2)}
-.alertbar{margin:10px 0 0;height:4px;background:var(--ln);border-radius:2px;overflow:hidden}
-.alertbar i{display:block;height:100%;background:var(--ac);animation:none;width:100%;transition:width .2s linear}
+.alertbar{margin:12px 0 0;height:4px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden}
+.alertbar i{display:block;height:100%;background:var(--ac);width:100%;transition:width .2s linear}
 
-@keyframes jobIn{from{opacity:0;transform:translateY(20px) scale(.96)}to{opacity:1;transform:none}}
-
-#jobbar{position:fixed;left:50%;transform:translateX(-50%);bottom:80px;width:min(calc(100% - 24px),460px);z-index:1500}
+/* Bottom Bar for Active Job */
+#jobbar{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;width:min(calc(100% - 24px),460px);z-index:1500}
 #jobbar:empty{display:none}
-.barcard{background:var(--s1);border:1px solid rgba(var(--rgb),.5);border-radius:22px;padding:14px;box-shadow:0 -8px 30px rgba(0,0,0,.6),0 0 0 1px rgba(var(--rgb),.2)}
+.barcard{background:rgba(20,20,24,0.9);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.6)}
 .barinfo{flex:1;min-width:0}.barinfo strong,.barinfo span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hasbar .app{padding-bottom:240px}
 
-.mepill{display:flex;align-items:center;gap:8px;background:var(--s1);border:1px solid var(--ln);border-radius:24px;padding:4px 14px 4px 4px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
-.sosbtn{display:inline-flex;align-items:center;gap:6px;background:#d93025;color:#fff;border:0;border-radius:20px;padding:8px 14px;font-size:12px;font-weight:700;box-shadow:0 4px 12px rgba(217,48,37,.4);transition:transform .2s}
-.sosbtn:hover{transform:scale(1.05)}
-.sosbtn .ic{width:16px;height:16px}
-
-.row>.ico{flex:none;width:48px;padding-left:0;padding-right:0}
-.primary.danger{background:#d93025;box-shadow:0 4px 16px rgba(217,48,37,.4)}
-.linkbtn{border:0;background:none;color:var(--ac);font-size:12px;padding:4px 0;font-weight:700;cursor:pointer}
-.linkbtn:hover{text-decoration:underline}
-.hacts{display:flex;gap:16px;margin-top:6px;font-size:12px;color:var(--tx2);flex-wrap:wrap}
-
+/* Sheet (Bottom Sheet Dialog) */
 #sheet:empty{display:none}#sheet{position:fixed;inset:0;z-index:2500;display:flex;align-items:flex-end;justify-content:center}
-.shbg{position:absolute;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px)}
-.shpanel{position:relative;width:min(100%,480px);max-height:88vh;overflow:auto;background:var(--s1);border-radius:28px 28px 0 0;padding:24px 20px 30px;animation:rise .25s ease-out;border-top:1px solid var(--ln);box-shadow:0 -10px 40px rgba(0,0,0,.7)}
-@keyframes rise{from{transform:translateY(40px);opacity:0}}
+.shbg{position:absolute;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px)}
+.shpanel{position:relative;width:min(100%,480px);max-height:88vh;overflow:auto;background:var(--s2);border-radius:28px 28px 0 0;padding:24px 20px 32px;animation:rise .25s ease-out;border-top:1px solid rgba(255,255,255,0.1)}
 .shpanel h3{margin:0 0 6px;font-size:18px;color:var(--tx);font-weight:700}
-.mrow{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;text-align:left;padding:14px 16px;border:1px solid var(--ln);border-radius:16px;background:var(--s2);color:var(--tx);text-decoration:none;margin:10px 0;font-size:14px;font-weight:600;transition:all .2s}
-.mrow:hover{border-color:var(--ac);background:rgba(var(--rgb),.06)}
-.mrow span{display:flex;align-items:center;gap:12px}.mrow .ic{color:var(--ac)}.mrow b{color:#ff5252;font-size:16px}.mrow.danger{background:#d93025;color:#fff;border:0;box-shadow:0 4px 14px rgba(217,48,37,.4)}.mrow.danger .ic{color:#fff}
+.mrow{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;text-align:left;padding:16px;border:1px solid rgba(255,255,255,0.08);border-radius:16px;background:rgba(255,255,255,0.02);color:var(--tx);text-decoration:none;margin:10px 0;font-size:14px;font-weight:600;transition:all .2s}
+.mrow:hover{border-color:rgba(255,255,255,0.2);background:rgba(255,255,255,0.05)}
+.mrow span{display:flex;align-items:center;gap:12px}.mrow .ic{color:var(--tx2)}.mrow b{color:var(--tx);font-size:16px}
+.mrow.danger{background:rgba(217,48,37,0.15);color:#ff5252;border-color:rgba(217,48,37,0.3)}.mrow.danger .ic{color:#ff5252}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
-.stars{display:flex;gap:8px;justify-content:center;margin:16px 0 6px}.stars button{border:0;background:none;padding:2px;color:var(--ln2);cursor:pointer;transition:transform .2s}.stars button:hover{transform:scale(1.2)}.stars button.on{color:#ffb74d}.stars .ic{width:38px;height:38px;fill:currentColor}
-.starlbl{text-align:center;font-size:14px;color:var(--tx2);margin-bottom:12px;font-weight:600}
+.opt{padding:10px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.02);color:var(--tx2);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+.opt[aria-pressed=true]{border-color:var(--ac);color:var(--tx);background:rgba(255,87,34,0.15)}
+.stars{display:flex;gap:12px;justify-content:center;margin:20px 0 10px}.stars button{border:0;background:none;padding:2px;color:rgba(255,255,255,0.1);cursor:pointer;transition:transform .2s}.stars button:hover{transform:scale(1.1)}.stars button.on{color:#ffb74d}.stars .ic{width:40px;height:40px;fill:currentColor;stroke:none}
+.starlbl{text-align:center;font-size:14px;color:var(--tx2);margin-bottom:16px;font-weight:600}
 
-@media(min-width:650px){.app{margin:24px auto;border-radius:32px;overflow:hidden}}
+@keyframes jobIn{from{opacity:0;transform:translateY(20px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes rise{from{transform:translateY(40px);opacity:0}}
+@media(min-width:650px){.app{margin:0 auto;border-left:1px solid var(--ln2);border-right:1px solid var(--ln2)}}
 </style>
-<link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/dense-layout.css?v=20261027-3px"></head>
+<link rel="stylesheet" href="/system.css"></head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></symbol>
@@ -240,11 +285,14 @@ textarea:focus{border-color:var(--ac)}
 <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/></symbol>
 <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a1 1 0 0 1-1 1A15 15 0 0 1 4 5a1 1 0 0 1 1-1z"/></symbol>
 <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+<symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+<symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
 </defs></svg>
 <div class="app">
   <header class="topbar">
-    <div><small>VELOSYNC KRANUAN</small><strong id="riderName">ไรเดอร์กระนวน</strong></div>
+    <div><small>VELOSYNC PREMIUM</small><strong id="riderName">ไรเดอร์กระนวน <span id="levelBadge" class="level-badge">Lv.1</span></strong></div>
     <div class="topbar-right"><button class="sosbtn" data-act="sheet" data-id="sos" aria-label="ฉุกเฉิน"><svg class="ic"><use href="#i-alert"/></svg>SOS</button><div class="mepill"><div class="rider-mini-avatar" id="miniAv"></div><div class="online-status" id="topStatus"><i></i><span>ออฟไลน์</span></div></div></div>
+    <div class="xp-container"><div class="xp-fill" id="xpFill"></div></div>
   </header>
 
   <div id="realMapContainer">
@@ -265,16 +313,20 @@ textarea:focus{border-color:var(--ac)}
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-/* ============ ตั้งค่าและตัวช่วย ============ */
+/* ============ Core Setup (ระบบหลังบ้านห้ามแก้) ============ */
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const baht=n=>'฿'+Number(n||0).toLocaleString('th-TH');
 const JOB_KEY='kranuan_jobs2',PROF_KEY='kranuan_profile';
-const cfg={mode:'central',url:'',key:'',riderId:'rider-1',support:''};
+const cfg={mode:'local',url:'',key:'',riderId:'rider-1',support:''};
 let tab='home',online=false,jobs=[],seen=null,pos=null,lastErr='',noticeTimer,lastPush=0;
-const isLocal=()=>cfg.mode==='local';
+const isLocal=()=>cfg.mode!=='supabase';
+
+let dailyGoal = 500;
+try { const savedGoal = localStorage.getItem('kranuan_goal'); if(savedGoal) dailyGoal = Number(savedGoal); } catch(e){}
+
 function seed(){
-  const now=Date.now(),mk=(i,shop,pickup,dropoff,km,fee,cn,min)=>({id:'J'+i,shop,pickup,dropoff,distance_km:km,fee,status:'pending',rider_id:null,customer_id:'c'+i,customer_name:cn,created_at:new Date(now-min*60000).toISOString()});
+  const now = Date.now(),mk=(i,shop,pickup,dropoff,km,fee,cn,min)=>({id:'J'+i,shop,pickup,dropoff,distance_km:km,fee,status:'pending',rider_id:null,customer_id:'c'+i,customer_name:cn,customer_phone:'080000000'+i,created_at:new Date(now-min*60000).toISOString(),pickup_lat:16.706,pickup_lng:103.078,dropoff_lat:16.715,dropoff_lng:103.085});
   return [
     mk(1,'ร้านก๋วยเตี๋ยวป้าแดง','ตลาดสดกระนวน','บ้านโนนสวรรค์ หมู่ 4',2.5,40,'คุณสมชาย',3),
     mk(2,'ร้านชานมกระนวน','หน้าโรงเรียนกระนวน','หมู่บ้านทุ่งนา หมู่ 2',1.8,30,'คุณมาลี',2),
@@ -289,30 +341,16 @@ async function api(path,o={}){
   const t=await r.text();return t?JSON.parse(t):null;
 }
 const BANKS=['ธนาคารกสิกรไทย','ธนาคารไทยพาณิชย์','ธนาคารกรุงเทพ','ธนาคารกรุงไทย','ธนาคารกรุงศรีอยุธยา','ธนาคารทหารไทยธนชาต','ธนาคารออมสิน','ธ.ก.ส.'];
-const ACC={orange:['#e95f2b','233,95,43','#ff8a5c','ส้ม VeloSync'],coral:['#ef6264','239,98,100','#ff7a7c','ชมพูสดใส'],green:['#00e676','0,230,118','#5fe09a','เขียวเรืองแสง'],blue:['#3b9cf0','59,156,240','#6cb6ff','ฟ้าคราม'],violet:['#9b7bf0','155,123,240','#b69cff','ม่วงพรีเมียม']};
-const SUR={
- black:{n:'ดำพรีเมียม',m:'dark',s0:'#08090a',s1:'#17181b',s2:'#111215',bg:'#08090a',top:'#17181b',tx:'#f0f2f5',tx2:'#9da4b0',ln:'#26282d',ln2:'#30333a',chip:'rgba(23,24,27,.9)',btn:'#1f2024'},
- gray:{n:'เทาเข้ม',m:'dark',s0:'#121418',s1:'#1c1f26',s2:'#0e1013',bg:'#0e1013',top:'#1c1f26',tx:'#f0f2f5',tx2:'#9da4b0',ln:'#2a2e39',ln2:'#363b48',chip:'rgba(28,31,38,.9)',btn:'#242933'},
- cream:{n:'ครีมเหลือง',m:'light',s0:'#fffbf2',s1:'#ffffff',s2:'#fff4dc',bg:'#efe6d8',top:'#fbd460',tx:'#2b2622',tx2:'#7b6f63',ln:'#efe2cf',ln2:'#e5d4bb',chip:'rgba(255,255,255,.92)',btn:'#ffffff'}
-};
-let prof={name:'ไรเดอร์กระนวน',bank_name:'',bank_account:'',bank_holder:'',address:'',avatar_url:'',photos:[null,null,null,null],theme_accent:'orange',theme_surface:'black',sound:true,emergency_name:'',emergency_phone:'',blocked:[]};
+let prof={name:'ไรเดอร์กระนวน',bank_name:'',bank_account:'',bank_holder:'',address:'',avatar_url:'',photos:[null,null,null,null],theme_accent:'orange',theme_surface:'black',sound:true,voice:true,emergency_name:'',emergency_phone:'',blocked:[]};
 try{Object.assign(prof,JSON.parse(localStorage.getItem(PROF_KEY)||'{}'))}catch(e){}
 if(!Array.isArray(prof.photos)||prof.photos.length!==4)prof.photos=[null,null,null,null];
 function normProf(){
   if(!Array.isArray(prof.photos)||prof.photos.length!==4)prof.photos=[null,null,null,null];
   if(!Array.isArray(prof.blocked))prof.blocked=[];
-  if(!SUR[prof.theme_surface])prof.theme_surface='black';if(!ACC[prof.theme_accent])prof.theme_accent='orange';
-}
-function applyTheme(){
-  const a=ACC[prof.theme_accent]||ACC.orange,u=SUR[prof.theme_surface]||SUR.black,r=document.documentElement,st=r.style,L=u.m==='light',set=(k,v)=>st.setProperty('--'+k,v);
-  r.dataset.mode=u.m;
-  Object.entries(u).forEach(([k,v])=>{if(k!=='n'&&k!=='m')set(k,v)});
-  set('ac',a[0]);set('rgb',a[1]);set('ac2',L?a[0]:a[2]);
-  set('navbg',L?a[0]:u.s1);set('navtx',L?'rgba(255,255,255,.85)':'#9da4b0');set('navon',L?'#fff':a[0]);set('navtile',L?'rgba(255,255,255,.24)':'rgba('+a[1]+',.15)');
-  set('tilebg',L?'#fdf0c8':'rgba('+a[1]+',.1)');set('tileln',L?'#f5e1a0':'rgba('+a[1]+',.2)');
-  set('ok',L?'#0b8f4d':'#00e676');set('okrgb',L?'11,143,77':'0,230,118');set('warn',L?'#a65a00':'#ffb74d');
+  if(prof.voice === undefined) prof.voice = true;
 }
 normProf();
+
 const me=()=>encodeURIComponent(cfg.riderId);
 const DB={
   async jobs(){
@@ -362,48 +400,142 @@ const done=()=>mine().filter(j=>j.status==='delivered').sort((a,b)=>String(b.del
 const isToday=s=>s&&new Date(s).toDateString()===new Date().toDateString();
 const sum=l=>l.reduce((s,j)=>s+Number(j.fee||0),0);
 const mapUrl=(t,la,ln)=>'https://www.google.com/maps/dir/?api=1&dir_action=navigate&travelmode=two-wheeler&destination='+encodeURIComponent(la!=null&&la!==''&&ln!=null&&ln!==''?la+','+ln:t+' กระนวน ขอนแก่น');
-const dest=j=>j.status==='picked'?[j.dropoff,j.dropoff_lat,j.dropoff_lng,'นำทางไปส่ง']:[j.pickup,j.pickup_lat,j.pickup_lng,j.type==='ride'?'นำทางไปรับผู้โดยสาร':j.type==='parcel'?'นำทางไปรับของ':'นำทางไปร้าน'];
-const MORE=j=>`<button class="secondary ico" data-act="sheet" data-id="menu:${esc(j.id)}" aria-label="ตัวเลือกงาน"><svg class="ic"><use href="#i-more"/></svg></button>`;
-const navBtn=j=>{const d=dest(j);return `<a class="secondary" target="_blank" rel="noopener" href="${mapUrl(d[0],d[1],d[2])}"><svg class="ic" style="width:16px;height:16px"><use href="#i-nav"/></svg>${d[3]}</a>`};
+const dest=j=>j.status==='picked'?[j.dropoff,j.dropoff_lat,j.dropoff_lng,'นำทางไปส่ง']:[j.pickup,j.pickup_lat,j.pickup_lng,'นำทางไปร้าน'];
+const MORE=j=>`<button class="secondary ico" data-act="sheet" data-id="menu:${esc(j.id)}" aria-label="ตัวเลือกงาน" style="flex:none;width:48px;padding:0"><svg class="ic"><use href="#i-more"/></svg></button>`;
+const navBtn=j=>{const d=dest(j);return `<a class="secondary" target="_blank" rel="noopener" href="${mapUrl(d[0],d[1],d[2])}"><svg class="ic" style="width:18px;height:18px"><use href="#i-nav"/></svg>${d[3]}</a>`};
+const callBtn=j=>j.customer_phone?`<a class="icon-btn" href="tel:${esc(j.customer_phone)}" title="โทรหาลูกค้า"><svg class="ic"><use href="#i-phone"/></svg></a>`:'';
 const STATUS={pending:'รอรับงาน',accepted:'รับงานแล้ว',picked:'รับของแล้ว',delivered:'ส่งสำเร็จ'};
+
+function getJobAge(created_at) {
+  if(!created_at) return 0;
+  return Math.floor((Date.now() - new Date(created_at).getTime()) / 60000);
+}
 
 function jobCard(j,withAct){
   let act='';
+  const age = getJobAge(j.created_at);
+  const urgentBadge = (j.status === 'pending' && age >= 3) ? `<span class="urgent-badge">รอ ${age} น.</span>` : '';
+
   if(withAct){
-    if(j.status==='pending')act=`<div class="row">${navBtn(j)}<button class="primary" data-act="accept" data-id="${esc(j.id)}">รับงานนี้</button>${MORE(j)}</div>`;
-    if(j.status==='accepted')act=`<div class="row">${navBtn(j)}<button class="primary" data-act="picked" data-id="${esc(j.id)}">${j.type==='ride'?'รับผู้โดยสารแล้ว':'รับของแล้ว'}</button>${MORE(j)}</div>`;
-    if(j.status==='picked')act=`<div class="row">${navBtn(j)}<button class="primary" data-act="delivered" data-id="${esc(j.id)}">ส่งสำเร็จ</button>${MORE(j)}</div>`;
+    if(j.status==='pending')act=`<div class="row">${navBtn(j)}${callBtn(j)}<button class="primary" data-act="accept" data-id="${esc(j.id)}" style="flex:2">รับงานนี้</button>${MORE(j)}</div>`;
+    if(j.status==='accepted')act=`<div class="row">${navBtn(j)}${callBtn(j)}<button class="primary" data-act="picked" data-id="${esc(j.id)}" style="flex:2">รับของแล้ว</button>${MORE(j)}</div>`;
+    if(j.status==='picked')act=`<div class="row">${navBtn(j)}${callBtn(j)}<button class="primary" data-act="delivered" data-id="${esc(j.id)}" style="flex:2">ส่งสำเร็จ</button>${MORE(j)}</div>`;
   }
-  return `<div class="card"><div class="jobhead"><div class="avatar"><svg class="ic"><use href="#i-scooter"/></svg></div><div><strong>${esc(j.shop)}</strong><span class="muted">${esc(j.type==='ride'?({pending:'รอรับผู้โดยสาร',accepted:'กำลังไปรับผู้โดยสาร',picked:'กำลังเดินทาง',delivered:'ถึงจุดหมายแล้ว'}[j.status]||j.status):(STATUS[j.status]||j.status))} · ${esc(j.distance_km)} กม.</span></div><div class="amount">${baht(j.fee)}</div></div>
-  <div class="timeline"><div class="stop">${esc(j.pickup)}<small>${j.type==='ride'?'จุดขึ้นรถ':'จุดรับของ'}</small></div><div class="stop">${esc(j.dropoff)}<small>${j.type==='ride'?'จุดลงรถ':'จุดส่งของ'}</small></div></div>${j.customer_name?`<div class="muted" style="margin:0 0 10px">ลูกค้า: ${esc(j.customer_name)}</div>`:''}${act}</div>`;
+  return `<div class="card"><div class="jobhead"><div class="avatar"><svg class="ic"><use href="#i-scooter"/></svg></div><div><strong>${esc(j.shop)} ${urgentBadge}</strong><span class="muted">${esc(STATUS[j.status]||j.status)} · ${esc(j.distance_km)} กม.</span></div><div class="amount">${baht(j.fee)}</div></div>
+  <div class="timeline"><div class="stop">${esc(j.pickup)}<small>จุดรับของ</small></div><div class="stop">${esc(j.dropoff)}<small>จุดส่งของ</small></div></div>${j.customer_name?`<div class="muted" style="margin:0 0 10px">ลูกค้า: ${esc(j.customer_name)}</div>`:''}${act}</div>`;
 }
 
 function homeView(){
   const a=active(),p=pending(),d=done(),t=d.filter(j=>isToday(j.delivered_at));
-  return `<div class="sectiontitle"><h1>แดชบอร์ด</h1><span class="pill">${isLocal()?'โหมดทดลอง':'เชื่อมฐานข้อมูลแล้ว'}</span></div>
-  <div class="switch"><span>สถานะรับงาน</span><button class="${online?'':'off'}" data-act="toggle"><i class="dot"></i>${online?'ออนไลน์ แตะเพื่อปิด':'ออฟไลน์ แตะเพื่อเปิด'}</button></div>
+  const todaySum = sum(t);
+  const goalPercent = Math.min(100, Math.max(0, (todaySum / dailyGoal) * 100));
+  const circ = 2 * Math.PI * 32; 
+  const offset = circ - (goalPercent / 100) * circ;
+
+  // 🏃‍♂️ กำหนดท่าทางมาสคอตตาม %
+  let mascotState = 'state-tired';
+  if (goalPercent >= 100) mascotState = 'state-win';
+  else if (goalPercent >= 71) mascotState = 'state-excited';
+  else if (goalPercent >= 31) mascotState = 'state-normal';
+
+  // Rider Level Calculation (1 Level per 10 jobs)
+  const totalJobs = d.length;
+  const currentLevel = Math.floor(totalJobs / 10) + 1;
+  const xpPercent = ((totalJobs % 10) / 10) * 100;
+  
+  setTimeout(() => {
+    const fill = document.getElementById('xpFill');
+    if(fill) fill.style.width = xpPercent + '%';
+    const lv = document.getElementById('levelBadge');
+    if(lv) lv.textContent = `Lv.${currentLevel}`;
+    const ring = document.getElementById('goalRingFill');
+    if(ring) ring.style.strokeDashoffset = offset;
+  }, 100);
+
+  return `<div class="sectiontitle"><h1>ศูนย์บัญชาการ</h1><span class="pill">${isLocal()?'โหมดทดลอง':'เชื่อมฐานข้อมูลแล้ว'}</span></div>
+  
+  <div class="goal-hud">
+    <svg class="ring-svg" viewBox="0 0 72 72">
+      <defs>
+        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#ffb74d" />
+          <stop offset="100%" stop-color="#ff5722" />
+        </linearGradient>
+      </defs>
+      <circle class="ring-bg" cx="36" cy="36" r="32"></circle>
+      <circle class="ring-fill" id="goalRingFill" cx="36" cy="36" r="32"></circle>
+    </svg>
+    <div class="goal-txt">
+      <h3><svg class="ic"><use href="#i-target"/></svg> เป้าหมายวันนี้</h3>
+      <p>${baht(todaySum)} <small>/ ${baht(dailyGoal)}</small></p>
+      <small>สู้ๆ อีกนิด! <span class="pct">(${goalPercent.toFixed(0)}%)</span></small>
+    </div>
+    
+    <!-- 🏃‍♂️ อนิเมชั่นมาสคอต -->
+    <div class="mascot-box ${mascotState}">
+      <svg class="mascot" viewBox="0 0 100 100">
+        <!-- มงกุฎ (แสดงตอน 100%) -->
+        <path class="crown" d="M 40 25 L 45 15 L 50 22 L 55 15 L 60 25 Z" fill="#ffd700"/>
+        
+        <!-- หัว -->
+        <g class="head">
+          <!-- หมวกกันน็อก -->
+          <path d="M 35 45 C 35 25 65 25 65 45 Z" fill="var(--ac)"/>
+          <rect x="30" y="42" width="40" height="5" rx="2" fill="var(--ac)"/>
+          <path d="M 40 27 L 60 27" stroke="#fff" stroke-width="2"/>
+          <!-- หน้า -->
+          <circle cx="42" cy="52" r="2" fill="#fff"/>
+          <circle cx="58" cy="52" r="2" fill="#fff"/>
+          <!-- ปากปกติ -->
+          <path d="M 46 58 Q 50 61 54 58" stroke="#fff" stroke-width="1.5" fill="none"/>
+          <!-- ปากยิ้ม (แสดงตอน excited/win) -->
+          <path class="smile" d="M 44 57 Q 50 64 56 57" stroke="#fff" stroke-width="1.5" fill="none"/>
+        </g>
+        
+        <!-- เหงื่อ (แสดงตอนเหนื่อย) -->
+        <path class="sweat-drop" d="M 65 45 Q 68 52 65 55 Q 62 52 65 45 Z" fill="#29b6f6"/>
+        
+        <!-- ลำตัว -->
+        <rect x="42" y="60" width="16" height="20" rx="4" fill="#fff"/>
+        
+        <!-- แขนซ้าย -->
+        <path class="arm-left" d="M 42 65 L 30 75" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+        <!-- แขนขวา -->
+        <path class="arm-right" d="M 58 65 L 70 75" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+        
+        <!-- ขา -->
+        <path d="M 45 80 L 42 90" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+        <path d="M 55 80 L 58 90" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+        
+        <!-- กระเป๋าเป้ -->
+        <rect x="35" y="62" width="6" height="14" rx="2" fill="var(--ac2)"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="switch"><span>สถานะรับงาน</span><button class="${online?'':'off'}" data-act="toggle"><i></i>${online?'ออนไลน์':'ออฟไลน์'}</button></div>
   <div class="dash-stats"><button data-go="jobs"><strong>${p.length}</strong><span>งานรอรับ</span></button><button data-go="jobs"><strong>${a?1:0}</strong><span>กำลังส่ง</span></button><button data-go="history"><strong>${t.length}</strong><span>ส่งแล้ววันนี้</span></button></div>
-  <h2 style="font-size:16px;margin:10px 0 6px">งานรอรับ (${p.length})</h2>${p.length?p.slice(0,3).map(j=>jobCard(j,true)).join('')+(p.length>3?'<button class="secondary full" data-go="jobs">ดูงานรอรับทั้งหมด</button>':''):'<div class="empty">ยังไม่มีงานรอรับ ระบบจะแจ้งเตือนเมื่อมีงานใหม่</div>'}`;
+  <h2 style="font-size:18px;margin:16px 0 8px;font-weight:700">ภารกิจรอรับ (${p.length})</h2>${p.length?p.slice(0,3).map(j=>jobCard(j,true)).join('')+(p.length>3?'<button class="secondary full" data-go="jobs" style="margin-top:10px">ดูงานรอรับทั้งหมด</button>':''):'<div class="empty">ยังไม่มีภารกิจรอรับ ระบบสแกนอัตโนมัติทุก 5 วินาที</div>'}`;
 }
 
 function jobsView(){
   const a=active(),p=pending();
-  return `<div class="sectiontitle"><h1>งาน</h1><button class="secondary" data-act="refresh"><svg class="ic" style="width:16px;height:16px"><use href="#i-refresh"/></svg>รีเฟรช</button></div>
+  return `<div class="sectiontitle"><h1>ภารกิจ</h1><button class="secondary" data-act="refresh"><svg class="ic" style="width:18px;height:18px"><use href="#i-refresh"/></svg>รีเฟรช</button></div>
   ${online?'':'<div class="state">คุณออฟไลน์อยู่ เปิดสถานะออนไลน์ที่หน้าหลักก่อนรับงาน</div>'}
-  <h2 style="font-size:16px;margin:10px 0 6px">งานรอรับ (${p.length})</h2>
+  <h2 style="font-size:18px;margin:16px 0 8px;font-weight:700">งานรอรับ (${p.length})</h2>
   ${p.length?p.map(j=>jobCard(j,true)).join(''):'<div class="empty">ตอนนี้ยังไม่มีงานใหม่ ระบบจะรีเฟรชให้ทุก 5 วินาทีขณะออนไลน์</div>'}`;
 }
 
 function historyView(){
   const d=done();
   return `<div class="sectiontitle"><h1>ประวัติ</h1><span class="pill">${d.length} งาน · ${baht(sum(d))}</span></div>
-  <div class="card">${d.length?d.map(j=>`<div class="hist"><div>${esc(j.shop)}<div class="muted">${esc(j.dropoff)} · ${j.delivered_at?new Date(j.delivered_at).toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'}):''}</div><div class="hacts">${j.rider_rating?`<span>ให้คะแนนลูกค้า ★ ${j.rider_rating}</span>`:`<button class="linkbtn" data-act="sheet" data-id="rate:${esc(j.id)}">ให้คะแนนลูกค้า</button>`}<button class="linkbtn" data-act="sheet" data-id="menu:${esc(j.id)}">รายงาน / บล็อก</button></div></div><b>${baht(j.fee)}</b></div>`).join(''):'<div class="empty">ยังไม่มีงานที่ส่งสำเร็จ</div>'}</div>`;
+  <div class="card">${d.length?d.map(j=>`<div class="hist"><div>${esc(j.shop)}<div class="muted">${esc(j.dropoff)} · ${j.delivered_at?new Date(j.delivered_at).toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'}):''}</div><div class="hacts" style="display:flex;gap:12px;margin-top:8px">${j.rider_rating?`<span style="color:var(--tx2)">ให้คะแนนลูกค้า ★ ${j.rider_rating}</span>`:`<button class="linkbtn" data-act="sheet" data-id="rate:${esc(j.id)}" style="border:0;background:none;color:var(--ac);font-size:12px;font-weight:600;cursor:pointer;padding:0">ให้คะแนนลูกค้า</button>`}<button class="linkbtn" data-act="sheet" data-id="menu:${esc(j.id)}" style="border:0;background:none;color:var(--tx2);font-size:12px;font-weight:600;cursor:pointer;padding:0">รายงาน / บล็อก</button></div></div><b>${baht(j.fee)}</b></div>`).join(''):'<div class="empty">ยังไม่มีงานที่ส่งสำเร็จ</div>'}</div>`;
 }
 
 function settingsView(){
-  const slot=i=>{const u=prof.photos[i];return `<div class="slotw"><label class="slot"><input type="file" accept="image/*" data-slot="p${i}" hidden>${u?`<img src="${esc(u)}" alt="">`:'<svg class="ic"><use href="#i-plus"/></svg>'}</label>${u?`<button class="x" data-act="rmPhoto" data-id="p${i}" aria-label="ลบรูป"><svg class="ic"><use href="#i-x"/></svg></button>`:''}</div>`};
-  return `<div class="sectiontitle"><h1>ตั้งค่า</h1></div>
-  <div class="card"><div class="profhead"><div class="bigav">${prof.avatar_url?`<img src="${esc(prof.avatar_url)}" alt="">`:'<svg class="ic" style="width:36px;height:36px"><use href="#i-user"/></svg>'}<label class="camera"><input type="file" accept="image/*" data-slot="avatar" hidden><svg class="ic"><use href="#i-camera"/></svg></label></div><div><strong>รูปโปรไฟล์</strong><span class="muted">แตะไอคอนกล้องเพื่อเปลี่ยนรูป</span></div></div>
+  const slot=i=>{const u=prof.photos[i];return `<div class="slotw"><label class="slot"><input type="file" accept="image/*" data-slot="p${i}" hidden>${u?`<img src="${esc(u)}" alt="">`:'<svg class="ic"><use href="#i-plus"/></svg>'}</label>${u?`<button class="x" data-act="rmPhoto" data-id="p${i}" aria-label="ลบรูป"><svg class="ic" style="width:12px;height:12px"><use href="#i-x"/></svg></button>`:''}</div>`};
+  return `<div class="sectiontitle"><h1>ระบบ</h1></div>
+  <div class="card"><div class="profhead"><div class="bigav">${prof.avatar_url?`<img src="${esc(prof.avatar_url)}" alt="">`:'<svg class="ic" style="width:32px;height:32px"><use href="#i-user"/></svg>'}<label class="camera"><input type="file" accept="image/*" data-slot="avatar" hidden><svg class="ic"><use href="#i-camera"/></svg></label></div><div><strong>รูปโปรไฟล์</strong><span class="muted">แตะไอคอนกล้องเพื่อเปลี่ยนรูป</span></div></div>
   <label>ชื่อที่แสดง<input data-f="name" value="${esc(prof.name)}"></label></div>
   <div class="card"><h2><svg class="ic"><use href="#i-camera"/></svg>รูปส่วนตัว</h2><div class="gal">${[0,1,2,3].map(slot).join('')}</div></div>
   <div class="card"><h2><svg class="ic"><use href="#i-bank"/></svg>บัญชีธนาคาร</h2>
@@ -412,31 +544,30 @@ function settingsView(){
   <label>ชื่อบัญชี<input data-f="bank_holder" value="${esc(prof.bank_holder)}"></label></div>
   <div class="card"><h2><svg class="ic"><use href="#i-pin"/></svg>ที่อยู่</h2><label>ที่อยู่ปัจจุบัน<textarea data-f="address" rows="3">${esc(prof.address)}</textarea></label></div>
   <div class="card"><h2><svg class="ic"><use href="#i-phone"/></svg>ผู้ติดต่อฉุกเฉิน</h2><label>ชื่อ<input data-f="emergency_name" value="${esc(prof.emergency_name)}"></label><label>เบอร์โทร<input data-f="emergency_phone" inputmode="tel" value="${esc(prof.emergency_phone)}"></label></div>
-  <button class="primary full" data-act="saveProfile" style="margin:14px 0">บันทึกข้อมูล</button>
-  <div class="card"><h2><svg class="ic"><use href="#i-ban"/></svg>ลูกค้าที่บล็อก</h2>${prof.blocked.length?prof.blocked.map(b=>`<div class="hist"><div>${esc(b.name)}</div><button class="linkbtn" data-act="unblock" data-id="${esc(b.id)}">เลิกบล็อก</button></div>`).join(''):'<span class="muted">ยังไม่มีลูกค้าที่ถูกบล็อก</span>'}</div>
-  <div class="card"><h2><svg class="ic"><use href="#i-palette"/></svg>ธีมแอปพรีเมียม</h2><span class="muted">สีหลัก (Accent)</span>
-  <div class="swatches">${Object.entries(ACC).map(([k,v])=>`<button class="sw" style="background:${v[0]}" data-act="theme" data-id="a:${k}" aria-label="${v[3]}" aria-pressed="${prof.theme_accent===k}"></button>`).join('')}</div><span class="muted">พื้นผิว (Surface)</span>
-  <div class="swatches">${Object.entries(SUR).map(([k,v])=>`<button class="opt" data-act="theme" data-id="s:${k}" aria-pressed="${prof.theme_surface===k}">${v.n}</button>`).join('')}</div></div>
+  <button class="primary full" data-act="saveProfile" style="margin:16px 0">บันทึกข้อมูล</button>
+  <div class="card"><h2><svg class="ic"><use href="#i-ban"/></svg>ลูกค้าที่บล็อก</h2>${prof.blocked.length?prof.blocked.map(b=>`<div class="hist"><div>${esc(b.name)}</div><button class="linkbtn" data-act="unblock" data-id="${esc(b.id)}" style="border:0;background:none;color:var(--ac);font-size:12px;font-weight:600;cursor:pointer;padding:0">เลิกบล็อก</button></div>`).join(''):'<span class="muted">ยังไม่มีลูกค้าที่ถูกบล็อก</span>'}</div>
   <div class="card"><h2><svg class="ic"><use href="#i-bell"/></svg>แจ้งเตือนงานใหม่</h2>
-  <div class="switch"><span>เสียงและการสั่น</span><button class="${prof.sound?'':'off'}" data-act="sound"><i class="dot"></i>${prof.sound?'เปิด':'ปิด'}</button></div>
-  <button class="secondary full" data-act="testAlert" style="margin-top:10px">ทดสอบการแจ้งเตือน</button></div>`;
+  <div class="switch"><span>เสียงและการสั่น</span><button class="${prof.sound?'':'off'}" data-act="sound"><i></i>${prof.sound?'เปิด':'ปิด'}</button></div>
+  <div class="switch"><span>ผู้ช่วยเสียง (อ่านงาน)</span><button class="${prof.voice?'':'off'}" data-act="voice"><i></i>${prof.voice?'เปิด':'ปิด'}</button></div>
+  <button class="secondary full" data-act="testAlert" style="margin-top:16px">ทดสอบการแจ้งเตือน</button></div>`;
 }
 
 function render(){
   const v={home:homeView,jobs:jobsView,history:historyView,settings:settingsView}[tab]();
   $('#screen').innerHTML=v;
   const n=pending().length;
-  $('#nav').innerHTML=[['home','home','หน้าหลัก'],['jobs','box','งาน'+(n?` (${n})`:'')],['history','receipt','ประวัติ'],['settings','sliders','ตั้งค่า']]
+  $('#nav').innerHTML=[['home','home','ศูนย์บัญชาการ'],['jobs','box','ภารกิจ'+(n?` (${n})`:'')],['history','receipt','ประวัติ'],['settings','sliders','ระบบ']]
     .map(([k,i,l])=>`<button class="${tab===k?'active':''}" data-go="${k}"><span class="tile"><svg class="ic"><use href="#i-${i}"/></svg></span>${l}</button>`).join('');
   const s=$('#topStatus');s.className='online-status'+(online?' on':'');s.lastElementChild.textContent=online?'ออนไลน์':'ออฟไลน์';
   const ja=active();document.body.classList.toggle('hasbar',!!ja);
-  $('#jobbar').innerHTML=ja?`<div class="barcard"><div class="jobhead"><div class="avatar"><svg class="ic"><use href="#i-scooter"/></svg></div><div class="barinfo"><strong>${esc(ja.shop)}</strong><span class="muted">${ja.status==='picked'?(ja.type==='ride'?'กำลังเดินทาง':'กำลังไปส่ง'):(ja.type==='ride'?'ไปรับผู้โดยสาร':'รอไปรับของ')} · ${esc(dest(ja)[0])}</span></div><div class="amount" style="font-size:18px">${baht(ja.fee)}</div></div><div class="row" style="margin-top:12px">${navBtn(ja)}<button class="primary" data-act="${ja.status==='picked'?'delivered':'picked'}" data-id="${esc(ja.id)}">${ja.status==='picked'?(ja.type==='ride'?'ถึงจุดหมายแล้ว':'ส่งสำเร็จ'):(ja.type==='ride'?'รับผู้โดยสารแล้ว':'รับของแล้ว')}</button> ${MORE(ja)}</div></div>`:'';
+  $('#jobbar').innerHTML=ja?`<div class="barcard"><div class="jobhead"><div class="avatar"><svg class="ic"><use href="#i-scooter"/></svg></div><div class="barinfo"><strong>${esc(ja.shop)}</strong><span class="muted">${ja.status==='picked'?'กำลังไปส่ง':'รอไปรับของ'} · ${esc(dest(ja)[0])}</span></div><div class="amount" style="font-size:20px">${baht(ja.fee)}</div></div><div class="row" style="margin-top:14px">${navBtn(ja)}<button class="primary" data-act="${ja.status==='picked'?'delivered':'picked'}" data-id="${esc(ja.id)}" style="flex:2">${ja.status==='picked'?'ส่งสำเร็จ':'รับของแล้ว'}</button> ${MORE(ja)}</div></div>`:'';
   const sH=sheetHTML();if(sH!==shHTML){$('#sheet').innerHTML=sH;shHTML=sH}
-  $('#riderName').textContent=prof.name;
+  $('#riderName').innerHTML=prof.name + ` <span id="levelBadge" class="level-badge">Lv.1</span>`;
   $('#miniAv').innerHTML=prof.avatar_url?`<img src="${esc(prof.avatar_url)}" alt="">`:esc((prof.name||'ร').trim().charAt(0));
   const dn=done(),td=dn.filter(j=>isToday(j.delivered_at));
   $('#mapStats').innerHTML=`<div><span>รายได้วันนี้</span><strong>${baht(sum(td))}</strong></div><div><span>รายได้สะสม</span><strong>${baht(sum(dn))}</strong></div><div><span>งานสำเร็จ</span><strong>${dn.length} งาน</strong></div>`;
   if(lastErr)$('#notice').textContent=lastErr;
+  updateMapRoute();
 }
 
 function toast(m){clearTimeout(noticeTimer);$('#notice').textContent=m;noticeTimer=setTimeout(()=>{$('#notice').textContent=lastErr},3500)}
@@ -456,12 +587,17 @@ const actions={
     if(await DB.claim(id)){tab='home';toast('รับงานแล้ว');return true}else{toast('งานนี้ถูกไรเดอร์คนอื่นรับไปแล้ว');return false}
   },
   async picked(id){await DB.patch(id,{status:'picked'});toast('บันทึกว่ารับของแล้ว')},
-  async delivered(id){await DB.patch(id,{status:'delivered',delivered_at:new Date().toISOString()});toast('ส่งสำเร็จ รายได้ถูกบันทึกแล้ว');sh={t:'rate',job:id,f:{stars:5,detail:'',reason:'',alsoBlock:false},msg:''}},
+  async delivered(id){
+    await DB.patch(id,{status:'delivered',delivered_at:new Date().toISOString()});
+    toast('ส่งสำเร็จ รายได้ถูกบันทึกแล้ว');
+    fireConfetti();
+    sh={t:'rate',job:id,f:{stars:5,detail:'',reason:'',alsoBlock:false},msg:''}
+  },
   async refresh(){},
   async saveProfile(){await DB.saveProfile(prof);toast('บันทึกข้อมูลแล้ว')},
   async rmPhoto(id){prof.photos[+id.slice(1)]=null;await DB.saveProfile(prof)},
-  async theme(id){const[k,v]=id.split(':');prof[k==='a'?'theme_accent':'theme_surface']=v;applyTheme();await DB.saveProfile(prof)},
   async sound(){prof.sound=!prof.sound;await DB.saveProfile(prof);if(prof.sound)beep()},
+  async voice(){prof.voice=!prof.voice;await DB.saveProfile(prof);if(prof.voice)speakText('เปิดใช้งานผู้ช่วยเสียงแล้วครับ')},
   async testAlert(){notify({id:'TEST',shop:'ร้านตัวอย่าง VeloSync',pickup:'ตลาดสดกระนวน',dropoff:'บ้านโนนสวรรค์ หมู่ 4',distance_km:2.5,fee:40})},
   async dismiss(){nextAlert()},
   async sheet(id){const i=id.indexOf(':'),t=i<0?id:id.slice(0,i),job=i<0?'':id.slice(i+1);sh={t,job:job||null,f:{stars:5,detail:'',reason:'',alsoBlock:false},msg:''}},
@@ -500,66 +636,16 @@ document.addEventListener('click',async e=>{
 let queue=[],cur=null,alertTimer,ac,alertDeadline=0,alertBusy=false,alertFocus=null,oldOverflow='',alertLocked=false;
 const ALERT_DURATION=30000;
 const ISAN_CHEERS=[
-'ไหวบ่อาววว! แอดมินส่งแฮงใจมาให้เด้อ ',
-'สู้เด้อ บ้านเฮามันแร้ง! แต่อย่าลืมกินน้ำเด้อ ',
-'งานมาแล้วเด้อ คนเก่งของกระนวน ',
+'ไหวบ่อาววว! แอดมินส่งแฮงใจมาให้เด้อ',
+'สู้เด้อ บ้านเฮามันแร้ง! แต่อย่าลืมกินน้ำเด้อ',
+'งานมาแล้วเด้อ คนเก่งของกระนวน',
 'มื้อนี้ขอให้หมาน ๆ งานเข้า เงินเข้าเด้อ!',
 'ค่อย ๆ ไปเด้อ ถึงปลอดภัย แอดมินกะดีใจแล้ว',
 'เมื่อยกะพักก่อนเด้อ แฮงใจทางนี้มีให้คือเก่า',
 'อีกจักรอบ กะใกล้ฮอดเป้าแล้ว สู้ ๆ เด้อ!',
-'บ่ต้องฟ้าวหลาย ขี่ปลอดภัยไว้ก่อนเด้อ ',
+'บ่ต้องฟ้าวหลาย ขี่ปลอดภัยไว้ก่อนเด้อ',
 'คนทางบ้านถ่าอยู่เด้อ ขี่รถดี ๆ นำ',
-'ขอบใจหลาย ๆ ที่ซ่อยส่งความแซ่บให้บ้านเฮา',
-'แดดสิฮ้อนปานใด๋ แอดมินกะส่งใจไปซ่อยเด้อ',
-'มื้อนี้เจ้าสุดยอดหลาย ฮู้โตบ่! ',
-'งานเด้งแล้วเด้อ พร้อมบ่คนเก่ง!',
-'ขอให้ทางโล่ง ไฟเขียว ลูกค้ายิ้มให้เด้อ',
-'กินข้าวแล้วบ่ อย่ามัวแต่แล่นงานจนลืมเด้อ',
-'น้ำเย็นจักอึก แล้วค่อยไปต่อเด้อ ',
-'แอดมินอยู่ทางนี้ ส่งแฮงใจไปฮอดเจ้าเด้อ',
-'ฝนสิตกกะระวังทางมื่นนำเด้อ เป็นห่วงหลาย',
-'มื้อนี้เฮ็ดดีแล้วเด้อ ภูมิใจในโตเองนำ',
-'ทีละงาน ทีละก้าว เฮาค่อย ๆ ไปนำกันเด้อ',
-'คนขยันคือเจ้า สมควรได้ยิ้มกว้าง ๆ เด้อ ',
-'บ่แม่นแค่ส่งของ เจ้ากำลังส่งรอยยิ้มเด้อ',
-'ฮ้อนกะหลบฮ่มก่อนเด้อ งานถัดไปค่อยว่ากัน',
-'งานนี้มีแฮงใจแถมให้เต็มกระเป๋าเลยเด้อ!',
-'ให้มื้อนี้เป็นมื้อดี ๆ ของเจ้าเด้อ ',
-'ไปรับความแซ่บ แล้วส่งฮอดมือเขาเด้อ',
-'ขี่ดี ๆ เด้อ อย่าลืมใส่หมวกกันน็อกนำ',
-'บ่ต้องเก่งทุกมื้อ แค่ดูแลโตเองกะเก่งแล้ว',
-'ขอให้ลูกค้าน่าฮัก ร้านเฮ็ดไว มื้อนี้เด้อ',
-'แฮงใจบ่เคยหมด ส่งให้เจ้าตลอดเด้อ!',
-'เงินกะอยากได้ แต่ความปลอดภัยต้องมาก่อนเด้อ',
-'มื้อนี้ได้เท่าใด๋ กะขอบใจที่ตั้งใจเด้อ',
-'พักหายใจจักหน่อย แล้วค่อยลุยต่อเด้อ',
-'หมาน ๆ เด้อ ขอให้มีแต่เรื่องม่วนใจ',
-'ยิ้มให้โตเองจักเทื่อ เจ้าพยายามหลายแล้ว',
-'ไปดีมาดีเด้อ แอดมินคอยเชียร์อยู่ ',
-'กระนวนบ้านเฮา มีเจ้าคอยส่งกะอุ่นใจหลาย',
-'ร้านพร้อมแล้ว แฮงใจแอดมินกะพร้อมคือกัน!',
-'บ่ไหวกะข้ามได้เด้อ เอาที่เจ้าสะดวกเลย',
-'สู้เด้อคนขยัน แต่อย่าฝืนร่างกายเด้อ',
-'ขอให้รับง่าย ส่งคล่อง ตลอดมื้อนี้เด้อ',
-'มื้อใด๋เมื่อย กะจำไว้ว่าเจ้ายังมีคนเชียร์',
-'งานเด้งติ๊ง ๆ แอดมินส่งใจปิ๊ง ๆ ให้เด้อ ',
-'ขอบใจที่เป็นแฮงสำคัญของบ้านเฮาเด้อ',
-'ค่อย ๆ สะสมไปเด้อ ความตั้งใจบ่เสียเปล่า',
-'อย่าลืมยืดแขนยืดขานำเด้อ คนเก่ง',
-'ขอให้ทุกเส้นทางพาเจ้ากลับเฮือนปลอดภัยเด้อ',
-'ใจพร้อม รถพร้อม กะไปได้เด้อ บ่พร้อมกะพักก่อน',
-'แซ่บคัก ๆ กำลังถ่าให้เจ้าไปส่งเด้อ!',
-'มื้อนี้บ่ได้สู้ผู้เดียวเด้อ แอดมินเชียร์อยู่',
-'เก็บแฮงไว้ยิ้มตอนเลิกงานนำเด้อ ',
-'ฮักแพงโตเองนำเด้อ ไรเดอร์บ้านเฮา',
-'ถึงช้าจักหน่อยบ่เป็นหยัง เอาปลอดภัยเด้อ',
-'ขอให้มื้อนี้มีเรื่องให้ยิ้มหลายกว่าเรื่องเมื่อย',
-'แอดมินยกนิ้วให้เลยเด้อ ตั้งใจคักหลาย ',
-'หิวกะกิน เมื่อยกะพัก แฮงใจบ่หนีไปไสเด้อ',
-'ลุยได้กะลุย บ่ไหวกะพัก เฮาเข้าใจเด้อ',
-'อีกหนึ่งงาน อีกหนึ่งรอยยิ้มของบ้านเฮา ',
-'ขอให้รถดี ทางดี มีแต่คนใจดีเด้อ',
-'พร้อมยามใด๋ค่อยไปเด้อ แอดมินส่งแฮงใจให้คือเก่า'
+'ขอบใจหลาย ๆ ที่ซ่อยส่งความแซ่บให้บ้านเฮา'
 ];
 let cheerBag=[],lastCheer='';
 function randomCheer(){
@@ -567,7 +653,7 @@ function randomCheer(){
  return lastCheer=cheerBag.pop();
 }
 
-const SHOP_PLACEHOLDER='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450"><rect width="800" height="450" fill="#17181b"/><circle cx="655" cy="90" r="95" fill="#e95f2b" opacity=".2"/><path d="M0 360Q400 290 800 360V450H0" fill="#202228"/><rect x="210" y="130" width="380" height="240" rx="12" fill="#2c303b"/><rect x="235" y="90" width="330" height="64" rx="12" fill="#e95f2b"/><path d="M200 170H600L570 225H230Z" fill="#ff8a5c"/><rect x="175" y="375" width="450" height="10" rx="5" fill="#e95f2b"/></svg>');
+const SHOP_PLACEHOLDER='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450"><rect width="800" height="450" fill="#17181b"/><circle cx="655" cy="90" r="95" fill="#ff5722" opacity=".2"/><path d="M0 360Q400 290 800 360V450H0" fill="#202228"/><rect x="210" y="130" width="380" height="240" rx="12" fill="#2c303b"/><rect x="235" y="90" width="330" height="64" rx="12" fill="#ff5722"/><path d="M200 170H600L570 225H230Z" fill="#ff8a5c"/><rect x="175" y="375" width="450" height="10" rx="5" fill="#ff5722"/></svg>');
 function jobPhoto(j){
  for(const [value,label] of [[j.shop_image_url,'ภาพหน้าร้าน'],[j.shop_image,'ภาพหน้าร้าน'],[j.product_image_url,'ภาพสินค้า'],[j.product_image,'ภาพสินค้า'],[j.image_url,'ภาพประกอบงาน']]){
   if(typeof value!=='string'||!value.trim())continue;
@@ -578,6 +664,37 @@ function jobPhoto(j){
 
 function unlockAudio(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();ac.resume()}catch(e){}}
 function beep(){if(!prof.sound)return;try{unlockAudio();[880,1175,880,1175].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+i*.22;o.frequency.value=f;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.25,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+.2);o.start(t);o.stop(t+.21)});navigator.vibrate&&navigator.vibrate([300,120,300])}catch(e){}}
+
+// 🎙️ Voice Assistant Feature
+function speakText(text) {
+  if(!prof.voice || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'th-TH';
+  utter.rate = 1.1;
+  utter.pitch = 1;
+  window.speechSynthesis.speak(utter);
+}
+function speakJob(j) {
+  const text = `มีภารกิจใหม่ จาก ${j.shop} ไปส่งที่ ${j.dropoff} ค่าตอบแทน ${j.fee} บาท`;
+  speakText(text);
+}
+
+// 🎉 Confetti Effect
+function fireConfetti() {
+  const colors = ['#ff5722', '#ffb74d', '#00e676', '#29b6f6', '#ffffff'];
+  for(let i=0; i<50; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    p.style.animationDuration = (Math.random() * 1.5 + 1.5) + 's';
+    p.style.animationDelay = (Math.random() * 0.5) + 's';
+    p.style.transform = `rotate(${Math.random() * 360}deg)`;
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 3500);
+  }
+}
 
 function detect(){
  const p=pending(),ids=new Set(p.map(j=>j.id));
@@ -590,8 +707,9 @@ function notify(j){
  if(j.id!=='TEST'&&(!online||active()))return;
  if(cur?.id===j.id||queue.some(x=>x.id===j.id))return;
  queue.push(j);if(!cur)nextAlert();beep();
- const n=$('#alertQueue');if(n)n.textContent=queue.length?'รออีก '+queue.length+' งาน':'งานใหม่สำหรับคุณ';
- try{if(document.hidden&&window.Notification&&Notification.permission==='granted')new Notification('งานใหม่ '+baht(j.fee),{body:j.shop+' → '+j.dropoff})}catch(e){}
+ speakJob(j); // 🔊 Voice announcement
+ const n=$('#alertQueue');if(n)n.textContent=queue.length?'รออีก '+queue.length+' งาน':'ภารกิจใหม่สำหรับคุณ';
+ try{if(document.hidden&&window.Notification&&Notification.permission==='granted')new Notification('ภารกิจใหม่ '+baht(j.fee),{body:j.shop+' → '+j.dropoff})}catch(e){}
 }
 function lockAlert(on){
  if(on===alertLocked)return;alertLocked=on;
@@ -610,11 +728,11 @@ function nextAlert(){
  if(!cur){el.innerHTML='';lockAlert(false);return}
  const j=cur,photo=jobPhoto(j);alertDeadline=Date.now()+ALERT_DURATION;
  el.innerHTML='<section class="alertcard"><div class="alertscroll">'+
- '<header class="alerthead"><div class="avatar"><svg class="ic"><use href="#i-bell"/></svg></div><div class="alertheading"><h2 id="alertTitle">งานใหม่เข้าแล้ว!</h2><small id="alertQueue">'+(queue.length?'รออีก '+queue.length+' งาน':'งานใหม่สำหรับคุณ')+'</small></div><div class="alertfee"><small>ค่ารอบ</small><strong>'+baht(j.fee)+'</strong></div></header>'+
+ '<header class="alerthead"><div class="avatar"><svg class="ic"><use href="#i-bell"/></svg></div><div class="alertheading"><h2 id="alertTitle">ภารกิจใหม่!</h2><small id="alertQueue">'+(queue.length?'รออีก '+queue.length+' งาน':'ภารกิจใหม่สำหรับคุณ')+'</small></div><div class="alertfee"><small>ค่าตอบแทน</small><strong>'+baht(j.fee)+'</strong></div></header>'+
  '<figure class="alertphoto"><img id="alertPhoto" src="'+esc(photo.url)+'" alt=""><span class="photochip" id="alertPhotoLabel">'+esc(photo.label)+'</span><figcaption>'+esc(j.shop)+'</figcaption></figure>'+
- '<div class="alertbody"><div class="admincheer"><div class="adminav"><svg class="ic"><use href="#i-chat"/></svg></div><div class="adminbubble"><small>VeloSync · กำลังใจอัตโนมัติ </small><p id="alertCheer">'+esc(randomCheer())+'</p></div></div>'+
- '<div class="timeline"><div class="stop"><small>'+(j.type==='ride'?'จุดขึ้นรถ':'จุดรับของ')+' · ระยะทาง '+esc(j.distance_km??'–')+' กม.</small>'+esc(j.pickup)+'</div><div class="stop"><small>'+(j.type==='ride'?'จุดลงรถ':'จุดส่งของ')+'</small>'+esc(j.dropoff)+'</div></div></div>'+
- '</div><footer class="alertfooter"><div class="alertclock"><span>ตัดสินใจภายใน</span><strong><span id="alertSeconds">30</span> วินาที</strong></div><div class="row"><button class="secondary" data-act="dismiss">ข้ามงานนี้</button><button class="primary" data-act="takeAlert">'+(j.id==='TEST'?'ทดสอบรับงาน':j.type==='ride'?'รับงานส่งคน 1 คน':'รับงานนี้')+'</button></div><div class="alertbar" aria-hidden="true"><i id="alertProgress"></i></div><p>ขับขี่ปลอดภัย ตรวจสอบเส้นทางก่อนรับงาน</p></footer></section>';
+ '<div class="alertbody"><div class="admincheer"><div class="adminav"><svg class="ic"><use href="#i-chat"/></svg></div><div class="adminbubble"><small>VeloSync · กำลังใจอัตโนมัติ</small><p id="alertCheer">'+esc(randomCheer())+'</p></div></div>'+
+ '<div class="timeline"><div class="stop"><small>จุดรับของ · ระยะทาง '+esc(j.distance_km??'–')+' กม.</small>'+esc(j.pickup)+'</div><div class="stop"><small>จุดส่งของ</small>'+esc(j.dropoff)+'</div></div></div>'+
+ '</div><footer class="alertfooter"><div class="alertclock"><span>ตัดสินใจภายใน</span><strong><span id="alertSeconds">30</span> วินาที</strong></div><div class="row"><button class="secondary" data-act="dismiss">ข้าม</button><button class="primary" data-act="takeAlert">'+(j.id==='TEST'?'ทดสอบ':'รับภารกิจ')+'</button></div><div class="alertbar" aria-hidden="true"><i id="alertProgress"></i></div><p>ขับขี่ปลอดภัย ตรวจสอบเส้นทางก่อนรับงาน</p></footer></section>';
  const img=$('#alertPhoto');img.onerror=()=>{img.onerror=null;img.src=SHOP_PLACEHOLDER;$('#alertPhotoLabel').textContent='ภาพประกอบ'};
  lockAlert(true);el.querySelector('[data-act="takeAlert"]').focus();startAlertClock();
 }
@@ -638,25 +756,25 @@ async function blockCust(j){const c=cust(j);if(!prof.blocked.some(b=>b.id===c.id
 function sheetHTML(){
   if(!sh)return '';
   const j=sh.job?jobOf(sh.job):null,c=j?cust(j):{name:'ลูกค้า'},f=sh.f,t=sh.t;
-  const head=(a,b)=>`<h3>${a}</h3><p class="muted" style="margin:0 0 12px">${b||''}</p>`;
+  const head=(a,b)=>`<h3>${a}</h3><p class="muted" style="margin:0 0 16px">${b||''}</p>`;
   const ch=l=>`<div class="chips">${l.map(r=>`<button class="opt" data-act="sfset" data-id="reason:${r}" aria-pressed="${f.reason===r}">${r}</button>`).join('')}</div>`;
   const note=`<label>รายละเอียดเพิ่มเติม (ถ้ามี)</label><textarea data-sf="detail" rows="3">${esc(f.detail)}</textarea>`;
   const msg=sh.msg?`<div class="state">${esc(sh.msg)}</div>`:'';
-  const foot=(act,label,cls='primary')=>`${msg}<div class="row" style="margin-top:14px"><button class="secondary" data-act="closeSheet">${t==='rate'?'ข้าม':'ปิด'}</button><button class="${cls}" data-act="${act}">${label}</button></div>`;
+  const foot=(act,label,cls='primary')=>`${msg}<div class="row" style="margin-top:20px"><button class="secondary" data-act="closeSheet">${t==='rate'?'ข้าม':'ปิด'}</button><button class="${cls}" data-act="${act}">${label}</button></div>`;
   const mr=(ic,label,id,cls='')=>`<button class="mrow ${cls}" data-act="sheet" data-id="${esc(id)}"><span><svg class="ic"><use href="#i-${ic}"/></svg>${label}</span></button>`;
   const tel=(n,l)=>`<a class="mrow" href="tel:${esc(n.replace(/[^0-9+]/g,''))}"><span>${l}</span><b>${esc(n)}</b></a>`;
   let b='';
   if(t==='menu'){
     const live=j&&j.rider_id===cfg.riderId&&(j.status==='accepted'||j.status==='picked'),blocked=prof.blocked.some(x=>x.id===c.id),id=j?j.id:'';
-    b=head('ตัวเลือกงาน',j?`${esc(j.shop)} · ลูกค้า ${esc(c.name)}`:'')+(live?mr('x','ยกเลิกงานนี้','cancel:'+id,'danger'):'')+(j&&j.status==='delivered'&&!j.rider_rating?mr('star','ให้คะแนนลูกค้า','rate:'+id):'')+mr('flag','รายงานลูกค้า','report:'+id)+(blocked?'<p class="muted">ลูกค้ารายนี้ถูกบล็อกอยู่แล้ว</p>':mr('ban','บล็อกลูกค้า','block:'+id))+mr('chat','ร้องเรียน / ขอความช่วยเหลือ','complaint:'+id)+'<button class="secondary full" style="margin-top:12px" data-act="closeSheet">ปิด</button>';
+    b=head('ตัวเลือกงาน',j?`${esc(j.shop)} · ลูกค้า ${esc(c.name)}`:'')+(live?mr('x','ยกเลิกงานนี้','cancel:'+id,'danger'):'')+(j&&j.status==='delivered'&&!j.rider_rating?mr('star','ให้คะแนนลูกค้า','rate:'+id):'')+mr('flag','รายงานลูกค้า','report:'+id)+(blocked?'<p class="muted">ลูกค้ารายนี้ถูกบล็อกอยู่แล้ว</p>':mr('ban','บล็อกลูกค้า','block:'+id))+mr('chat','ร้องเรียน / ขอความช่วยเหลือ','complaint:'+id)+'<button class="secondary full" style="margin-top:16px" data-act="closeSheet">ปิด</button>';
   }else if(t==='cancel')b=head('ยกเลิกงาน','เลือกเหตุผลการยกเลิก')+ch(REASONS.cancel)+note+foot('doCancel','ยืนยันยกเลิกงาน','primary danger');
-  else if(t==='report')b=head('รายงานลูกค้า',esc(c.name))+ch(REASONS.report)+note+`<button class="opt" data-act="sfset" data-id="alsoBlock:${f.alsoBlock?0:1}" aria-pressed="${!!f.alsoBlock}" style="margin-top:10px">บล็อกลูกค้ารายนี้ด้วย</button>`+foot('doReport','ส่งรายงาน');
+  else if(t==='report')b=head('รายงานลูกค้า',esc(c.name))+ch(REASONS.report)+note+`<button class="opt" data-act="sfset" data-id="alsoBlock:${f.alsoBlock?0:1}" aria-pressed="${!!f.alsoBlock}" style="margin-top:12px">บล็อกลูกค้ารายนี้ด้วย</button>`+foot('doReport','ส่งรายงาน');
   else if(t==='block')b=head('บล็อกลูกค้า',`คุณจะไม่เห็นงานจาก ${esc(c.name)} อีก`)+foot('doBlock','บล็อกลูกค้า','primary danger');
   else if(t==='rate')b=head('ให้คะแนนลูกค้า',`${esc(c.name)}`)+`<div class="stars">${[1,2,3,4,5].map(n=>`<button class="${f.stars>=n?'on':''}" data-act="sfset" data-id="stars:${n}" aria-label="${n} ดาว"><svg class="ic"><use href="#i-star"/></svg></button>`).join('')}</div><div class="starlbl">${['','แย่มาก','แย่','พอใช้','ดี','ดีมาก'][f.stars]}</div>`+note+foot('doRate','ส่งคะแนน');
   else if(t==='complaint')b=head('ร้องเรียน','เลือกหัวข้อ ทีมงานจะติดต่อกลับ')+ch(REASONS.complaint)+note+foot('doComplaint','ส่งเรื่อง');
   else if(t==='sos')b=head('ฉุกเฉิน', 'โทรขอความช่วยเหลือหรือแจ้งเหตุ')+EMER.map(e=>tel(e[0],e[1])).join('')+(prof.emergency_phone?tel(prof.emergency_phone,'ผู้ติดต่อฉุกเฉิน '+esc(prof.emergency_name)):'')+(cfg.support?tel(cfg.support,'ฝ่ายดูแลไรเดอร์'):'')
     +'<button class="mrow" data-act="shareLoc"><span><svg class="ic"><use href="#i-pin"/></svg>แชร์ตำแหน่งปัจจุบัน</span></button><button class="mrow danger" data-act="sendSos"><span><svg class="ic"><use href="#i-alert"/></svg>ส่งสัญญาณ SOS ถึงฝ่ายดูแล</span></button>'
-    +mr('chat','ร้องเรียน / แจ้งปัญหา','complaint:'+(active()?active().id:''))+msg+'<button class="secondary full" style="margin-top:12px" data-act="closeSheet">ปิด</button>';
+    +mr('chat','ร้องเรียน / แจ้งปัญหา','complaint:'+(active()?active().id:''))+msg+'<button class="secondary full" style="margin-top:16px" data-act="closeSheet">ปิด</button>';
   return `<div class="shbg" data-act="closeSheet"></div><div class="shpanel">${b}</div>`;
 }
 
@@ -669,29 +787,64 @@ document.addEventListener('change',async e=>{
     await DB.saveProfile(prof);toast('บันทึกรูปแล้ว')}catch(err){toast('อัปโหลดรูปไม่ได้: '+err.message)}
   render();
 });
-async function loadProfile(){try{const r=await DB.getProfile();if(!r)return;Object.keys(r).forEach(k=>{if(r[k]!=null&&k in prof)prof[k]=r[k]});if(!Array.isArray(prof.photos)||prof.photos.length!==4)prof.photos=[null,null,null,null];normProf();applyTheme();render()}catch(e){}}
+async function loadProfile(){try{const r=await DB.getProfile();if(!r)return;Object.keys(r).forEach(k=>{if(r[k]!=null&&k in prof)prof[k]=r[k]});if(!Array.isArray(prof.photos)||prof.photos.length!==4)prof.photos=[null,null,null,null];normProf();render()}catch(e){}}
 
-let map,pin;
+let map,pin,routeLine;
 function initMap(){
   if(map||!window.L)return;
-  map=L.map('realMap',{zoomControl:false,attributionControl:true,dragging:!L.Browser.mobile,tap:false}).setView([16.706,103.078],15);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,className:'dark-map-tiles',attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
-  pin=L.marker([16.706,103.078],{icon:L.divIcon({className:'',html:'<div style="background:var(--ac);width:26px;height:26px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 16px var(--ac)"></div>',iconSize:[26,26],iconAnchor:[13,13]})}).addTo(map);
+  map=L.map('realMap',{zoomControl:false,attributionControl:false,dragging:!L.Browser.mobile,tap:false}).setView([16.706,103.078],15);
+  // ใช้แผนที่จาก CartoDB ป้องกันการโดน OSM บล็อก
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    className:'dark-map-tiles'
+  }).addTo(map);
+  
+  pin=L.marker([16.706,103.078],{icon:L.divIcon({className:'',html:'<div class="map-dot"></div>',iconSize:[12,12],iconAnchor:[6,6]})}).addTo(map);
 }
+
+function updateMapRoute() {
+  if(!map || !window.L) return;
+  map.eachLayer((layer) => {
+    if(layer instanceof L.Polyline || (layer instanceof L.Marker && layer !== pin)) {
+      map.removeLayer(layer);
+    }
+  });
+  
+  const ja = active();
+  if (ja && ja.pickup_lat && ja.pickup_lng && ja.dropoff_lat && ja.dropoff_lng) {
+    const start = [ja.pickup_lat, ja.pickup_lng];
+    const end = [ja.dropoff_lat, ja.dropoff_lng];
+    
+    routeLine = L.polyline([start, end], {color: '#ff5722', weight: 4, dashArray: '10, 10', opacity: 0.9}).addTo(map);
+    
+    L.marker(start, {icon: L.divIcon({className:'',html:'<div class="map-dot" style="background:#00e676;box-shadow:0 0 10px #00e676"></div>',iconSize:[12,12],iconAnchor:[6,6]})}).addTo(map).bindPopup(ja.pickup);
+    L.marker(end, {icon: L.divIcon({className:'',html:'<div class="map-dot" style="background:#ff5722;box-shadow:0 0 10px #ff5722"></div>',iconSize:[12,12],iconAnchor:[6,6]})}).addTo(map).bindPopup(ja.dropoff);
+    
+    map.fitBounds(routeLine.getBounds(), { padding: [50, 50], maxZoom: 16 });
+  } else {
+    const p = pending();
+    p.forEach(j => {
+       if(j.pickup_lat && j.pickup_lng) {
+           L.marker([j.pickup_lat, j.pickup_lng], {icon: L.divIcon({className:'',html:'<div class="map-dot" style="background:#ffb74d;box-shadow:0 0 10px #ffb74d"></div>',iconSize:[12,12],iconAnchor:[6,6]})}).addTo(map).bindPopup(j.shop);
+       }
+    });
+  }
+}
+
 function watchGps(){
-  if(window.__kranuanGpsWatch!=null)return;
   const st=$('#mapGpsStatus');
   if(!navigator.geolocation){st.textContent='อุปกรณ์ไม่รองรับ GPS';return}
-  window.__kranuanGpsWatch=navigator.geolocation.watchPosition(p=>{
+  navigator.geolocation.watchPosition(p=>{
     pos={lat:p.coords.latitude,lng:p.coords.longitude};
-    if(pin)pin.setLatLng([pos.lat,pos.lng]);if(map)map.panTo([pos.lat,pos.lng]);
+    if(pin)pin.setLatLng([pos.lat,pos.lng]);
     st.textContent=`GPS ${pos.lat.toFixed(3)}, ${pos.lng.toFixed(3)}`;
     if(online&&Date.now()-lastPush>15000){lastPush=Date.now();DB.presence(true).catch(()=>{})}
   },()=>{st.textContent='กรุณาเปิดสิทธิ์ GPS';st.style.color='#ff5252'},{enableHighAccuracy:true,timeout:20000});
 }
 
 window.addEventListener('DOMContentLoaded',async()=>{
-  applyTheme();initMap();watchGps();
+  initMap();watchGps();
   if(!isLocal()){try{await loadProfile()}catch(e){}}
   jobs=await DB.jobs();
   render();
