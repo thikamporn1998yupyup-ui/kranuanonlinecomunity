@@ -655,7 +655,7 @@ function deliveryFormHtml() {
 
       ${ride ? rideBlock : parcelBlock}
 
-    <button type="submit" id="submitDeliveryBtn" class="btn-delivery-submit" disabled>
+   <button type="button" id="submitDeliveryBtn" class="btn-delivery-submit" disabled onclick="window.customDeliverySubmit(event)">
         ${icon('rider')} <span id="submitLabel">${e ? 'ยืนยันเรียกไรเดอร์ · ' + e.fee + ' ฿' : 'เลือกจุดรับและจุดหมายก่อน'}</span>
       </button>
     </form>
@@ -1316,59 +1316,55 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
 
-<!-- ▼▼▼ delivery-fix-v8 ▼▼▼ -->
+<!-- ▼▼▼ delivery-fix-v12 ▼▼▼ -->
 <script>
-(function(){
-'use strict';
-if(window.__deliveryFixV8)return;
-window.__deliveryFixV8=true;
-
-// ดักจับการ fetch เพื่อแก้ Token และโชว์ Error ที่แท้จริง
-const origFetch = window.fetch;
-window.fetch = async function(url, options) {
-    if (typeof url === 'string' && url.includes('/api/orders')) {
-        options = options || {};
-        options.headers = options.headers || {};
-        
-        let token = '';
-        try {
-            if (typeof liff !== 'undefined' && liff.isLoggedIn()) {
-                // ลองใช้ ID Token ก่อน (ที่หลังบ้านมักจะต้องการ)
-                if (typeof liff.getIDToken === 'function') {
-                    token = liff.getIDToken();
-                }
-                if (!token && typeof liff.getAccessToken === 'function') {
-                    token = liff.getAccessToken();
-                }
-            }
-        } catch(e) {}
-        
-        if (token) {
-            options.headers['Authorization'] = 'Bearer ' + token;
-        }
-
-        // ดักจับ Response ว่าหลังบ้านตอบอะไรกลับมา
-        try {
-            const response = await origFetch(url, options);
-            if (!response.ok) {
-                const clone = response.clone();
-                clone.text().then(text => {
-                    alert("⚠️ หลังบ้านตอบกลับ (403):\n" + text);
-                    console.error("หลังบ้านตอบ:", text);
-                });
-            }
-            return response;
-        } catch (err) {
-            console.error("Fetch Error:", err);
-            throw err;
-        }
+window.customDeliverySubmit = function(e) {
+    if(e && e.preventDefault) e.preventDefault();
+    const btn = document.getElementById('submitDeliveryBtn');
+    if(!btn || btn.disabled) return;
+    
+    const d = typeof deliveryDraft !== 'undefined' ? deliveryDraft : null;
+    if(!d || !d.pickup || !d.drop) {
+        alert('กรุณาเลือกจุดรับและจุดหมายก่อนครับ'); return;
     }
-    return origFetch(url, options);
+    
+    const ride = d.mode === 'ride';
+    
+    // สร้างออเดอร์ โดย "ปลอมตัว" ให้เหมือนออเดอร์อาหารเป๊ะๆ
+    const order = {
+        id: Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,6),
+        areaId: typeof areaId !== 'undefined' ? areaId : 'khon-kaen-kranuan',
+        status: 'waiting', // 🔑 ใช้สถานะเดียวกับอาหาร ไรเดอร์จะได้รับงาน
+        type: 'food',      // 🔑 บังคับ Type เป็น food เพื่อให้ระบบหลังบ้านรับ
+        item: (ride ? '[ส่งคน] ' : '[ส่งของ] ') + (d.receiverName || 'งานด่วน'),
+        note: d.itemNote || '',
+        receiver: { name: d.receiverName || '', phone: d.receiverPhone || '' },
+        pickupInfo: { address: d.pickup.address, note: d.pickup.note },
+        dropInfo: { address: d.drop.address, note: d.drop.note },
+        coordinates: { pickup: { lat: d.pickup.lat, lng: d.pickup.lng }, drop: { lat: d.drop.lat, lng: d.drop.lng }, isSample: false },
+        deliveryFee: 30, 
+        createdAt: Date.now()
+    };
+    
+    // 🔑 บันทึกผ่านระบบหลักของเว็บ (แบบเดียวกับ createOrder ของอาหาร)
+    if(typeof state !== 'undefined' && state.orders) {
+        state.orders.push(order);
+        if(typeof save === 'function') save();
+    }
+    
+    // ส่งสัญญาณให้ระบบหลังบ้านทำงาน
+    try { document.dispatchEvent(new CustomEvent('kranuan-order', { detail: order })); } catch(err){}
+    
+    alert('🎉 สร้างงานสำเร็จ! งานถูกส่งเข้าสู่ระบบหลักแล้ว ไรเดอร์จะมองเห็นงานนี้ครับ');
+    
+    // ล้างค่าและกลับหน้าแรก
+    if(typeof deliveryDraft !== 'undefined' && typeof emptyDraft === 'function') {
+        deliveryDraft = emptyDraft(d.mode);
+    }
+    if(typeof go === 'function') go('ออเดอร์ของฉัน');
 };
-
-console.log('%c[fix-v8] ติดตั้งสำเร็จ (ระบบแก้ Token + ดักจับ Error)', 'color:#0a0;font-weight:bold');
-})();
+console.log('%c[fix-v12] โหมดบายพาส API! ส่งข้อมูลผ่านระบบหลัก', 'color:#0a0;font-weight:bold');
 </script>
-<!-- ▲▲▲ delivery-fix-v8 ▲▲▲ -->
+<!-- ▲▲▲ delivery-fix-v12 ▲▲▲ -->
 </body>
 </html>
