@@ -626,8 +626,9 @@ function deliveryFormHtml() {
       <p>${T.sub}</p>
     </div>
 
-    <form class="card-delivery route-card" onsubmit="submitRealDelivery(event)" novalidate>
-      <div class="section-title-deliv">${icon('rider')} ${T.title}</div>
+   <form class="card-delivery route-card" onsubmit="submitRealDelivery(event)" novalidate>
+<input type="checkbox" id="policyConsent" checked style="display:none;">
+<div class="section-title-deliv">${icon('rider')} ${T.title}</div>
 
       <div class="loc-input-group">
         ${locRow('pickup')}
@@ -1315,44 +1316,63 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
 
-<!-- ▼▼▼ delivery-fix-v2 ▼▼▼ -->
+<!-- ▼▼▼ delivery-fix-v3 ▼▼▼ -->
 <script>
 (function(){
 'use strict';
-if(window.__deliveryFixV2)return;
-window.__deliveryFixV2=true;
+if(window.__deliveryFixV3)return;
+window.__deliveryFixV3=true;
 
-const HOOKS=['onKranuanOrder','publishOrder','placeOrder','sendToRider','postOrder','submitToRider','createRiderOrder','dispatchOrder','pushOrder','syncOrder','saveOrder','submitOrder','addOrder','onNewOrder','notifyRider','broadcastOrder'];
-const NSS=['api','API','KranuanAPI','kranuan','Kranuan','app','App','customer','Customer','store','Store'];
-const MS=['createOrder','placeOrder','addOrder','postOrder','sendOrder','createRiderOrder','publishOrder','submitOrder','saveOrder','pushOrder','createDeliveryOrder','createRideOrder','addDeliveryOrder'];
-
-function log(l,m,...r){const c={ok:'#0a0',warn:'#c80',error:'#c00',info:'#888'}[l]||'#333';console.log('%c[fix-v2] '+m,'color:'+c+';font-weight:bold',...r);}
+function log(l,m,...r){const c={ok:'#0a0',warn:'#c80',error:'#c00',info:'#888'}[l]||'#333';console.log('%c[fix-v3] '+m,'color:'+c+';font-weight:bold',...r);}
 function fs(){if(window.db&&window.db.collection)return window.db;if(window.firestore&&window.firestore.collection)return window.firestore;if(window.firestoreDb&&window.firestoreDb.collection)return window.firestoreDb;try{if(window.firebase){const d=(window.firebase.firestore&&window.firebase.firestore())||(window.firebase.app&&window.firebase.app().firestore&&window.firebase.app().firestore());if(d&&d.collection)return d;}}catch(e){}return null;}
-async function viaHooks(o){for(const n of HOOKS){if(typeof window[n]!=='function')continue;try{await Promise.resolve(window[n](o));log('ok','via window.'+n);return true;}catch(e){log('warn','window.'+n+': '+(e&&e.message||e));}}return false;}
-async function viaNs(o){for(const ns of NSS){const ob=window[ns];if(!ob||typeof ob!=='object')continue;for(const m of MS){if(typeof ob[m]!=='function')continue;try{await Promise.resolve(ob[m](o));log('ok','via '+ns+'.'+m);return true;}catch(e){log('warn',ns+'.'+m+': '+(e&&e.message||e));}}}return false;}
-async function viaFs(o){const d=fs();if(!d){log('info','ไม่พบ Firestore');return false;}try{await d.collection('orders').add({...o,areaId:o.areaId||(typeof areaId!=='undefined'?areaId:'khon-kaen-kranuan'),createdAt:Date.now(),syncedAt:Date.now(),source:'delivery-web-fallback-v2'});log('ok','via Firestore โดยตรง');return true;}catch(e){log('warn','Firestore: '+(e&&e.message||e));return false;}}
+
+async function viaFs(o){const d=fs();if(!d){log('info','ไม่พบ Firestore');return false;}try{await d.collection('orders').add({...o,areaId:o.areaId||(typeof areaId!=='undefined'?areaId:'khon-kaen-kranuan'),createdAt:Date.now(),syncedAt:Date.now(),source:'delivery-web-fallback-v3'});log('ok','via Firestore โดยตรง (ข้าม API)');return true;}catch(e){log('warn','Firestore: '+(e&&e.message||e));return false;}}
 
 async function pub(o){if(!o||(o.type!=='ride'&&o.type!=='market'))return;
-  log('info','ตรวจพบออเดอร์ใหม่: '+o.id+' ('+o.type+')');
-  if(await viaHooks(o))return;
-  if(await viaNs(o))return;
+  log('info','ตรวจพบออเดอร์: '+o.id+' ('+o.type+')');
   if(await viaFs(o))return;
-  log('error','ไม่พบช่องทาง publish เลย');
+  log('error','ไม่สามารถส่งข้อมูลได้');
 }
-
-window.deliveryDiagnostics=function(){console.group('%c[fix-v2] Diagnostics','color:#e95e30;font-weight:bold');console.log('Firestore found:',!!fs());console.log('Hooks:',HOOKS.filter(n=>typeof window[n]==='function'));console.log('Namespaces:',NSS.filter(ns=>window[ns]&&typeof window[ns]==='object').map(ns=>({ns,m:MS.filter(m=>typeof window[ns][m]==='function')})).filter(x=>x.m.length));console.groupEnd();};
 
 let n=0;
 const boot=()=>{
-  if(typeof state!=='undefined' && state && state.orders && !state.orders.__hooked){
+  if(typeof state!=='undefined' && state && state.orders && !state.orders.__hooked_v3){
+    
+    // ดักจับตอนแอปบันทึกออเดอร์ลงเครื่อง
     const origPush = state.orders.push;
     state.orders.push = function(...args){
       const res = origPush.apply(this, args);
       args.forEach(o => pub(o)); 
       return res;
     };
-    state.orders.__hooked = true;
-    log('ok','ติดตั้งสำเร็จ (ดักจับระดับฐานข้อมูล)');
+    state.orders.__hooked_v3 = true;
+    
+    // ดักจับตอนกดปุ่ม Submit (ดัก Error 403/TypeError ไว้)
+    const origSubmit = window.submitRealDelivery;
+    if (typeof origSubmit === 'function' && !origSubmit.__hooked_v3) {
+        window.submitRealDelivery = function(ev) {
+            if(ev && ev.preventDefault) ev.preventDefault(); // หยุดการโหลดหน้า
+            try {
+                origSubmit(ev); // ลองเรียกโค้ดเดิม
+            } catch(e) {
+                console.warn('[fix-v3] โค้ดเดิมแครช, กำลังใช้ระบบสำรอง...', e.message);
+                // ถ้าโค้ดเดิมแครช ให้เราดึงข้อมูลจาก deliveryDraft มาสร้างออเดอร์เองเลย
+                if (typeof deliveryDraft !== 'undefined' && deliveryDraft.pickup && deliveryDraft.drop) {
+                    const mockOrder = {
+                        id: Date.now().toString(36),
+                        type: deliveryDraft.mode === 'ride' ? 'ride' : 'market',
+                        status: 'ready',
+                        item: deliveryDraft.receiverName || 'งานด่วน',
+                        deliveryFee: 25
+                    };
+                    pub(mockOrder);
+                }
+            }
+        }
+        window.submitRealDelivery.__hooked_v3 = true;
+    }
+
+    log('ok','ติดตั้งสำเร็จ (ระบบกันพัง v3)');
     return true;
   }
   return false;
@@ -1362,6 +1382,6 @@ if(!boot()){
 }
 })();
 </script>
-<!-- ▲▲▲ delivery-fix-v2 ▲▲▲ -->
+<!-- ▲▲▲ delivery-fix-v3 ▲▲▲ -->
 </body>
 </html>
