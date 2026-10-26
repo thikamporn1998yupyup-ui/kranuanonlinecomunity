@@ -274,6 +274,12 @@ p{line-height:1.7}
 .mp-warn .icon{width:16px;height:16px;margin-top:1px}
 .mp-sheet .btn-delivery-submit:disabled{opacity:.45}
 @media(prefers-reduced-motion:reduce){.mp,.mp-pin,.mp-pin-shadow,.mp-addr .spin{animation:none!important;transition:none!important}}
+
+/* สลับโหมด ส่งของ / ส่งคน */
+.mode-seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#f4ead9;border-radius:18px;padding:5px}
+.mode-btn{border:0;background:none;border-radius:14px;padding:11px 8px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:700;color:#7a6b5c;transition:background .2s,color .2s,box-shadow .2s}
+.mode-btn .icon{width:20px;height:20px}
+.mode-btn.active{background:#e95e30;color:#fff;box-shadow:0 4px 12px rgba(233,94,48,.28)}
 </style>
 <!-- แผนที่ในแอป: Leaflet + OpenStreetMap -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
@@ -464,7 +470,7 @@ const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
 let insideBoxImageBase64 = '';
 let houseImageBase64 = '';
-const emptyDraft = () => ({ pickup: null, drop: null, receiverName: '', receiverPhone: '', itemDesc: '', itemNote: '', size: 'medium', consent: false });
+const emptyDraft = (mode) => ({ mode: mode || 'parcel', pickup: null, drop: null, receiverName: '', receiverPhone: '', itemDesc: '', itemNote: '', size: 'medium', consent: false });
 let deliveryDraft = emptyDraft();
 let routeMapInst = null;
 let mp = null; // สถานะหน้าจอเลือกตำแหน่ง
@@ -490,10 +496,15 @@ function estimate() {
 /* ---------- ไอคอนหมุด (SVG) ---------- */
 function pinSvg(kind, w) {
   w = w || 34;
+  const ride = deliveryDraft.mode === 'ride';
   const c = kind === 'pickup' ? '#00a854' : '#e95e30';
-  const glyph = kind === 'pickup'
-    ? '<path d="M18 9.6 23.2 12.4V18L18 20.8 12.8 18V12.4Z"/><path d="M12.8 12.4 18 15.2l5.2-2.8M18 15.2v5.6"/>'
-    : '<path d="M12.6 15.8 18 11l5.4 4.8"/><path d="M14.3 14.6v5.4h7.4v-5.4"/>';
+  const G = {
+    box: '<path d="M18 9.6 23.2 12.4V18L18 20.8 12.8 18V12.4Z"/><path d="M12.8 12.4 18 15.2l5.2-2.8M18 15.2v5.6"/>',
+    home: '<path d="M12.6 15.8 18 11l5.4 4.8"/><path d="M14.3 14.6v5.4h7.4v-5.4"/>',
+    person: '<circle cx="18" cy="12.3" r="2.3"/><path d="M13.4 20.2c.5-2.6 2.2-3.9 4.6-3.9s4.1 1.3 4.6 3.9"/>',
+    flag: '<path d="M14.2 20.6V10.4M14.2 10.8h6.6l-1.5 2.4 1.5 2.4h-6.6"/>'
+  };
+  const glyph = kind === 'pickup' ? (ride ? G.person : G.box) : (ride ? G.flag : G.home);
   return '<svg viewBox="0 0 36 42" width="' + w + '" height="' + Math.round(w * 42 / 36) + '" aria-hidden="true">' +
     '<path d="M18 1.5C10 1.5 3.8 7.7 3.8 15.4c0 9.8 11.4 21.2 13.2 22.9a1.5 1.5 0 0 0 2 0c1.8-1.7 13.2-13.1 13.2-22.9C32.2 7.7 26 1.5 18 1.5Z" fill="' + c + '" stroke="#fff" stroke-width="2"/>' +
     '<circle cx="18" cy="15.4" r="8.6" fill="#fff"/>' +
@@ -502,23 +513,47 @@ function pinSvg(kind, w) {
 function pinIcon(kind) { return L.divIcon({ className: '', html: pinSvg(kind, 34), iconSize: [34, 40], iconAnchor: [17, 38] }); }
 
 /* ---------- ฟอร์มหน้าส่งของ ---------- */
+const MODE_TEXT = {
+  parcel: {
+    banner: 'ส่งพัสดุ & เดลิเวอรีด่วน', sub: 'บริการรับส่งสิ่งของ อาหาร เอกสาร ทั่วอำเภอกระนวน',
+    title: 'ไปรับที่ไหน ส่งที่ไหน',
+    pickup: 'จุดรับของ (ต้นทาง)', drop: 'จุดส่งของ (ปลายทาง)',
+    pickupHint: 'แตะเพื่อเลือกจุดรับของบนแผนที่', dropHint: 'แตะเพื่อเลือกจุดส่งของบนแผนที่',
+    pickupIcon: 'box', dropIcon: 'home', confirmP: 'จุดรับของ', confirmD: 'จุดส่งของ',
+    chipP: 'ตำแหน่งฉัน = จุดรับ', chipD: 'ตำแหน่งฉัน = จุดส่ง',
+    contact: 'ผู้รับของ', contactName: 'ชื่อผู้รับ',
+    searchP: 'ค้นหาจุดรับของ เช่น ตลาด ร้านค้า', searchD: 'ค้นหาจุดส่งของ เช่น ชื่อหมู่บ้าน วัด โรงเรียน'
+  },
+  ride: {
+    banner: 'เรียกไรเดอร์ รับ-ส่งคน', sub: 'บริการไรเดอร์รับส่งผู้โดยสารทั่วอำเภอกระนวน',
+    title: 'รับที่ไหน ไปที่ไหน',
+    pickup: 'จุดรับผู้โดยสาร', drop: 'จุดหมายปลายทาง',
+    pickupHint: 'แตะเพื่อเลือกจุดรับบนแผนที่', dropHint: 'แตะเพื่อเลือกจุดหมายบนแผนที่',
+    pickupIcon: 'user', dropIcon: 'flag', confirmP: 'จุดรับ', confirmD: 'จุดหมาย',
+    chipP: 'ตำแหน่งฉัน = จุดรับ', chipD: 'ตำแหน่งฉัน = จุดหมาย',
+    contact: 'ผู้โดยสาร', contactName: 'ชื่อผู้โดยสาร',
+    searchP: 'ค้นหาจุดรับ เช่น ชื่อหมู่บ้าน วัด โรงเรียน', searchD: 'ค้นหาจุดหมาย เช่น ตลาด โรงพยาบาล วัด'
+  }
+};
+function modeT() { return MODE_TEXT[deliveryDraft.mode] || MODE_TEXT.parcel; }
+
 function locRow(which) {
-  const p = deliveryDraft[which], isP = which === 'pickup';
+  const p = deliveryDraft[which], isP = which === 'pickup', T = modeT();
   return '<button type="button" class="loc-pick ' + (p ? 'filled' : '') + '" onclick="openMapPicker(\'' + which + '\')">' +
-    '<span class="loc-dot ' + (isP ? 'pickup' : 'drop') + '">' + icon(isP ? 'box' : 'home') + '</span>' +
-    '<span class="loc-pick-text"><small>' + (isP ? 'จุดรับของ (ต้นทาง)' : 'จุดส่งของ (ปลายทาง)') + '</small>' +
-    '<b>' + (p ? escapeHtml(p.address) : (isP ? 'แตะเพื่อเลือกจุดรับของบนแผนที่' : 'แตะเพื่อเลือกจุดส่งของบนแผนที่')) + '</b>' +
+    '<span class="loc-dot ' + (isP ? 'pickup' : 'drop') + '">' + icon(isP ? T.pickupIcon : T.dropIcon) + '</span>' +
+    '<span class="loc-pick-text"><small>' + (isP ? T.pickup : T.drop) + '</small>' +
+    '<b>' + (p ? escapeHtml(p.address) : (isP ? T.pickupHint : T.dropHint)) + '</b>' +
     (p && p.note ? '<em>' + escapeHtml(p.note) + '</em>' : '') + '</span></button>';
 }
 
 function routeSummaryHtml() {
   const e = estimate();
-  if (!e) return '<div class="route-empty">' + icon('route') + '<span>เลือกจุดรับและจุดส่ง เพื่อดูแผนที่เส้นทางและค่าส่ง</span></div>';
+  if (!e) return '<div class="route-empty">' + icon('route') + '<span>เลือกจุดรับและจุดหมาย เพื่อดูแผนที่เส้นทางและค่าบริการ</span></div>';
   return '<div class="route-map-wrap"><div id="routeMap" class="route-map"></div><span class="osm-credit">© OpenStreetMap</span></div>' +
     '<div class="route-stats">' +
     '<div>' + icon('route') + '<small>ระยะทางโดยประมาณ</small><b>' + e.km.toFixed(1) + ' กม.</b></div>' +
     '<div>' + icon('clock') + '<small>เวลาโดยประมาณ</small><b>~' + e.min + ' นาที</b></div>' +
-    '<div class="fee"><small>ค่าส่งโดยประมาณ</small><b>' + e.fee + ' ฿</b></div></div>';
+    '<div class="fee"><small>ค่าบริการโดยประมาณ</small><b>' + e.fee + ' ฿</b></div></div>';
 }
 
 const PARCEL_SIZES = [
@@ -528,43 +563,12 @@ const PARCEL_SIZES = [
 ];
 
 function deliveryFormHtml() {
-  const d = deliveryDraft, e = estimate();
+  const d = deliveryDraft, e = estimate(), T = modeT(), ride = d.mode === 'ride';
   const sizeChips = PARCEL_SIZES.map(([k, t, s, ic]) =>
     '<button type="button" class="size-chip ' + (d.size === k ? 'active' : '') + '" data-size="' + k + '" onclick="setSize(\'' + k + '\')">' + icon(ic) + '<b>' + t + '</b><small>' + s + '</small></button>').join('');
-  return `
-  <div class="delivery-container">
-    <div class="delivery-banner">
-      <h2>ส่งพัสดุ & เดลิเวอรีด่วน</h2>
-      <p>บริการรับส่งสิ่งของ อาหาร เอกสาร ทั่วอำเภอกระนวน</p>
-    </div>
 
-    <form class="card-delivery route-card" onsubmit="submitRealDelivery(event)">
-      <div class="section-title-deliv">${icon('rider')} ไปรับที่ไหน ส่งที่ไหน</div>
-
-      <div class="loc-input-group">
-        ${locRow('pickup')}
-        ${locRow('drop')}
-        <button type="button" class="swap-btn" aria-label="สลับจุดรับและจุดส่ง" onclick="swapPoints()">${icon('swap')}</button>
-      </div>
-      <input type="hidden" name="pickupLoc" value="${d.pickup ? escapeHtml(d.pickup.address) : ''}">
-      <input type="hidden" name="dropLoc" value="${d.drop ? escapeHtml(d.drop.address) : ''}">
-
-      <div class="quick-row">
-        <button type="button" class="chip" onclick="useGps('pickup')">${icon('crosshair')} ตำแหน่งฉัน = จุดรับ</button>
-        <button type="button" class="chip" onclick="useGps('drop')">${icon('crosshair')} ตำแหน่งฉัน = จุดส่ง</button>
-      </div>
-
-      ${routeSummaryHtml()}
-
-      <div style="margin-top:18px">
-        <div class="section-title-deliv" style="font-size:12px;margin-bottom:8px">${icon('user', 16)} ผู้รับของ</div>
-        <div class="contact-row">
-          <div class="loc-field"><label>ชื่อผู้รับ</label><input name="receiverName" value="${escapeHtml(d.receiverName)}" oninput="setDraft('receiverName',this.value)" placeholder="ชื่อ-นามสกุล"></div>
-          <div class="loc-field"><label>เบอร์โทร</label><input name="receiverPhone" type="tel" inputmode="tel" value="${escapeHtml(d.receiverPhone)}" oninput="setDraft('receiverPhone',this.value)" placeholder="08x-xxx-xxxx"></div>
-        </div>
-      </div>
-
-      <div style="margin-top:14px">
+  const parcelBlock = `
+      <div data-keep style="margin-top:14px">
         <div class="section-title-deliv" style="font-size:12px;margin-bottom:8px">${icon('box', 16)} รายละเอียดพัสดุ & ถ่ายภาพสิ่งของ</div>
         <div class="loc-field" style="margin-bottom:8px">
           <label>สิ่งของในกล่อง / ประเภท</label>
@@ -599,18 +603,95 @@ function deliveryFormHtml() {
           <strong>ยินยอมเปิดเผยถ่ายภาพสิ่งของด้านใน</strong> และอนุญาตให้ไรเดอร์ตรวจสอบสภาพพัสดุก่อนจัดส่ง
           <br><span style="color:#9e8d7c;font-size:9px;">* นโยบายของเรา: เพื่อป้องกันการส่งสิ่งของผิดกฎหมายและสารเสพติดอย่างเคร่งครัด</span>
         </label>
+      </div>`;
+
+  const rideBlock = `
+      <div data-keep style="margin-top:14px">
+        <div class="loc-field">
+          <label>หมายเหตุถึงไรเดอร์</label>
+          <input name="itemNote" value="${escapeHtml(d.itemNote)}" oninput="setDraft('itemNote',this.value)" placeholder="เช่น ยืนรออยู่หน้าร้านชำ, ใส่เสื้อสีฟ้า">
+        </div>
+      </div>`;
+
+  return `
+  <div class="delivery-container">
+    <div class="mode-seg" role="tablist" aria-label="เลือกบริการ">
+      <button type="button" role="tab" aria-selected="${!ride}" class="mode-btn ${!ride ? 'active' : ''}" onclick="setMode('parcel')">${icon('box')} ส่งของ</button>
+      <button type="button" role="tab" aria-selected="${ride}" class="mode-btn ${ride ? 'active' : ''}" onclick="setMode('ride')">${icon('user')} ส่งคน</button>
+    </div>
+
+    <div class="delivery-banner">
+      <h2>${T.banner}</h2>
+      <p>${T.sub}</p>
+    </div>
+
+    <form class="card-delivery route-card" onsubmit="submitRealDelivery(event)">
+      <div class="section-title-deliv">${icon('rider')} ${T.title}</div>
+
+      <div class="loc-input-group">
+        ${locRow('pickup')}
+        ${locRow('drop')}
+        <button type="button" class="swap-btn" aria-label="สลับจุดรับและจุดหมาย" onclick="swapPoints()">${icon('swap')}</button>
+      </div>
+      <input type="hidden" name="pickupLoc" value="${d.pickup ? escapeHtml(d.pickup.address) : ''}">
+      <input type="hidden" name="dropLoc" value="${d.drop ? escapeHtml(d.drop.address) : ''}">
+
+      <div class="quick-row">
+        <button type="button" class="chip" onclick="useGps('pickup')">${icon('crosshair')} ${T.chipP}</button>
+        <button type="button" class="chip" onclick="useGps('drop')">${icon('crosshair')} ${T.chipD}</button>
       </div>
 
+      ${routeSummaryHtml()}
+
+      <div data-keep style="margin-top:18px">
+        <div class="section-title-deliv" style="font-size:12px;margin-bottom:8px">${icon('user', 16)} ${T.contact}</div>
+        <div class="contact-row">
+          <div class="loc-field"><label>${T.contactName}</label><input name="receiverName" value="${escapeHtml(d.receiverName)}" oninput="setDraft('receiverName',this.value)" placeholder="ชื่อ-นามสกุล"></div>
+          <div class="loc-field"><label>เบอร์โทร</label><input name="receiverPhone" type="tel" inputmode="tel" value="${escapeHtml(d.receiverPhone)}" oninput="setDraft('receiverPhone',this.value)" placeholder="08x-xxx-xxxx"></div>
+        </div>
+      </div>
+
+      ${ride ? rideBlock : parcelBlock}
+
       <button type="submit" id="submitDeliveryBtn" class="btn-delivery-submit" disabled>
-        ${icon('rider')} <span id="submitLabel">${e ? 'ยืนยันเรียกไรเดอร์ · ' + e.fee + ' ฿' : 'เลือกจุดรับและจุดส่งก่อน'}</span>
+        ${icon('rider')} <span id="submitLabel">${e ? 'ยืนยันเรียกไรเดอร์ · ' + e.fee + ' ฿' : 'เลือกจุดรับและจุดหมายก่อน'}</span>
       </button>
     </form>
   </div>`;
 }
 
+function setMode(m) {
+  if (deliveryDraft.mode === m) return;
+  deliveryDraft.mode = m;
+  render();
+}
+
+/* กวาดช่องที่ไม่ใช่ของฟอร์มนี้ (เช่นที่สคริปต์ภายนอกแทรกเข้ามา) ออกจากฟอร์มเรียกไรเดอร์ */
+const FORM_KEEP = '.section-title-deliv,.loc-input-group,.quick-row,.route-empty,.route-map-wrap,.route-stats,.policy-box,#submitDeliveryBtn,input[type=hidden],[data-keep]';
+const FORM_MINE = '.loc-field,.loc-input-group,.policy-box,.section-title-deliv,[data-keep],.route-empty,.route-map-wrap,.quick-row';
+function purgeForeignFields() {
+  document.querySelectorAll('form.route-card').forEach(f => {
+    [...f.childNodes].forEach(n => {
+      if (n.nodeType === 3 && n.textContent.trim()) n.remove();
+      else if (n.nodeType === 1 && !n.matches(FORM_KEEP)) n.remove();
+    });
+    f.querySelectorAll('input:not([type=hidden]):not([type=file]):not([type=checkbox])').forEach(inp => {
+      if (!inp.isConnected || inp.closest('.loc-field')) return;
+      let el = inp;
+      while (el.parentElement && el.parentElement !== f && !el.parentElement.querySelector(FORM_MINE)) el = el.parentElement;
+      el.remove();
+    });
+  });
+}
+window.addEventListener('DOMContentLoaded', () => {
+  const app = document.getElementById('app');
+  if (app) new MutationObserver(purgeForeignFields).observe(app, { childList: true, subtree: true });
+});
+
 function updateSubmitState() {
   const btn = document.getElementById('submitDeliveryBtn');
-  if (btn) btn.disabled = !(deliveryDraft.pickup && deliveryDraft.drop && deliveryDraft.consent);
+  const d = deliveryDraft;
+  if (btn) btn.disabled = !(d.pickup && d.drop && (d.mode === 'ride' || d.consent));
 }
 function toggleSubmitButton() { updateSubmitState(); }
 
@@ -654,6 +735,7 @@ function initRoutePreview() {
   try { routeMapInst && routeMapInst.remove(); } catch (e) {}
   routeMapInst = null;
   const el = document.getElementById('routeMap'), d = deliveryDraft;
+  purgeForeignFields();
   updateSubmitState();
   if (!el || !window.L || !d.pickup || !d.drop) return;
   const m = L.map(el, { zoomControl: false, attributionControl: false, dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false, tap: false });
@@ -694,17 +776,17 @@ function rememberPlace(p) {
 function openMapPicker(which) {
   if (!window.L) { setNotice('โหลดแผนที่ไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่'); return; }
   closeMapPicker();
-  const isP = which === 'pickup', d = deliveryDraft;
+  const isP = which === 'pickup', d = deliveryDraft, T = modeT();
   const existing = d[which];
   const start = existing || (isP ? d.drop : d.pickup) || userLiveLocation || SERVICE_CENTER;
   const recent = Array.isArray(state.recentPlaces) ? state.recentPlaces : [];
 
   const root = document.createElement('div');
-  root.className = 'mp'; root.id = 'mapPicker'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-label', isP ? 'เลือกจุดรับของ' : 'เลือกจุดส่งของ');
+  root.className = 'mp'; root.id = 'mapPicker'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-label', isP ? T.pickup : T.drop);
   root.innerHTML =
     '<div class="mp-top">' +
       '<button type="button" class="mp-back" aria-label="ย้อนกลับ" onclick="closeMapPicker()">' + icon('back') + '</button>' +
-      '<div class="mp-search">' + icon('search') + '<input id="mpSearch" type="search" autocomplete="off" placeholder="' + (isP ? 'ค้นหาจุดรับของ เช่น ตลาด ร้านค้า' : 'ค้นหาจุดส่งของ เช่น ชื่อหมู่บ้าน วัด โรงเรียน') + '"></div>' +
+      '<div class="mp-search">' + icon('search') + '<input id="mpSearch" type="search" autocomplete="off" placeholder="' + (isP ? T.searchP : T.searchD) + '"></div>' +
       '<div class="mp-results" id="mpResults"></div>' +
     '</div>' +
     '<div class="mp-mapwrap">' +
@@ -716,14 +798,14 @@ function openMapPicker(which) {
     '</div>' +
     '<div class="mp-sheet">' +
       '<div class="mp-grab"></div>' +
-      '<div class="mp-label"><span class="loc-dot ' + (isP ? 'pickup' : 'drop') + '">' + icon(isP ? 'box' : 'home') + '</span>' + (isP ? 'จุดรับของ (ต้นทาง)' : 'จุดส่งของ (ปลายทาง)') + '</div>' +
+      '<div class="mp-label"><span class="loc-dot ' + (isP ? 'pickup' : 'drop') + '">' + icon(isP ? T.pickupIcon : T.dropIcon) + '</span>' + (isP ? T.pickup : T.drop) + '</div>' +
       '<div class="mp-addr loading" id="mpAddr"></div>' +
       '<div class="mp-recent" id="mpRecent">' +
         recent.map((r, i) => '<button type="button" class="chip" onclick="mpUseRecent(' + i + ')">' + icon('clock') + '<span>' + escapeHtml(r.note || r.address) + '</span></button>').join('') +
       '</div>' +
       '<div class="loc-field"><label>จุดสังเกต / รายละเอียดเพิ่มเติม</label><input id="mpNote" placeholder="เช่น บ้านรั้วสีขาว ตรงข้ามร้านชำ" value="' + escapeHtml(existing ? existing.note : '') + '"></div>' +
       '<div class="mp-warn" id="mpWarn">' + icon('shield') + '<span>จุดนี้อยู่นอกพื้นที่ให้บริการโดยประมาณ (เกิน ' + SERVICE_RADIUS_KM + ' กม. จากกระนวน) ลองเลื่อนหมุดเข้ามาในพื้นที่</span></div>' +
-      '<button type="button" class="btn-delivery-submit" id="mpConfirm" style="margin-top:12px" onclick="confirmMapPicker()">' + icon('check') + ' ยืนยัน' + (isP ? 'จุดรับของ' : 'จุดส่งของ') + '</button>' +
+      '<button type="button" class="btn-delivery-submit" id="mpConfirm" style="margin-top:12px" onclick="confirmMapPicker()">' + icon('check') + ' ยืนยัน' + (isP ? T.confirmP : T.confirmD) + '</button>' +
     '</div>';
   document.body.appendChild(root);
   document.body.style.overflow = 'hidden';
@@ -865,20 +947,23 @@ function closeMapPicker() {
 /* ---------- ส่งคำขอเรียกไรเดอร์ ---------- */
 function submitRealDelivery(e) {
   e.preventDefault();
-  const d = deliveryDraft, est = estimate();
-  if (!d.pickup || !d.drop || !est) { setNotice('กรุณาเลือกจุดรับของและจุดส่งของบนแผนที่ก่อน'); return; }
+  const d = deliveryDraft, est = estimate(), ride = d.mode === 'ride';
+  if (!d.pickup || !d.drop || !est) { setNotice(ride ? 'กรุณาเลือกจุดรับและจุดหมายบนแผนที่ก่อน' : 'กรุณาเลือกจุดรับของและจุดส่งของบนแผนที่ก่อน'); return; }
   const sizeLabel = (PARCEL_SIZES.find(s => s[0] === d.size) || [])[1] || '';
+  const notes = ride
+    ? [d.itemNote, d.pickup.note && ('จุดสังเกตจุดรับ: ' + d.pickup.note), d.drop.note && ('จุดสังเกตจุดหมาย: ' + d.drop.note)]
+    : [d.itemNote, d.drop.note && ('จุดสังเกตปลายทาง: ' + d.drop.note), d.pickup.note && ('จุดสังเกตต้นทาง: ' + d.pickup.note)];
   state.orders.push({
     id: Date.now().toString(36),
     areaId,
     status: 'ready',
-    type: 'market',
-    item: 'ส่งของ: ' + d.itemDesc + ' (รับ: ' + d.pickup.address + ')',
-    note: [d.itemNote, d.drop.note && ('จุดสังเกตปลายทาง: ' + d.drop.note), d.pickup.note && ('จุดสังเกตต้นทาง: ' + d.pickup.note)].filter(Boolean).join(' · '),
+    type: ride ? 'ride' : 'market',
+    item: ride ? ('ส่งคน: ' + (d.receiverName || 'ผู้โดยสาร') + ' (รับ: ' + d.pickup.address + ')') : ('ส่งของ: ' + d.itemDesc + ' (รับ: ' + d.pickup.address + ')'),
+    note: notes.filter(Boolean).join(' · '),
     receiver: { name: d.receiverName, phone: d.receiverPhone },
-    parcelSize: sizeLabel,
-    image: houseImageBase64,
-    insideImage: insideBoxImageBase64,
+    parcelSize: ride ? '' : sizeLabel,
+    image: ride ? '' : houseImageBase64,
+    insideImage: ride ? '' : insideBoxImageBase64,
     deliveryFee: est.fee,
     pickupInfo: { address: d.pickup.address, note: d.pickup.note },
     dropInfo: { address: d.drop.address, note: d.drop.note },
@@ -886,11 +971,10 @@ function submitRealDelivery(e) {
   });
   insideBoxImageBase64 = '';
   houseImageBase64 = '';
-  deliveryDraft = emptyDraft();
+  deliveryDraft = emptyDraft(d.mode);
   view = 'ออเดอร์ของฉัน'; save();
-  document.getElementById('notice').textContent = 'สร้างงานส่งของเรียบร้อย! ไรเดอร์กำลังเตรียมมารับสิ่งของ';
+  document.getElementById('notice').textContent = ride ? 'เรียกไรเดอร์เรียบร้อย! ไรเดอร์กำลังเตรียมมารับคุณ' : 'สร้างงานส่งของเรียบร้อย! ไรเดอร์กำลังเตรียมมารับสิ่งของ';
 }
-
 /* 2. แก้ไขเฉพาะฟอร์มลงประกาศหน้าตลาดตามสั่ง */
 function listingForm(){
   document.getElementById('marketForm').innerHTML=`
@@ -987,7 +1071,7 @@ function orders(){
         navButton = '<button type="button" onclick="window.open(\'https://www.google.com/maps/dir/?api=1&destination=' + o.coordinates.drop.lat + ',' + o.coordinates.drop.lng + '&travelmode=driving\', \'_blank\')" style="background:#00c853; color:white; border:none; padding:10px 15px; border-radius:8px; font-weight:bold; width:100%; margin-top:8px;"> เปิด Google Maps นำทาง</button>';
       } catch(e) {}
     }
-    return '<article class="card"><span class="badge">'+(o.type==='market'?'รับ–ส่งของจากตลาด':'อาหารจากร้าน')+'</span><h3>'+escapeHtml(o.item||'ข้าวกล่อง')+'</h3>'+(o.note?'<p style="font-size:11px;color:#8a7b6b"> หมายเหตุ: '+escapeHtml(o.note)+'</p>':'')+(o.image?'<img src="'+o.image+'" style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-top:6px">':'')+'<p>ค่าส่งประมาณ '+Number(o.deliveryFee||10)+' บาท</p>'+distanceHtml+'<p class="status">'+statuses[o.status]+'</p>'+navButton+
+    return '<article class="card"><span class="badge">'+(o.type==='ride'?'รับ–ส่งคน':o.type==='market'?'รับ–ส่งของจากตลาด':'อาหารจากร้าน')+'</span><h3>'+escapeHtml(o.item||'ข้าวกล่อง')+'</h3>'+(o.note?'<p style="font-size:11px;color:#8a7b6b"> หมายเหตุ: '+escapeHtml(o.note)+'</p>':'')+(o.image?'<img src="'+o.image+'" style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-top:6px">':'')+'<p>ค่าส่งประมาณ '+Number(o.deliveryFee||10)+' บาท</p>'+distanceHtml+'<p class="status">'+statuses[o.status]+'</p>'+navButton+
            (view==='ร้านรับงาน'&&o.status==='seller'?action(o,'ready','ผู้ขายยืนยันพร้อมส่ง')+action(o,'cancelled','ปฏิเสธ'):'')+
            (view==='ร้านรับงาน'&&o.status==='waiting'?action(o,'ready','ร้านรับออเดอร์')+action(o,'cancelled','ปฏิเสธ'):'')+
            (view==='ออเดอร์ของฉัน'&&['waiting','seller','ready'].includes(o.status)?action(o,'cancelled','ยกเลิกคำขอ'):'')+
@@ -1027,6 +1111,7 @@ const paths={
   swap:'<path d="M7 20V4M7 4 3.5 7.5M7 4l3.5 3.5M17 4v16M17 20l-3.5-3.5M17 20l3.5-3.5"/>',
   shield:'<path d="M12 3 4.5 6v5.5c0 4.5 3.2 8 7.5 9.5 4.3-1.5 7.5-5 7.5-9.5V6L12 3Z"/><path d="m9 12 2.2 2.2L15.5 10"/>',
   user:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20c.6-3.8 3.4-6 7-6s6.4 2.2 7 6"/>',
+  flag:'<path d="M6 21V4M6 5h12l-2.5 4 2.5 4H6"/>',
   loader:'<path d="M12 3a9 9 0 1 0 9 9"/>'
 };
 
@@ -1051,7 +1136,7 @@ function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':
 function topNav(){
   const navEl = document.getElementById('nav');
   if(!navEl) return;
-  navEl.innerHTML=[['ร้านค้า','home','หน้าแรก'],['ตลาด','market','ตลาด'],['ออเดอร์ของฉัน','orders','งานของฉัน'],['ข่าว','news','ข่าวชุมชน'],['ส่งของ','rider','ส่งของ']].map(([v,k,l])=>'<button class="'+(view===v?'active':'')+'" data-view="'+v+'" onclick="go(this.dataset.view)">'+icon(k)+l+'</button>').join('');
+  navEl.innerHTML=[['ร้านค้า','home','หน้าแรก'],['ตลาด','market','ตลาด'],['ออเดอร์ของฉัน','orders','งานของฉัน'],['ข่าว','news','ข่าวชุมชน'],['ส่งของ','rider','เรียกรถ']].map(([v,k,l])=>'<button class="'+(view===v?'active':'')+'" data-view="'+v+'" onclick="go(this.dataset.view)">'+icon(k)+l+'</button>').join('');
   const locEl = document.getElementById('location');
   if(locEl) locEl.innerHTML=icon('pin')+'อ.กระนวน จ.ขอนแก่น';
   const searchIconEl = document.getElementById('searchIcon');
@@ -1075,7 +1160,7 @@ const HERO_CONTENT={
  'เครื่องดื่ม':{title:'เติมความสดชื่น',kicker:'แก้วโปรด ใกล้คุณ',desc:'ชา กาแฟ และแก้วเย็น ๆ สำหรับมื้อนี้',image:'drink'},
  'บริการ':{title:'เรื่องบ้าน ให้เราช่วย',kicker:'คนเก่ง ในชุมชน',desc:'ค้นหาช่างและบริการจากคนใกล้บ้าน',image:'service'},
  'ตลาด':{title:'ของดี ส่งต่อกัน',kicker:'ตลาดของคนกระนวน',desc:'ของใหม่ มือสอง และของน่าใช้จากคนบ้านเฮา',image:'welcome'},
- 'ส่งของ':{title:'ส่งของ ใกล้บ้าน',kicker:'เรียกง่าย อุ่นใจ',desc:'ให้ไรเดอร์ช่วยรับ–ส่งสิ่งของในกระนวน',image:'service'},
+ 'ส่งของ':{title:'ส่งของ ส่งคน ใกล้บ้าน',kicker:'เรียกง่าย อุ่นใจ',desc:'ให้ไรเดอร์ช่วยรับ–ส่งสิ่งของและผู้โดยสารในกระนวน',image:'service'},
  'ออเดอร์ของฉัน':{title:'ติดตามงานของคุณ',kicker:'ทุกงาน อยู่ตรงนี้',desc:'ดูสถานะออเดอร์และคำขอส่งของ',image:'welcome'},
  'ข่าว':{title:'เรื่องราวบ้านเฮา',kicker:'ข่าวและกิจกรรมชุมชน',desc:'ติดตามเรื่องน่ารู้และสีสันในกระนวน',image:'welcome'}
 };
