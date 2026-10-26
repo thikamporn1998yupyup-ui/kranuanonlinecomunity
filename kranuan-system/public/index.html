@@ -655,7 +655,7 @@ function deliveryFormHtml() {
 
       ${ride ? rideBlock : parcelBlock}
 
-  <button type="button" id="submitDeliveryBtn" class="btn-delivery-submit" disabled onclick="window.forceSubmitDelivery(event)">
+<button type="submit" id="submitDeliveryBtn" class="btn-delivery-submit" disabled>
         ${icon('rider')} <span id="submitLabel">${e ? 'ยืนยันเรียกไรเดอร์ · ' + e.fee + ' ฿' : 'เลือกจุดรับและจุดหมายก่อน'}</span>
       </button>
     </form>
