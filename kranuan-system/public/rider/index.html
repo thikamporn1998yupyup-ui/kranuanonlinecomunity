@@ -594,21 +594,55 @@ document.addEventListener('change',async e=>{
 });
 async function loadProfile(){try{const r=await DB.getProfile();if(!r)return;Object.keys(r).forEach(k=>{if(r[k]!=null&&k in prof)prof[k]=r[k]});if(!Array.isArray(prof.photos)||prof.photos.length!==4)prof.photos=[null,null,null,null];normProf();applyTheme();render()}catch(e){}}
 /* ============ แผนที่และ GPS ============ */
-let map,pin;
+let map, pin;
 function initMap(){
-  if(map||!window.L)return;
-  // ปิดการใช้ Tile ล่านอกทั้งหมด แล้วใช้ Div พื้นหลังสีโทนดาร์กมืดสนิทแทนความเสถียร
-  const mapElement = document.getElementById('realMap');
-  if(mapElement) {
-    mapElement.style.background = '#121212';
-    mapElement.style.backgroundImage = 'radial-gradient(#222 15%, transparent 16%), radial-gradient(#1a1a1a 15%, transparent 16%)';
-    mapElement.style.backgroundSize = '20px 20px';
-    mapElement.style.backgroundPosition = '0 0, 10px 10px';
+  if(map){
+    try { map.remove(); } catch(e){}
+    map = null;
   }
 
-  map = L.map('realMap',{zoomControl:false,attributionControl:false,dragging:!L.Browser.mobile,tap:false}).setView([16.706,103.078],15);
+  const mapContainer = document.getElementById('realMap');
+  if(!mapContainer || !window.L) return;
 
-  pin = L.marker([16.706,103.078],{icon:L.divIcon({className:'',html:'<div style="background:var(--ac);width:24px;height:24px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 12px var(--ac)"></div>',iconSize:[24,24],iconAnchor:[12,12]})}).addTo(map);
+  /* ============ แผนที่และ GPS ============ */
+let map, pin;
+function initMap(){
+  if(map){
+    try { map.remove(); } catch(e){}
+    map = null;
+  }
+
+  const mapContainer = document.getElementById('realMap');
+  if(!mapContainer || !window.L) return;
+
+  // สร้างแผนที่ Leaflet สำหรับระบบเดลิเวอรี่
+  map = L.map('realMap', {
+    zoomControl: false,
+    attributionControl: false,
+    dragging: !L.Browser.mobile,
+    tap: false
+  }).setView([16.706, 103.078], 15);
+
+  // ใช้ Mapbox Public Token ของคุณ
+  const mapboxToken = 'pk.eyJ1IjoidGhpa2FtcG9ybiIsImEiOiJjbXZwaG50ZjgwMGo5MnlxNjVucGk1dm1iIn0.SoJgiynxF0FfD0O_6akr_g';
+
+  // โหลดแผนที่ Mapbox Dark Tiles สำหรับธีมแอป
+  L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/dark-v10/tiles/{z}/{x}/{y}?access_token=' + mapboxToken, {
+    maxZoom: 19,
+    tileSize: 512,
+    zoomOffset: -1,
+    attribution: '© Mapbox'
+  }).addTo(map);
+
+  // ปักหมุดตำแหน่ง
+  pin = L.marker([16.706, 103.078], {
+    icon: L.divIcon({
+      className: '',
+      html: '<div style="background:var(--ac);width:24px;height:24px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 12px var(--ac)"></div>',
+      iconSize: [24, 24],
+      iconAnchor: [12, 12]
+    })
+  }).addTo(map);
 }
 function watchGps(){
   const st=$('#mapGpsStatus');
