@@ -1312,34 +1312,9 @@ window.addEventListener('DOMContentLoaded', () => {
 </script>
 <script src="/api.js"></script><script src="/customer.js"></script>
 <script src="/commerce-media.js?v=20261027"></script><script src="/commerce-customer.js?v=20261027"></script>
-<script>
-/* ส่งก้อนงานฝากส่งของ/ส่งคนเข้าฟังก์ชันเดียวกับออเดอร์อาหาร ถ้าสคริปต์หน้าร้านมีให้เรียก — ไม่ได้แปลงฟิลด์ */
-(function () {
-  const local = window.submitRealDelivery;
-  if (typeof local !== 'function') return;
-  window.submitRealDelivery = function (ev) {
-    const before = (state.orders || []).length;
-    local(ev);
-    const order = state.orders && state.orders[state.orders.length - 1];
-    if (!order || state.orders.length === before) return;
-    if (order.type !== 'ride' && order.type !== 'market') return;
-    const hooks = ['onKranuanOrder', 'publishOrder', 'placeOrder', 'sendToRider', 'postOrder', 'submitToRider'];
-    hooks.forEach(name => {
-      if (typeof window[name] === 'function') {
-        try { window[name](order); } catch (e) { console.warn(name, e); }
-      }
-    });
-    ['api', 'API'].forEach(ns => {
-      const obj = window[ns];
-      if (!obj) return;
-      ['createOrder', 'placeOrder', 'addOrder', 'postOrder', 'sendOrder'].forEach(m => {
-        if (typeof obj[m] === 'function') {
-          try { obj[m](order); } catch (e) { console.warn(ns + '.' + m, e); }
-        }
-      });
-    });
-  };
-})();
+<script src="/api.js"></script><script src="/customer.js"></script>
+<script src="/commerce-media.js?v=20261027"></script><script src="/commerce-customer.js?v=20261027"></script>
+
 <!-- ▼▼▼ delivery-fix-v2 ▼▼▼ -->
 <script>
 (function(){
@@ -1367,7 +1342,6 @@ async function pub(o){if(!o||(o.type!=='ride'&&o.type!=='market'))return;
 
 window.deliveryDiagnostics=function(){console.group('%c[fix-v2] Diagnostics','color:#e95e30;font-weight:bold');console.log('Firestore found:',!!fs());console.log('Hooks:',HOOKS.filter(n=>typeof window[n]==='function'));console.log('Namespaces:',NSS.filter(ns=>window[ns]&&typeof window[ns]==='object').map(ns=>({ns,m:MS.filter(m=>typeof window[ns][m]==='function')})).filter(x=>x.m.length));console.groupEnd();};
 
-// ดักจับ state.orders.push แบบดักที่ต้นทางเลย
 let n=0;
 const boot=()=>{
   if(typeof state!=='undefined' && state && state.orders && !state.orders.__hooked){
@@ -1379,7 +1353,6 @@ const boot=()=>{
     };
     state.orders.__hooked = true;
     log('ok','ติดตั้งสำเร็จ (ดักจับระดับฐานข้อมูล)');
-    log('info','รอรับออเดอร์ ส่งของ/ส่งคน ครับ...');
     return true;
   }
   return false;
