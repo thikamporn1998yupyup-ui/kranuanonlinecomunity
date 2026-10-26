@@ -125,15 +125,21 @@ async function api(req,res,url){
  for(const line of b.items){if(menuIds.has(line.menu_id))fail(400,'รายการสินค้าซ้ำ');menuIds.add(line.menu_id);const m=get('SELECT * FROM menus WHERE id=? AND shop_id=?',text(line.menu_id),shop.id);if(!m?.available)fail(409,'บางรายการหมดหรือเปลี่ยนแปลง กรุณาเลือกใหม่');const q=Number(line.quantity);if(!Number.isInteger(q)||q<1||q>20)fail(400,'จำนวนต้องอยู่ระหว่าง 1–20');items.push({menu_id:m.id,name:m.name,quantity:q,price:m.price_satang/100,image_url:m.image_url});goods+=m.price_satang*q}
  if(goods>1000000)fail(400,'ยอดสินค้าสูงเกินวงเงิน 10,000 บาท');kind='food';pickup=shop.address||shop.name;status=shop.order_mode==='merchant_confirm'?'waiting':'ready';
  snapshot={shop:shop.name,shop_image_url:shop.image_url,items,order_mode:shop.order_mode,pickup_lat:shop.lat,pickup_lng:shop.lng};
- }else snapshot={shop:'งานรับ–ส่งของ',description:required(b.description,'รายละเอียดสิ่งของ',300),items:[],order_mode:'rider_purchase'};
+ }else {const pickupLat=coord(b.pickup_lat,-90,90),pickupLng=coord(b.pickup_lng,-180,180);if((pickupLat===null)!==(pickupLng===null))fail(400,'ระบุพิกัดจุดรับให้ครบทั้งสองค่า');snapshot={shop:'เรียกไรเดอร์รับ–ส่งของ',description:required(b.description,'รายละเอียดสิ่งของ',300),items:[],order_mode:'rider_purchase',pickup_lat:pickupLat,pickup_lng:pickupLng};}
  const fee=Math.round(Number(process.env.DELIVERY_FEE_THB||25)*100);if(!Number.isInteger(fee)||fee<0)fail(500,'ตั้งค่าค่าส่งไม่ถูกต้อง');
  run('INSERT INTO orders(id,customer_id,shop_id,status,kind,snapshot,pickup,dropoff,customer_name,phone,lat,lng,note,image,inside_image,goods_satang,fee_satang,created_at,updated_at,idempotency_key) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',oid,u.id,shop?.id||null,status,kind,JSON.stringify(snapshot),pickup,dropoff,name,phone,lat,lng,text(b.note,500),imageURL(b.image),imageURL(b.inside_image),goods,fee,now(),now(),idem);
  addEvent(oid,u,status);return oid;
  });emit();return send(res,201,orderView(get('SELECT * FROM orders WHERE id=?',orderId),u));
  }
- const orderMatch=p.match(/^\/api\/orders\/([^/]+)(?:\/(claim|status|events))?$/);
+ const orderMatch=p.match(/^\/api\/orders\/([^/]+)(?:\/(claim|status|events|feedback))?$/);
  if(orderMatch){const oid=orderMatch[1],action=orderMatch[2],o=get('SELECT * FROM orders WHERE id=?',oid);if(!o)fail(404,'ไม่พบงาน');
  if(action==='events'&&method==='GET'){if(!canReadOrder(u,o))fail(403,'ไม่มีสิทธิ์ดูงาน');return send(res,200,all('SELECT status,note,created_at FROM order_events WHERE order_id=? ORDER BY id',oid))}
+ if(action==='feedback'){
+ if(!canReadOrder(u,o))fail(403,'ไม่มีสิทธิ์ดูความคิดเห็นของออเดอร์นี้');
+ const found=all("SELECT * FROM reports WHERE user_id=? AND kind='customer_feedback'",o.customer_id).find(r=>{try{return JSON.parse(r.payload).order_id===oid}catch{return false}});const oldFeedback=found?JSON.parse(found.payload):{};
+ if(method==='GET')return send(res,200,oldFeedback);
+ if(method==='POST'){if(o.customer_id!==u.id)fail(403,'เฉพาะผู้สั่งที่ให้คะแนนได้');if(o.status!=='done')fail(409,'ให้คะแนนและทิปได้เมื่อส่งสำเร็จแล้ว');let rating=oldFeedback.rating??null,tip=oldFeedback.tip_amount??null;if(b.rating!==undefined){rating=Number(b.rating);if(!Number.isInteger(rating)||rating<1||rating>5)fail(400,'คะแนนต้องเป็น 1–5');}if(b.tip_amount!==undefined){tip=Number(b.tip_amount);if(!Number.isInteger(tip)||tip<1||tip>10000)fail(400,'ทิปต้องเป็นจำนวนเต็ม 1–10,000 บาท');}if(b.rating===undefined&&b.tip_amount===undefined)fail(400,'ระบุคะแนนหรือจำนวนทิป');const payload={order_id:oid,rider_id:o.rider_id,rating,comment:b.comment===undefined?(oldFeedback.comment||''):text(b.comment,500),tip_amount:tip,tip_method:'direct',tip_status:tip?'intent':null,updated_at:now()};if(found)run('UPDATE reports SET payload=? WHERE id=?',JSON.stringify(payload),found.id);else run('INSERT INTO reports VALUES(?,?,?,?,?)',id(),u.id,'customer_feedback',JSON.stringify(payload),now());return send(res,200,{ok:true,paid:false,feedback:payload})}
+ }
  if(action==='claim'&&method==='POST'){
  needUser(u,['rider']);if(!u.online)fail(409,'เปิดออนไลน์ก่อนรับงาน');
  transaction(()=>{if(get("SELECT id FROM orders WHERE rider_id=? AND status IN ('assigned','picked')",u.id))fail(409,'ส่งงานปัจจุบันให้เสร็จก่อน');const r=run("UPDATE orders SET status='assigned',rider_id=?,updated_at=? WHERE id=? AND status='ready' AND rider_id IS NULL",u.id,now(),oid);if(!r.changes)fail(409,'งานถูกยกเลิกหรือไรเดอร์คนอื่นรับแล้ว');addEvent(oid,u,'assigned')});emit();return send(res,200,orderView(get('SELECT * FROM orders WHERE id=?',oid),u));
