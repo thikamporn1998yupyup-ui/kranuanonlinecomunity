@@ -1984,5 +1984,101 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 <script src="/api.js"></script><script src="/customer.js"></script>
-<script src="/commerce-media.js?v=20261027"></script><script src="/commerce-customer.js?v=20261027"></script></body>
+<script src="/commerce-media.js?v=20261027"></script><script src="/commerce-customer.js?v=20261027"></script><style id="tight-spacing">
+/* ===== กระชับช่องไฟทั้งแอป (ชิด แน่น) — ปรับค่าได้ที่นี่ที่เดียว ===== */
+main{padding:12px 14px}
+#notice{padding:8px 12px;margin-bottom:8px}
+.top{padding:12px 16px}
+.top-hero{height:150px}
+.hero-copy{padding:6px 0}
+.top h1{margin:4px 0}
+.top.is-compact{padding-top:10px;padding-bottom:10px}
+.top.is-compact .top-hero{height:72px}
+.top.is-compact .hero-copy{padding:2px 0}
+.location-search-row{margin-top:4px}
+.categories{gap:2px;margin-top:0}
+.category{font-size:10.5px;line-height:1.3}
+.category span{max-width:50px;margin-bottom:3px;border-radius:16px}
+.category .icon{width:24px;height:24px}
+h2{margin:0 0 8px}
+.sectionhead{margin:12px 0 8px}
+.shop-selection{margin:12px 0 8px}
+.shop-selection small{margin-top:1px}
+.event-heading{margin:0 0 6px}
+.poster-rail{gap:8px;padding:0 0 2px}
+.local-poster{height:176px;padding:14px}
+.local-poster h3{font-size:25px;margin:6px 0 4px}
+.poster-controls{margin-top:2px}
+.shopgrid{gap:8px}
+.shopbody{padding:8px 10px 10px}
+.cover{height:92px}
+.cover>svg{width:120px;height:92px}
+.shop h3{margin:2px 0}
+.shop p{margin:2px 0}
+.shop button,.card button,.primary{margin-top:5px;padding:8px 12px}
+.home-hint{margin-top:10px;padding:9px 12px}
+.card{padding:14px;margin:8px 0}
+.card-delivery{padding:14px}
+.delivery-container{gap:10px}
+.demo{margin-top:14px;padding-top:10px}
+.bottomnav{padding-top:8px;padding-bottom:max(12px,env(safe-area-inset-bottom))}
+.bottomnav button{gap:3px}
+main{padding-bottom:84px}
+/* ตลาด */
+.mk-root{padding-bottom:12px}
+.mk-head{margin:0 0 8px}
+.mk-tabs{margin-bottom:8px}
+.mk-tabs button{padding:8px}
+.mk-strip,.mk-season{margin-bottom:8px;padding:9px 12px}
+.mk-chips{gap:6px;padding:0 2px 4px;margin-bottom:0}
+.mk-chip{padding:6px 11px}
+.mk-sortrow{margin:0 0 8px}
+.mk-grid{gap:8px}
+.mk-cover{aspect-ratio:4/3}
+.mk-body{padding:8px 9px 9px;gap:2px}
+.mk-title{min-height:2.6em}
+.mk-panel{padding:12px;margin-top:8px;border-radius:16px}
+.mk-panel h3{margin-bottom:8px}
+.mk-label{margin:10px 0 4px}
+.mk-back{margin:0 0 6px}
+.mk-list{gap:8px}
+.mk-want{padding:11px 12px}
+.mk-note{margin-top:8px;padding:8px 10px}
+.mk-actions{margin-top:8px;gap:6px}
+.mk-fare{margin-top:8px;gap:6px}
+.mk-cta{margin-top:10px;gap:6px}
+.mk-cta .mk-btn{padding:12px}
+</style>
+<script>
+/* ซ่อนลิงก์/ข้อความฝั่งทีมงานจากผู้ใช้ทั่วไป — ทีมงานเปิดด้วยลิงก์ที่ต่อท้าย ?staff=1 จึงจะเห็น */
+(function(){
+  if(/[?&]staff=1(&|$)/.test(location.search))return;
+  var WORDS=['ผู้ดูแล / ร้านรับงาน','หน้าไรเดอร์','เชื่อมฐานข้อมูลกลางแล้ว','ออกจากบัญชีทีมงาน'];
+  var SKIP={SCRIPT:1,STYLE:1,NOSCRIPT:1,TEMPLATE:1,HTML:1,BODY:1,MAIN:1,HEAD:1};
+  function onlyStaff(el){
+    var t=el.textContent;
+    if(!t||t.length>240)return false;
+    for(var i=0;i<WORDS.length;i++)t=t.split(WORDS[i]).join('');
+    return el.textContent.trim()!==''&&t.replace(/[\s·|/\-–]/g,'')==='';
+  }
+  function sweep(){
+    var all=document.body.querySelectorAll('*');
+    for(var i=0;i<all.length;i++){
+      var el=all[i];
+      if(SKIP[el.tagName]||el.id==='app'||el.hasAttribute('data-staff-hidden'))continue;
+      if(el.parentElement&&el.parentElement.hasAttribute('data-staff-hidden'))continue;
+      if(onlyStaff(el)){
+        var up=el;
+        while(up.parentElement&&!SKIP[up.parentElement.tagName]&&up.parentElement.id!=='app'&&onlyStaff(up.parentElement))up=up.parentElement;
+        up.setAttribute('data-staff-hidden','1');up.style.display='none';
+      }
+    }
+  }
+  var q=0;function later(){if(q)return;q=requestAnimationFrame(function(){q=0;sweep()})}
+  new MutationObserver(later).observe(document.body,{childList:true,subtree:true,characterData:true});
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',sweep);else sweep();
+  window.addEventListener('load',function(){sweep();setTimeout(sweep,1500)});
+})();
+</script>
+</body>
 </html>
