@@ -655,7 +655,7 @@ function deliveryFormHtml() {
 
       ${ride ? rideBlock : parcelBlock}
 
-   <button type="button" id="submitDeliveryBtn" class="btn-delivery-submit" disabled onclick="window.customDeliverySubmit(event)">
+  <button type="button" id="submitDeliveryBtn" class="btn-delivery-submit" disabled onclick="window.forceSubmitDelivery(event)">
         ${icon('rider')} <span id="submitLabel">${e ? 'ยืนยันเรียกไรเดอร์ · ' + e.fee + ' ฿' : 'เลือกจุดรับและจุดหมายก่อน'}</span>
       </button>
     </form>
@@ -1316,55 +1316,72 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
 
-<!-- ▼▼▼ delivery-fix-v12 ▼▼▼ -->
+<!-- ▼▼▼ delivery-fix-v13 ▼▼▼ -->
 <script>
-window.customDeliverySubmit = function(e) {
+window.forceSubmitDelivery = async function(e) {
     if(e && e.preventDefault) e.preventDefault();
     const btn = document.getElementById('submitDeliveryBtn');
     if(!btn || btn.disabled) return;
-    
+
     const d = typeof deliveryDraft !== 'undefined' ? deliveryDraft : null;
     if(!d || !d.pickup || !d.drop) {
         alert('กรุณาเลือกจุดรับและจุดหมายก่อนครับ'); return;
     }
-    
-    const ride = d.mode === 'ride';
-    
-    // สร้างออเดอร์ โดย "ปลอมตัว" ให้เหมือนออเดอร์อาหารเป๊ะๆ
-    const order = {
-        id: Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,6),
+
+    btn.disabled = true;
+    const oldText = btn.innerHTML;
+    btn.innerHTML = '⏳ กำลังส่งเข้าระบบ...';
+
+    // 1. จัดรูปแบบข้อมูลให้เหมือนกับที่ระบบอาหารส่งเป๊ะๆ
+    const payload = {
         areaId: typeof areaId !== 'undefined' ? areaId : 'khon-kaen-kranuan',
-        status: 'waiting', // 🔑 ใช้สถานะเดียวกับอาหาร ไรเดอร์จะได้รับงาน
-        type: 'food',      // 🔑 บังคับ Type เป็น food เพื่อให้ระบบหลังบ้านรับ
-        item: (ride ? '[ส่งคน] ' : '[ส่งของ] ') + (d.receiverName || 'งานด่วน'),
+        type: d.mode === 'ride' ? 'ride' : 'delivery',
+        status: 'waiting', // ใช้สถานะ waiting เพื่อให้ไรเดอร์มองเห็น
+        customer_name: d.receiverName || 'ลูกค้า',
+        phone: d.receiverPhone || '0000000000',
+        item: d.mode === 'ride' ? 'ส่งคน' : (d.itemDesc || 'ส่งของ'),
         note: d.itemNote || '',
-        receiver: { name: d.receiverName || '', phone: d.receiverPhone || '' },
-        pickupInfo: { address: d.pickup.address, note: d.pickup.note },
-        dropInfo: { address: d.drop.address, note: d.drop.note },
-        coordinates: { pickup: { lat: d.pickup.lat, lng: d.pickup.lng }, drop: { lat: d.drop.lat, lng: d.drop.lng }, isSample: false },
-        deliveryFee: 30, 
-        createdAt: Date.now()
+        pickup: d.pickup,
+        drop: d.drop,
+        deliveryFee: 30,
+        coordinates: { 
+            pickup: { lat: d.pickup.lat, lng: d.pickup.lng }, 
+            drop: { lat: d.drop.lat, lng: d.drop.lng } 
+        }
     };
-    
-    // 🔑 บันทึกผ่านระบบหลักของเว็บ (แบบเดียวกับ createOrder ของอาหาร)
-    if(typeof state !== 'undefined' && state.orders) {
-        state.orders.push(order);
-        if(typeof save === 'function') save();
+
+    // 2. ยิงตรงไปที่ API แบบไม่ผ่านฟอร์ม
+    try {
+        const res = await fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            alert('🎉 ส่งข้อมูลเข้าระบบหลังบ้านสำเร็จ! ไรเดอร์จะเห็นงานนี้แล้วครับ');
+            
+            // ล้างข้อมูลและกลับหน้าออเดอร์
+            if(typeof deliveryDraft !== 'undefined' && typeof emptyDraft === 'function') {
+                deliveryDraft = emptyDraft(d.mode);
+            }
+            if(typeof go === 'function') go('ออเดอร์ของฉัน');
+            else location.reload();
+
+        } else {
+            const errorText = await res.text();
+            alert('❌ หลังบ้านปฏิเสธข้อมูล:\n' + errorText + '\n\n(อาจจะติด 429 ให้รอ 1 นาทีแล้วลองใหม่ครับ)');
+            btn.disabled = false;
+            btn.innerHTML = oldText;
+        }
+    } catch (err) {
+        alert('❌ การเชื่อมต่อล้มเหลว: ' + err.message);
+        btn.disabled = false;
+        btn.innerHTML = oldText;
     }
-    
-    // ส่งสัญญาณให้ระบบหลังบ้านทำงาน
-    try { document.dispatchEvent(new CustomEvent('kranuan-order', { detail: order })); } catch(err){}
-    
-    alert('🎉 สร้างงานสำเร็จ! งานถูกส่งเข้าสู่ระบบหลักแล้ว ไรเดอร์จะมองเห็นงานนี้ครับ');
-    
-    // ล้างค่าและกลับหน้าแรก
-    if(typeof deliveryDraft !== 'undefined' && typeof emptyDraft === 'function') {
-        deliveryDraft = emptyDraft(d.mode);
-    }
-    if(typeof go === 'function') go('ออเดอร์ของฉัน');
 };
-console.log('%c[fix-v12] โหมดบายพาส API! ส่งข้อมูลผ่านระบบหลัก', 'color:#0a0;font-weight:bold');
+console.log('%c[fix-v13] ติดตั้งสำเร็จ (ยิง API ตรง)', 'color:#0a0;font-weight:bold');
 </script>
-<!-- ▲▲▲ delivery-fix-v12 ▲▲▲ -->
+<!-- ▲▲▲ delivery-fix-v13 ▲▲▲ -->
 </body>
 </html>
