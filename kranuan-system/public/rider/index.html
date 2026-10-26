@@ -600,11 +600,10 @@ function initMap(){
   if(map||!window.L)return;
   map=L.map('realMap',{zoomControl:false,attributionControl:false,dragging:!L.Browser.mobile,tap:false}).setView([16.706,103.078],15);
   
-  // เปลี่ยนมาใช้ OpenStreetMap ตัวมาตรฐานแบบระบุ Subdomain เพื่อเลี่ยงปัญหา API Key
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    subdomains: ['a', 'b', 'c'],
-    attribution: '&copy; OpenStreetMap contributors',
+  // เปลี่ยนมาใช้ Stamen Tile ผ่าน Stamen Server (ฟรี และไม่โดนบล็อก 403 ของ OSM หลัก)
+  L.tileLayer('https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.jpg', {
+    maxZoom: 18,
+    attribution: 'Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under ODbL.',
     className: 'dark-map-tiles'
   }).addTo(map);
 
