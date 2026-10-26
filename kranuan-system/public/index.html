@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>กระนวนใกล้บ้าน</title>
 
 <!-- โหลด SDK ของ LINE LIFF -->
@@ -172,7 +172,99 @@ p{line-height:1.7}
 @media(max-width:360px){.top{padding-left:16px;padding-right:16px}.brandline strong{font-size:16px}.eyebrow{font-size:8px}.logo{width:34px;height:34px}.line-profile-btn{max-width:105px;font-size:10px;padding:4px 6px}.line-profile-btn span{max-width:48px}.location{font-size:8px}.location-search-row{gap:5px}.top h1{font-size:25px}.local-poster{height:205px;padding:15px}.local-poster h3{font-size:26px}main{padding-left:16px;padding-right:16px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important}.top,.top-hero,.category span,.poster-dot{transition:none!important}.hero-scene,.hero-copy,.view-enter,main{animation:none!important}}
 
-</style>
+/* === Spacing polish only: ปรับเฉพาะระยะห่าง ไม่แตะข้อมูล/เลย์เอาต์หลัก === */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  touch-action: manipulation;
+}
+
+main {
+  padding: 20px 18px 24px;
+}
+
+.top {
+  padding: 18px 18px 16px;
+}
+
+.brandline,
+.brand-left {
+  gap: 10px;
+}
+
+.location-search-row {
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.searchbox {
+  margin-left: 8px;
+  padding: 4px 12px;
+  gap: 8px;
+}
+
+.categories {
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.category span {
+  margin-bottom: 5px;
+}
+
+.sectionhead {
+  margin: 20px 0 12px;
+}
+
+.shopgrid {
+  gap: 14px;
+}
+
+.market-grid {
+  gap: 12px;
+}
+
+.delivery-container {
+  gap: 16px;
+}
+
+.card-delivery,
+.market-form-card {
+  padding: 18px;
+}
+
+.form-group {
+  margin-bottom: 12px;
+}
+
+.form-row {
+  gap: 12px;
+}
+
+.loc-input-group {
+  gap: 12px;
+}
+
+.location-mode-selector {
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.policy-box {
+  margin-top: 14px;
+  padding: 10px 12px;
+}
+
+.btn-delivery-submit {
+  margin-top: 16px;
+}
+
+.bottomnav {
+  gap: 4px;
+  padding: 10px 8px max(16px, env(safe-area-inset-bottom));
+} </style>
 <link rel="stylesheet" href="/system.css">
 <link rel="stylesheet" href="/commerce.css?v=20261027"><link rel="stylesheet" href="/market.css?v=20261027-market"><link rel="stylesheet" href="/dense-layout.css?v=20261027-3px"></head>
 <body>
