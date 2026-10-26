@@ -607,15 +607,16 @@ function initMap(){
   /* ============ แผนที่และ GPS ============ */
 let map, pin;
 function initMap(){
-  if(map){
-    try { map.remove(); } catch(e){}
-    map = null;
-  }
-
   const mapContainer = document.getElementById('realMap');
   if(!mapContainer || !window.L) return;
 
-  // สร้างแผนที่ Leaflet สำหรับระบบเดลิเวอรี่
+  // ถ้ามีแผนที่เก่าอยู่แล้ว ให้ลบเคลียร์ทิ้งก่อนป้องกันบัณทับซ้อน
+  if(map){
+    map.remove();
+    map = null;
+  }
+
+  // สร้างแผนที่ Leaflet
   map = L.map('realMap', {
     zoomControl: false,
     attributionControl: false,
@@ -623,10 +624,10 @@ function initMap(){
     tap: false
   }).setView([16.706, 103.078], 15);
 
-  // ใช้ Mapbox Public Token ของคุณ
+  // Mapbox Public Token ของคุณ
   const mapboxToken = 'pk.eyJ1IjoidGhpa2FtcG9ybiIsImEiOiJjbXZwaG50ZjgwMGo5MnlxNjVucGk1dm1iIn0.SoJgiynxF0FfD0O_6akr_g';
 
-  // โหลดแผนที่ Mapbox Dark Tiles สำหรับธีมแอป
+  // โหลด Tile แผนที่ Mapbox
   L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/dark-v10/tiles/{z}/{x}/{y}?access_token=' + mapboxToken, {
     maxZoom: 19,
     tileSize: 512,
@@ -643,7 +644,17 @@ function initMap(){
       iconAnchor: [12, 12]
     })
   }).addTo(map);
+
+  // สั่งให้ Leaflet คำนวณขนาดหน้าจอใหม่ทันที ป้องกันจอเทา/จอขาว
+  setTimeout(() => {
+    map.invalidateSize();
+  }, 200);
 }
+
+// เรียกใช้งานฟังก์ชันเมื่อหน้าเว็บพร้อม
+window.addEventListener('DOMContentLoaded', () => {
+  initMap();
+});
 function watchGps(){
   const st=$('#mapGpsStatus');
   if(!navigator.geolocation){st.textContent='อุปกรณ์ไม่รองรับ GPS';return}
