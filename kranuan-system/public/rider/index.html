@@ -600,11 +600,11 @@ function initMap(){
   if(map||!window.L)return;
   map=L.map('realMap',{zoomControl:false,attributionControl:false,dragging:!L.Browser.mobile,tap:false}).setView([16.706,103.078],15);
   
-  // เปลี่ยนมาใช้ CartoDB Tile เพื่อแก้ปัญหา 403 Access blocked
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  // เปลี่ยนมาใช้ OpenStreetMap ตัวมาตรฐานแบบระบุ Subdomain เพื่อเลี่ยงปัญหา API Key
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
-    subdomains: 'abcd',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: ['a', 'b', 'c'],
+    attribution: '&copy; OpenStreetMap contributors',
     className: 'dark-map-tiles'
   }).addTo(map);
 
