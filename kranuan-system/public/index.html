@@ -966,16 +966,23 @@ function closeMapPicker() {
    ก้อนงานยังเป็นชุดเดิมทุกฟิลด์ (จุดรับ จุดส่ง ชื่อ เบอร์ รูป ค่าส่ง)
    แค่ไม่ลบหน้าทิ้งทันที เพื่อให้สคริปต์ตัวเดียวกับหน้าสั่งอาหารยิงก้อนนี้ไปหาไรเดอร์ได้
 */
-function submitRealDelivery(e) {
-  e.preventDefault();
+async function submitRealDelivery(e) {
+  if(e) e.preventDefault();
   const d = deliveryDraft, est = estimate(), ride = d.mode === 'ride';
-  if (!d.pickup || !d.drop || !est) { setNotice(ride ? 'กรุณาเลือกจุดรับและจุดหมายบนแผนที่ก่อน' : 'กรุณาเลือกจุดรับของและจุดส่งของบนแผนที่ก่อน'); return; }
+  if (!d.pickup || !d.drop || !est) { 
+    setNotice(ride ? 'กรุณาเลือกจุดรับและจุดหมายบนแผนที่ก่อน' : 'กรุณาเลือกจุดรับของและจุดส่งของบนแผนที่ก่อน'); 
+    return; 
+  }
+  
   const form = e.target && e.target.tagName === 'FORM' ? e.target : document.querySelector('form.route-card');
   if (form) fillForeignFromDraft(form);
+  
   const sizeLabel = (PARCEL_SIZES.find(s => s[0] === d.size) || [])[1] || '';
   const notes = ride
     ? [d.itemNote, d.pickup.note && ('จุดสังเกตจุดรับ: ' + d.pickup.note), d.drop.note && ('จุดสังเกตจุดหมาย: ' + d.drop.note)]
     : [d.itemNote, d.drop.note && ('จุดสังเกตปลายทาง: ' + d.drop.note), d.pickup.note && ('จุดสังเกตต้นทาง: ' + d.pickup.note)];
+
+  // สร้างข้อมูลสำหรับบันทึกลงเครื่อง (เพื่อให้หน้าจอแสดงผล)
   const order = {
     id: Date.now().toString(36),
     areaId,
@@ -992,17 +999,49 @@ function submitRealDelivery(e) {
     dropInfo: { address: d.drop.address, note: d.drop.note },
     coordinates: { pickup: { lat: d.pickup.lat, lng: d.pickup.lng }, drop: { lat: d.drop.lat, lng: d.drop.lng }, isSample: false }
   };
-  state.orders.push(order);
-  document.dispatchEvent(new CustomEvent('kranuan-order', { detail: order }));
-  setTimeout(() => {
+
+  // 🔑 [ส่วนที่เพิ่มเข้ามา] ยิงข้อมูลไปที่เซิร์ฟเวอร์ผ่าน window.K (แนบ Token ครบถ้วน)
+  try {
+    const btn = document.getElementById('submitDeliveryBtn');
+    if(btn) { btn.disabled = true; btn.innerHTML = '⏳ กำลังส่งข้อมูล...'; }
+
+    // จัดรูปแบบ Payload ให้หลังบ้านรู้จัก
+    const payload = {
+      type: order.type,
+      status: 'waiting', // ใช้ waiting เพื่อให้ไรเดอร์มองเห็นงาน
+      areaId: order.areaId,
+      customer_name: d.receiverName || '',
+      phone: d.receiverPhone || '',
+      item: order.item,
+      note: order.note,
+      pickup: d.pickup,
+      drop: d.drop,
+      deliveryFee: order.deliveryFee
+    };
+
+    // ส่งข้อมูลผ่านระบบกลางของคุณ
+    await window.K.request('/orders', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    // ถ้าเซิร์ฟเวอร์ตอบกลับว่าสำเร็จ (200 OK) ค่อยบันทึกและเปลี่ยนหน้า
+    state.orders.push(order);
     insideBoxImageBase64 = '';
     houseImageBase64 = '';
     deliveryDraft = emptyDraft(d.mode);
     view = 'ออเดอร์ของฉัน';
     save();
-    const n = document.getElementById('notice');
-    if (n) n.textContent = ride ? 'เรียกไรเดอร์เรียบร้อย! ไรเดอร์กำลังเตรียมมารับคุณ' : 'สร้างงานส่งของเรียบร้อย! ไรเดอร์กำลังเตรียมมารับสิ่งของ';
-  }, 0);
+    
+    alert('🎉 ส่งข้อมูลเข้าระบบสำเร็จ! ไรเดอร์จะมองเห็นงานนี้แล้ว');
+    if(typeof go === 'function') go('ออเดอร์ของฉัน');
+
+  } catch (err) {
+    // ถ้าเซิร์ฟเวอร์ปฏิเสธ จะแจ้งเตือน
+    alert('❌ หลังบ้านปฏิเสธ: ' + (err.message || 'ไม่ทราบสาเหตุ'));
+    const btn = document.getElementById('submitDeliveryBtn');
+    if(btn) { btn.disabled = false; btn.innerHTML = 'ยืนยันเรียกไรเดอร์'; }
+  }
 }
 /* 2. แก้ไขเฉพาะฟอร์มลงประกาศหน้าตลาดตามสั่ง */
 function listingForm(){
