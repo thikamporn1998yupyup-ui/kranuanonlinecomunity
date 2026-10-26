@@ -1,0 +1,19 @@
+ภาพสร้างด้วย built-in image_gen; prompts ที่ใช้:
+
+WELCOME
+Bright editorial illustration for a Thai community web app welcome hero, wide 3:2 landscape. An artist's impression inspired by Nong Ko pond in Kranuan, Khon Kaen: calm turquoise pond, a small orange suspension footbridge with twin orange towers, leafy green lakeside trees, blue sky, warm sunshine. Friendly contemporary travel illustration, textured painterly detail, pale butter yellow and cream palette with coral orange accents. Composition: bridge and scenic detail in right and bottom two thirds, pale open sky on upper left for HTML overlay text. No text, no letters, no logos. Not a documentary photograph.
+
+FOOD
+Wide landscape 3:2 image for a bright Thai local food category banner. Delicious Thai Isan lunch spread: som tam, grilled chicken, sticky rice basket and leafy herbs, appetizing realistic editorial food photography, sunny soft daylight, warm ivory and butter yellow tabletop, coral orange accent napkin. Dishes clustered on right two thirds, clean pale cream negative space at left for HTML title. Bright, fresh, premium but friendly local Thai food. No text, no watermark.
+
+DRINK
+Wide landscape 3:2 image for Thai community drinks category banner. Cold Thai milk tea in clear cup, iced matcha latte and fresh lime soda with condensation, orange slices and mint leaves. Sunny cafe editorial photography, pale butter yellow and cream backdrop, fresh mint green and coral details. Drinks clustered on right two thirds, clean pale area at left for HTML title. Bright airy delicious, no text, no logos, no watermark.
+
+SERVICE
+Wide landscape 3:2 image for Thai neighborhood services category banner. Friendly Thai repair technician wearing clean orange work shirt, smiling, small toolbox and tidy household repair tools in bright cream workshop with sunlit green plant. High quality editorial lifestyle photography, warm ivory, butter yellow, orange accents. Person and tools on right two thirds, clean light empty left for HTML heading. Natural face and hands, welcoming, no text, logos or watermark.
+
+FESTIVAL
+Wide landscape 3:2 artwork background for a SAMPLE local Thai-Chinese opera community festival poster in Kranuan. Joyful ornate Chinese opera performer with red and gold headdress at right, red paper lanterns at top, stylized local festival stage and tiny food stalls along bottom. Premium vibrant editorial illustration in coral red, warm gold and cream, bright celebratory lighting, not dark. Left half has uncluttered warm red negative space for HTML Thai poster title. No text, letters, dates, logos or watermark.
+
+Validation
+Browser checks passed: welcome and food/drink/service category imagery, reduced header height, slide transitions, carousel buttons/dots, poster dialog opening and Escape closing, shop search, navigation to all tabs, original delivery form submission, no horizontal overflow at 320/390/480/900px, reduced-motion preference, no JavaScript page errors. LINE SDK and original pricing assets were not supplied and were not integration-tested.

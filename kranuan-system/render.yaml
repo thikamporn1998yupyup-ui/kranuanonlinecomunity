@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: kranuan-community-system
+    runtime: node
+    plan: free
+    region: oregon
+    numInstances: 1
+    buildCommand: npm install --omit=dev
+    startCommand: node server.cjs
+    healthCheckPath: /api/health
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_VERSION
+        value: 24.22.1
+      - key: NODE_ENV
+        value: production
+      - key: FIREBASE_DATABASE_URL
+        value: https://kranuan-app-default-rtdb.asia-southeast1.firebasedatabase.app
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: APP_ORIGIN
+        sync: false
+      - key: DELIVERY_FEE_THB
+        value: 25

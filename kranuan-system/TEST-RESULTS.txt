@@ -1,0 +1,5 @@
+API integration suite: 14 tests passed using Node 24.22.1 and an isolated temporary SQLite database.
+Browser integration: Chromium, separate customer/admin/rider sessions. Shop verification, merchant opt-in, menu creation, opening, checkout, live alert, claim, pickup, delivery and live customer/admin status all passed. No page errors.
+Order prices calculated server-side. Concurrent claim test: exactly one successful rider.
+Remote OSM import did not complete (HTTP 406 / timeout); no real shop directory is preloaded.
+Render deployment and LINE authentication were not performed.

@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>กระนวนไรเดอร์</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+@font-face{font-family:Seed;src:url("../assets/fonts/LINESeedSansTH_W_Rg.woff2") format("woff2");font-weight:400}
+@font-face{font-family:Seed;src:url("../assets/fonts/LINESeedSansTH_W_Bd.woff2") format("woff2");font-weight:700}
+:root{--ac:#e95f2b;--rgb:233,95,43;--ac2:#e95f2b;--s0:#fffbf2;--s1:#ffffff;--s2:#fff4dc;--bg:#efe6d8;--top:#fbd460;--tx:#2b2622;--tx2:#7b6f63;--ln:#efe2cf;--ln2:#e5d4bb;--chip:rgba(255,255,255,.92);--btn:#ffffff;--navbg:#e95f2b;--navtx:rgba(255,255,255,.85);--navon:#fff;--navtile:rgba(255,255,255,.24);--tilebg:#fdf0c8;--tileln:#f5e1a0;--ok:#0b8f4d;--okrgb:11,143,77;--warn:#a65a00}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:400 14px/1.6 Seed,"Noto Sans Thai",Tahoma,sans-serif}
+button,input,select{font:inherit}button{cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.app{max-width:480px;background:var(--s0);min-height:100vh;margin:auto;padding-bottom:90px;position:relative}
+.topbar{padding:20px 18px 24px;background:var(--top);display:flex;align-items:center;justify-content:space-between;gap:10px;border-radius:0 0 32px 32px}
+.topbar strong{font-size:22px;font-weight:700;line-height:1.3;display:block;color:var(--tx)}
+.topbar small{display:block;color:var(--tx2);font-size:10px;letter-spacing:.2em;font-weight:700}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.rider-mini-avatar{width:32px;height:32px;border-radius:50%;background:var(--ok);display:grid;place-items:center;color:#fff;flex:none;font-weight:700;font-size:14px;overflow:hidden}
+.rider-mini-avatar img{width:100%;height:100%;object-fit:cover}
+.online-status{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--tx2)}
+.online-status i{width:6px;height:6px;border-radius:50%;background:var(--tx2)}
+.online-status.on{color:var(--ok)}.online-status.on i{background:var(--ok);box-shadow:0 0 6px var(--ok)}
+#realMapContainer{height:clamp(320px,52vh,500px);position:relative;background:var(--s2);margin:14px 14px 0;border-radius:24px;overflow:hidden;border:1px solid var(--ln)}
+#realMap{height:100%;width:100%}
+:root[data-mode=dark] .dark-map-tiles{filter:brightness(.6) invert(1) contrast(3) hue-rotate(200deg) saturate(.3)}:root[data-mode=light] .dark-map-tiles{filter:saturate(.85) sepia(.12)}
+.maptop{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;gap:8px;z-index:1000}
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--chip);padding:5px 10px;border-radius:8px;font-size:11px;border:1px solid var(--ln);font-weight:700;color:var(--tx)}
+.chip .ic{width:14px;height:14px;color:var(--ac)}
+.mapstats{position:absolute;left:0;right:0;bottom:0;z-index:1000;padding:60px 16px 14px;background:linear-gradient(to top,rgba(10,11,13,.94) 0%,rgba(10,11,13,.78) 45%,rgba(10,11,13,0) 100%);display:grid;grid-template-columns:repeat(3,1fr);gap:10px;pointer-events:none}
+.mapstats span{display:block;font-size:10px;color:#c3c9d3;text-shadow:0 1px 3px #000}
+.mapstats strong{display:block;font-size:18px;line-height:1.3;color:#fff;text-shadow:0 1px 4px #000}
+.mapstats div:first-child strong{color:var(--ac2)}
+
+.content{padding:18px}
+.sectiontitle{display:flex;justify-content:space-between;align-items:center;margin:5px 0 15px}
+.sectiontitle h1{font-size:22px;font-weight:700;margin:0;color:var(--tx)}
+.pill{font-size:10px;padding:5px 9px;border-radius:20px;background:rgba(var(--rgb),.15);color:var(--ac);border:1px solid rgba(var(--rgb),.25)}
+.card{padding:18px;background:var(--s1);border:1px solid var(--ln);border-radius:22px;margin:12px 0}
+.jobhead{display:flex;align-items:center;gap:10px}
+.avatar{display:grid;place-items:center;width:44px;height:44px;border-radius:14px;background:var(--tilebg);border:1px solid var(--tileln);color:var(--ac);flex:none}
+.jobhead strong{display:block;font-size:15px;color:var(--tx)}
+.muted{color:var(--tx2);font-size:11px}
+.amount{font-weight:700;font-size:24px;margin-left:auto;color:var(--ac2)}
+.timeline{margin:18px 0 12px;padding-left:9px}
+.stop{border-left:1px dashed var(--ln2);padding:0 0 19px 20px;position:relative;font-size:12px;color:var(--tx)}
+.stop:last-child{border-left-color:transparent;padding-bottom:0}
+.stop:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--tx2);position:absolute;left:-4px;top:6px}
+.stop:last-child:before{border-radius:2px;background:var(--ac2)}
+.stop small{display:block;font-size:10px;color:var(--tx2)}
+.row{display:flex;gap:9px;align-items:center}.row>*{min-width:0;flex:1}
+.primary,.secondary{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:0;border-radius:12px;padding:12px 14px;font-size:13px;text-decoration:none;font-weight:700}
+.primary{background:var(--ac);color:#fff}.secondary{border:1px solid var(--ln2);color:var(--tx);background:var(--btn)}
+button:disabled{opacity:.45;cursor:default}.full{width:100%}
+.state{font-size:12px;background:var(--s2);padding:10px;border-radius:10px;margin-bottom:12px;color:var(--warn);border:1px solid var(--ln)}
+label{display:block;font-size:12px;margin:10px 0;color:var(--tx)}
+input,select{width:100%;padding:10px;border:1px solid var(--ln2);border-radius:10px;background:var(--s2);color:var(--tx);font-size:13px}
+#notice:empty{display:none}#notice{font-size:12px;padding:12px;background:#332a18;color:#ffd54f;border-radius:10px;margin-bottom:12px}
+.empty{text-align:center;padding:22px;color:var(--tx2);font-size:13px}
+.switch{margin:12px 0;display:flex;align-items:center;justify-content:space-between}
+.switch button{border-radius:30px;padding:8px 15px;background:rgba(var(--okrgb),.13);color:var(--ok);font-size:12px;font-weight:700;border:1px solid rgba(var(--okrgb),.25)}
+.switch button.off{background:var(--s2);color:var(--tx2);border-color:var(--ln2)}
+.earnings{background:linear-gradient(135deg,var(--ac),#b71c1c);color:#fff;border-radius:22px;padding:24px}
+.earn-label{font-size:13px;opacity:.9}.earn-total{font-weight:700;font-size:48px;line-height:1.4;letter-spacing:-1px}
+.earnings p{font-size:12px;margin:0 0 17px;opacity:.8}
+.earn-breakdown{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(255,255,255,.2);padding-top:15px;gap:15px}
+.earn-breakdown span{display:block;font-size:11px;opacity:.8}.earn-breakdown strong{font-size:21px}
+.dash-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:18px 0}
+.dash-stats button{background:var(--tilebg);border:1px solid var(--tileln);border-radius:22px;padding:16px 6px;color:var(--tx)}
+.dash-stats strong{display:block;font-size:25px;color:var(--ac)}.dash-stats span{font-size:11px;color:var(--tx2)}
+.hist{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--ln);font-size:13px}
+.hist:last-child{border-bottom:0}.hist b{color:var(--ac2);white-space:nowrap}
+details{margin-top:14px}summary{cursor:pointer;font-size:12px;color:var(--tx2)}
+pre{white-space:pre-wrap;font-size:10px;background:var(--s2);padding:10px;border-radius:10px;color:var(--tx2);overflow-x:auto}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,480px);display:flex;background:var(--navbg);border-radius:30px 30px 0 0;padding:12px 10px 16px;z-index:1000}
+.nav button{flex:1;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--navtx);font-size:10px}
+.nav button.active{color:var(--navon);font-weight:700}
+.ic{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.tile{display:grid;place-items:center;width:44px;height:30px;border-radius:12px;border:1px solid transparent;color:var(--navtx)}
+.nav .ic{width:20px;height:20px}
+.nav button.active .tile{background:transparent;color:var(--navon)}
+:root[data-mode=dark] .nav button.active .tile{background:var(--navtile)}
+.dot{width:8px;height:8px;border-radius:50%;background:currentColor;margin-right:7px}
+.switch button{display:inline-flex;align-items:center}
+textarea{width:100%;padding:10px;border:1px solid var(--ln2);border-radius:10px;background:var(--s2);color:var(--tx);font-size:13px;resize:vertical}
+.card h2{display:flex;align-items:center;gap:8px;font-size:15px;margin:0 0 12px;color:var(--tx)}.card h2 .ic{width:18px;height:18px;color:var(--ac)}
+.profhead{display:flex;align-items:center;gap:16px}.profhead strong{display:block;color:var(--tx)}
+.bigav{position:relative;width:72px;height:72px;border-radius:22px;background:rgba(var(--rgb),.12);border:1px solid rgba(var(--rgb),.2);display:grid;place-items:center;color:var(--ac);flex:none}
+.bigav img{width:100%;height:100%;object-fit:cover;border-radius:21px}
+.camera{position:absolute;right:-6px;bottom:-6px;margin:0;width:28px;height:28px;border-radius:50%;background:var(--ac);color:#fff;display:grid;place-items:center;cursor:pointer;border:2px solid var(--s1)}.camera .ic{width:15px;height:15px}
+.gal{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.slotw{position:relative}
+.slot{display:grid;place-items:center;aspect-ratio:1;margin:0;border-radius:14px;border:1px dashed rgba(var(--rgb),.4);background:rgba(var(--rgb),.1);color:var(--ac);overflow:hidden;cursor:pointer}.slot img{width:100%;height:100%;object-fit:cover}
+.slotw .x{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(0,0,0,.75);color:#fff;display:grid;place-items:center;padding:0}.x .ic{width:12px;height:12px}
+.swatches{display:flex;gap:10px;margin:8px 0 14px;flex-wrap:wrap}
+.sw{width:34px;height:34px;border-radius:50%;border:2px solid transparent;padding:0}.sw[aria-pressed=true]{border-color:var(--tx);box-shadow:0 0 0 3px var(--s1) inset}
+.opt{padding:8px 12px;border-radius:12px;border:1px solid var(--ln2);background:var(--s2);color:var(--tx);font-size:12px}.opt[aria-pressed=true]{border-color:var(--ac);color:var(--ac);font-weight:700}
+#alert{position:fixed;top:12px;left:50%;transform:translateX(-50%);width:min(calc(100% - 24px),456px);z-index:3000}#alert:empty{display:none}
+.alertcard{background:var(--s1);border:1px solid var(--ac);border-radius:20px;padding:16px;box-shadow:0 12px 36px rgba(0,0,0,.55),0 0 0 4px rgba(var(--rgb),.18);animation:drop .35s cubic-bezier(.2,1.2,.4,1)}
+.alertbar{height:3px;border-radius:2px;background:rgba(var(--rgb),.25);margin-top:14px;overflow:hidden}.alertbar i{display:block;height:100%;background:var(--ac);animation:cd 30s linear forwards}
+@keyframes drop{from{transform:translateY(-130%);opacity:0}}@keyframes cd{from{width:100%}to{width:0}}
+@media(prefers-reduced-motion:reduce){.alertcard,.alertbar i{animation:none}}
+#jobbar{position:fixed;left:50%;transform:translateX(-50%);bottom:74px;width:min(calc(100% - 16px),464px);z-index:1500}#jobbar:empty{display:none}
+.barcard{background:var(--s1);border:1px solid rgba(var(--rgb),.5);border-radius:18px;padding:12px;box-shadow:0 -6px 24px rgba(0,0,0,.45)}
+.barinfo{flex:1;min-width:0}.barinfo strong,.barinfo span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hasbar .app{padding-bottom:230px}
+.mepill{display:flex;align-items:center;gap:8px;background:#fff;border:0;border-radius:24px;padding:4px 14px 4px 4px;box-shadow:0 1px 0 rgba(0,0,0,.04)}
+:root[data-mode=dark] .mepill{background:var(--s1);border:1px solid var(--ln)}
+.sosbtn{display:inline-flex;align-items:center;gap:4px;background:#d93025;color:#fff;border:0;border-radius:20px;padding:8px 12px;font-size:12px;font-weight:700}.sosbtn .ic{width:16px;height:16px}
+.row>.ico{flex:none;width:46px;padding-left:0;padding-right:0}.primary.danger{background:#d93025}
+.linkbtn{border:0;background:none;color:var(--ac);font-size:12px;padding:4px 0;font-weight:700}
+.hacts{display:flex;gap:16px;margin-top:2px;font-size:12px;color:var(--tx2);flex-wrap:wrap}
+#sheet:empty{display:none}#sheet{position:fixed;inset:0;z-index:2500;display:flex;align-items:flex-end;justify-content:center}
+.shbg{position:absolute;inset:0;background:rgba(0,0,0,.5)}
+.shpanel{position:relative;width:min(100%,480px);max-height:88vh;overflow:auto;background:var(--s0);border-radius:26px 26px 0 0;padding:20px 18px 26px;animation:rise .25s ease-out}
+@keyframes rise{from{transform:translateY(40px);opacity:0}}
+.shpanel h3{margin:0 0 4px;font-size:17px;color:var(--tx)}
+.mrow{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;padding:12px 14px;border:1px solid var(--ln);border-radius:14px;background:var(--s1);color:var(--tx);text-decoration:none;margin:8px 0;font-size:14px}
+.mrow span{display:flex;align-items:center;gap:10px}.mrow .ic{color:var(--ac)}.mrow b{color:#d93025;font-size:18px}.mrow.danger{background:#d93025;color:#fff;border:0}.mrow.danger .ic{color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.stars{display:flex;gap:6px;justify-content:center;margin:12px 0 4px}.stars button{border:0;background:none;padding:2px;color:var(--ln2)}.stars button.on{color:#f5a623}.stars .ic{width:36px;height:36px;fill:currentColor}
+.starlbl{text-align:center;font-size:13px;color:var(--tx2);margin-bottom:8px}
+@media(prefers-reduced-motion:reduce){.shpanel{animation:none}}
+@media(min-width:650px){.app{margin:20px auto;border-radius:27px;overflow:hidden}}
+
+/* กล่องงานเข้ากลางจอ ใช้สีธีมเดิม */
+#alert{inset:0;transform:none;width:100%;height:100%;height:100dvh;padding:16px;display:flex;align-items:center;justify-content:center;background:rgba(8,10,13,.76);backdrop-filter:blur(5px);overscroll-behavior:contain}
+#alert:empty{display:none}.alertcard{width:min(100%,456px);max-height:100%;display:flex;flex-direction:column;padding:0;overflow:hidden;border-radius:24px;box-shadow:0 24px 80px #0008,0 0 0 4px rgba(var(--rgb),.12);animation:jobIn .25s ease-out}.alertscroll{overflow:auto;min-height:0;overscroll-behavior:contain}
+.alerthead{padding:16px 18px 12px;display:flex;align-items:center;gap:10px}.alerthead .avatar{width:40px;height:40px;border-radius:13px}.alertheading{min-width:0;flex:1}.alertheading h2{font-size:21px;line-height:1.3;margin:0}.alertheading small{font-size:11px;color:var(--tx2)}.alertfee{text-align:right;flex:none}.alertfee small{display:block;font-size:10px;color:var(--tx2)}.alertfee strong{font-size:30px;color:var(--ac2);line-height:1.2}
+.alertphoto{position:relative;margin:0 12px;aspect-ratio:16/9;background:var(--s2);border-radius:16px;overflow:hidden;border:1px solid var(--ln)}.alertphoto img{display:block;width:100%;height:100%;object-fit:cover}.alertphoto figcaption{position:absolute;inset:auto 0 0;padding:30px 14px 12px;background:linear-gradient(transparent,#000c);color:white;font-size:17px;font-weight:700;overflow-wrap:anywhere}.photochip{position:absolute;top:10px;left:10px;padding:3px 9px;border-radius:8px;background:#16191cbb;color:#fff;font-size:10px}
+.alertbody{padding:14px 18px 0}.admincheer{display:flex;gap:10px;align-items:flex-start;margin-bottom:14px}.adminav{width:34px;height:34px;border-radius:12px;display:grid;place-items:center;background:rgba(var(--rgb),.15);color:var(--ac2);flex:none}.adminbubble{flex:1;min-width:0;background:var(--s2);border:1px solid var(--ln2);border-radius:0 16px 16px 16px;padding:10px 13px}.adminbubble small{display:block;font-size:10px;color:var(--tx2)}.adminbubble p{font-size:18px;font-weight:700;line-height:1.5;margin:3px 0 0;color:var(--tx);overflow-wrap:anywhere}.alertbody .timeline{margin:10px 0 14px}.alertbody .stop{font-size:14px;padding-bottom:12px;overflow-wrap:anywhere}.alertbody .stop:last-child{padding-bottom:0}.alertbody .stop small{font-size:11px}
+.alertfooter{flex:none;padding:12px 18px 16px;background:var(--s1);border-top:1px solid var(--ln)}.alertfooter .row{display:grid;grid-template-columns:1fr 1.7fr}.alertfooter button{min-height:52px;font-size:16px}.alertfooter p{margin:8px 0 0;font-size:10px;color:var(--tx2);text-align:center}.alertclock{display:flex;justify-content:space-between;font-size:11px;color:var(--tx2);margin-bottom:8px}.alertclock strong{color:var(--ac2)}.alertbar{margin:9px 0 0;height:4px}.alertbar i{animation:none;width:100%;transition:width .2s linear}
+@keyframes jobIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+@media(max-height:650px){.alertphoto{aspect-ratio:2.5}.alerthead{padding:10px 14px}.alertbody{padding:10px 14px 0}.admincheer{margin-bottom:8px}.adminbubble p{font-size:16px}.alertfooter{padding:10px 14px}.alertheading h2{font-size:19px}}
+@media(prefers-reduced-motion:reduce){.alertcard{animation:none}.alertbar i{transition:none}}
+
+</style>
+<link rel="stylesheet" href="/system.css"></head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></symbol>
+<symbol id="i-box" viewBox="0 0 24 24"><path d="M3.5 7.5L12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5L12 12l8.5-4.5M12 12v9"/></symbol>
+<symbol id="i-receipt" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></symbol>
+<symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h8.8M17.2 7H20M4 17h2.8M11.2 17H20"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4M4 4v4h4M4 13a8 8 0 0 0 14.5 4M20 20v-4h-4"/></symbol>
+<symbol id="i-nav" viewBox="0 0 24 24"><path d="M4 11.5L20 4l-7.5 16-2-6.5z"/></symbol>
+<symbol id="i-scooter" viewBox="0 0 24 24"><circle cx="5.5" cy="17.5" r="2.5"/><circle cx="18.5" cy="17.5" r="2.5"/><rect x="2.5" y="8" width="6.5" height="5" rx="1.3"/><path d="M8 17.5h8M14.5 6.5h3M16.5 6.5l1.8 8.5"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.8"/><path d="M4.5 20c0-4 3.4-6 7.5-6s7.5 2 7.5 6"/></symbol>
+<symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l1.6-2.5h6.8L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.3"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="i-bank" viewBox="0 0 24 24"><path d="M3.5 9.5L12 4l8.5 5.5z"/><path d="M6 12v5M10 12v5M14 12v5M18 12v5M3.5 20h17"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 21h4"/></symbol>
+<symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.4 0 2-1 1.5-2.2-.5-1.2.3-2.3 1.6-2.3H17a3.5 3.5 0 0 0 3.5-3.5C20.5 7 16.8 3.5 12 3.5z"/><circle cx="8" cy="11" r=".8"/><circle cx="11" cy="7.5" r=".8"/><circle cx="15.5" cy="8.5" r=".8"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17.2v.01"/></symbol>
+<symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></symbol>
+<symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1.1 5.9L12 16.9 6.7 19.7l1.1-5.9L3.5 9.7l5.9-.8z"/></symbol>
+<symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
+<symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/></symbol>
+<symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a1 1 0 0 1-1 1A15 15 0 0 1 4 5a1 1 0 0 1 1-1z"/></symbol>
+<symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+</defs></svg>
+<div class="app">
+  <header class="topbar">
+    <div><small>KRANUAN COMMUNITY</small><strong id="riderName">ไรเดอร์กระนวน</strong></div>
+    <div class="topbar-right"><button class="sosbtn" data-act="sheet" data-id="sos" aria-label="ฉุกเฉิน"><svg class="ic"><use href="#i-alert"/></svg>SOS</button><div class="mepill"><div class="rider-mini-avatar" id="miniAv"></div><div class="online-status" id="topStatus"><i></i><span>ออฟไลน์</span></div></div></div>
+  </header>
+
+  <div id="realMapContainer">
+    <div id="realMap"></div>
+    <div class="maptop"><span class="chip"><svg class="ic"><use href="#i-pin"/></svg>กระนวน · ขอนแก่น</span><span class="chip" id="mapGpsStatus">กำลังค้นหาสัญญาณ GPS...</span></div>
+    <div class="mapstats" id="mapStats"></div>
+  </div>
+
+  <main class="content">
+    <div id="notice" role="status"></div>
+    <div id="screen"></div>
+  </main>
+  <nav class="nav" id="nav"></nav>
+  <div id="jobbar"></div>
+  <div id="sheet" role="dialog" aria-modal="true"></div>
+  <div id="alert" role="alertdialog" aria-modal="true" aria-labelledby="alertTitle" aria-describedby="alertCheer"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ============ ตั้งค่าและตัวช่วย ============ */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const baht=n=>'฿'+Number(n||0).toLocaleString('th-TH');
+const JOB_KEY='kranuan_jobs2',PROF_KEY='kranuan_profile';
+/* เชื่อมฐานข้อมูล: แก้ตรงนี้ที่เดียว (mode = 'local' หรือ 'supabase') */
+const cfg={mode:'local',url:'',key:'',riderId:'rider-1',support:''}; // support = เบอร์ฝ่ายดูแลไรเดอร์ (เว้นว่างได้)
+/* ===== ตัวแปรสถานะและตัวช่วยฐานข้อมูล ===== */
+let tab='home',online=false,jobs=[],seen=null,pos=null,lastErr='',noticeTimer,lastPush=0;
+const isLocal=()=>cfg.mode!=='supabase';
+function seed(){
+  const now=Date.now(),mk=(i,shop,pickup,dropoff,km,fee,cn,min)=>({id:'J'+i,shop,pickup,dropoff,distance_km:km,fee,status:'pending',rider_id:null,customer_id:'c'+i,customer_name:cn,created_at:new Date(now-min*60000).toISOString()});
+  return [
+    mk(1,'ร้านก๋วยเตี๋ยวป้าแดง','ตลาดสดกระนวน','บ้านโนนสวรรค์ หมู่ 4',2.5,40,'คุณสมชาย',3),
+    mk(2,'ร้านชานมกระนวน','หน้าโรงเรียนกระนวน','หมู่บ้านทุ่งนา หมู่ 2',1.8,30,'คุณมาลี',2),
+    mk(3,'ครัวแม่ทองดี','ถนนมะลิวัลย์','บ้านขามเรียง',4.2,60,'คุณวิชัย',1)
+  ];
+}
+function lsGet(){try{const l=JSON.parse(localStorage.getItem(JOB_KEY)||'null');if(Array.isArray(l))return l}catch(e){}const s=seed();lsSet(s);return s}
+function lsSet(l){try{localStorage.setItem(JOB_KEY,JSON.stringify(l))}catch(e){}}
+async function api(path,o={}){
+  const r=await fetch(cfg.url.replace(/\/$/,'')+'/rest/v1'+path,{...o,headers:{apikey:cfg.key,Authorization:'Bearer '+cfg.key,'Content-Type':'application/json',Prefer:'return=representation',...(o.headers||{})}});
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const t=await r.text();return t?JSON.parse(t):null;
+}
+const BANKS=['ธนาคารกสิกรไทย','ธนาคารไทยพาณิชย์','ธนาคารกรุงเทพ','ธนาคารกรุงไทย','ธนาคารกรุงศรีอยุธยา','ธนาคารทหารไทยธนชาต','ธนาคารออมสิน','ธ.ก.ส.'];
+const ACC={orange:['#e95f2b','233,95,43','#ff8a5c','ส้มกระนวน'],coral:['#ef6264','239,98,100','#ff7a7c','ชมพูกระนวน'],green:['#2fbf71','47,191,113','#5fe09a','เขียวทุ่งนา'],blue:['#3b9cf0','59,156,240','#6cb6ff','ฟ้าลำน้ำ'],violet:['#9b7bf0','155,123,240','#b69cff','ม่วงพลบค่ำ']};
+const SUR={
+ cream:{n:'ครีมเหลือง',m:'light',s0:'#fffbf2',s1:'#ffffff',s2:'#fff4dc',bg:'#efe6d8',top:'#fbd460',tx:'#2b2622',tx2:'#7b6f63',ln:'#efe2cf',ln2:'#e5d4bb',chip:'rgba(255,255,255,.92)',btn:'#ffffff'},
+ gray:{n:'เทาเข้ม',m:'dark',s0:'#1e2024',s1:'#25282e',s2:'#18191c',bg:'#18191c',top:'#25282e',tx:'#f0f2f5',tx2:'#9da4b0',ln:'#32363e',ln2:'#3a3f47',chip:'rgba(24,25,28,.85)',btn:'#2c3038'},
+ black:{n:'ดำสนิท',m:'dark',s0:'#0f1012',s1:'#17181b',s2:'#08090a',bg:'#08090a',top:'#17181b',tx:'#f0f2f5',tx2:'#9da4b0',ln:'#26282d',ln2:'#30333a',chip:'rgba(8,9,10,.85)',btn:'#1f2024'},
+ navy:{n:'น้ำเงินเข้ม',m:'dark',s0:'#151c2b',s1:'#1b2436',s2:'#0f1520',bg:'#0f1520',top:'#1b2436',tx:'#f0f2f5',tx2:'#9da4b0',ln:'#2a3550',ln2:'#34405c',chip:'rgba(15,21,32,.85)',btn:'#222d44'}
+};
+let prof={name:'ไรเดอร์กระนวน',bank_name:'',bank_account:'',bank_holder:'',address:'',avatar_url:'',photos:[null,null,null,null],theme_accent:'orange',theme_surface:'cream',sound:true,emergency_name:'',emergency_phone:'',blocked:[]};
+try{Object.assign(prof,JSON.parse(localStorage.getItem(PROF_KEY)||'{}'))}catch(e){}
+if(!Array.isArray(prof.photos)||prof.photos.length!==4)prof.photos=[null,null,null,null];
+function normProf(){
+  if(!Array.isArray(prof.photos)||prof.photos.length!==4)prof.photos=[null,null,null,null];
+  if(!Array.isArray(prof.blocked))prof.blocked=[];
+  if(prof.theme_accent==='coral'&&prof.theme_surface==='gray'){prof.theme_accent='orange';prof.theme_surface='cream'}
+  if(!SUR[prof.theme_surface])prof.theme_surface='cream';if(!ACC[prof.theme_accent])prof.theme_accent='orange';
+}
+function applyTheme(){
+  const a=ACC[prof.theme_accent]||ACC.orange,u=SUR[prof.theme_surface]||SUR.cream,r=document.documentElement,st=r.style,L=u.m==='light',set=(k,v)=>st.setProperty('--'+k,v);
+  r.dataset.mode=u.m;
+  Object.entries(u).forEach(([k,v])=>{if(k!=='n'&&k!=='m')set(k,v)});
+  set('ac',a[0]);set('rgb',a[1]);set('ac2',L?a[0]:a[2]);
+  set('navbg',L?a[0]:u.s1);set('navtx',L?'rgba(255,255,255,.85)':'#8a94a2');set('navon',L?'#fff':a[0]);set('navtile',L?'rgba(255,255,255,.24)':'rgba('+a[1]+',.1)');
+  set('tilebg',L?'#fdf0c8':'rgba('+a[1]+',.1)');set('tileln',L?'#f5e1a0':'rgba('+a[1]+',.2)');
+  set('ok',L?'#0b8f4d':'#00e676');set('okrgb',L?'11,143,77':'0,230,118');set('warn',L?'#a65a00':'#ffb74d');
+}
+normProf();
+const me=()=>encodeURIComponent(cfg.riderId);
+const DB={
+  async jobs(){
+    if(isLocal())return lsGet();
+    return api('/jobs?select=*&order=created_at.desc&limit=100&or=(status.eq.pending,rider_id.eq.'+me()+')');
+  },
+  async claim(id){ // รับงาน: กันไรเดอร์สองคนรับงานเดียวกัน
+    if(isLocal()){const l=lsGet(),j=l.find(x=>x.id===id);if(!j||j.status!=='pending')return false;j.status='accepted';j.rider_id=cfg.riderId;lsSet(l);return true}
+    const r=await api('/jobs?id=eq.'+encodeURIComponent(id)+'&status=eq.pending',{method:'PATCH',body:JSON.stringify({status:'accepted',rider_id:cfg.riderId})});
+    return !!(r&&r.length);
+  },
+  async patch(id,f){
+    if(isLocal()){const l=lsGet();Object.assign(l.find(x=>x.id===id)||{},f);lsSet(l);return}
+    await api('/jobs?id=eq.'+encodeURIComponent(id)+'&rider_id=eq.'+me(),{method:'PATCH',body:JSON.stringify(f)});
+  },
+  async presence(on){
+    if(isLocal())return;
+    await api('/riders',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({id:cfg.riderId,name:prof.name,online:on,lat:pos&&pos.lat,lng:pos&&pos.lng,updated_at:new Date().toISOString()})});
+  },
+  async log(kind,o){ // รายงาน/ร้องเรียน/SOS -> ตาราง rider_reports
+    const row={rider_id:cfg.riderId,kind,created_at:new Date().toISOString(),...o};
+    if(isLocal()){try{const l=JSON.parse(localStorage.getItem('kranuan_logs')||'[]');l.push(row);localStorage.setItem('kranuan_logs',JSON.stringify(l))}catch(e){}return}
+    await api('/rider_reports',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(row)});
+  },
+  async getProfile(){if(isLocal())return null;const r=await api('/riders?id=eq.'+me()+'&select=*');return r&&r[0]},
+  async saveProfile(p){
+    try{localStorage.setItem(PROF_KEY,JSON.stringify(p))}catch(e){}
+    if(isLocal())return;
+    const o={id:cfg.riderId,updated_at:new Date().toISOString()};
+    ['name','bank_name','bank_account','bank_holder','address','avatar_url','photos','theme_accent','theme_surface','emergency_name','emergency_phone','blocked'].forEach(k=>o[k]=p[k]);
+    await api('/riders',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(o)});
+  },
+  async photo(slot,d){ // local = เก็บในเครื่อง, supabase = อัปโหลดเข้า Storage bucket "rider-photos"
+    if(isLocal())return d;
+    const b=await (await fetch(d)).blob(),path=me()+'/'+slot+'.jpg',base=cfg.url.replace(/\/$/,'')+'/storage/v1/object/';
+    const r=await fetch(base+'rider-photos/'+path,{method:'POST',headers:{apikey:cfg.key,Authorization:'Bearer '+cfg.key,'x-upsert':'true','Content-Type':'image/jpeg'},body:b});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return base+'public/rider-photos/'+path+'?v='+Date.now();
+  },
+  reset(){lsSet(seed())}
+};
+
+/* ============ ข้อมูลที่คำนวณจาก jobs ============ */
+const mine=()=>jobs.filter(j=>j.rider_id===cfg.riderId);
+const active=()=>mine().find(j=>j.status==='accepted'||j.status==='picked');
+const pending=()=>jobs.filter(j=>j.status==='pending'&&j.cancelled_by!==cfg.riderId&&!prof.blocked.some(b=>b.id===cust(j).id));
+const done=()=>mine().filter(j=>j.status==='delivered').sort((a,b)=>String(b.delivered_at).localeCompare(String(a.delivered_at)));
+const isToday=s=>s&&new Date(s).toDateString()===new Date().toDateString();
+const sum=l=>l.reduce((s,j)=>s+Number(j.fee||0),0);
+const mapUrl=(t,la,ln)=>'https://www.google.com/maps/dir/?api=1&dir_action=navigate&travelmode=two-wheeler&destination='+encodeURIComponent(la!=null&&la!==''&&ln!=null&&ln!==''?la+','+ln:t+' กระนวน ขอนแก่น');
+const dest=j=>j.status==='picked'?[j.dropoff,j.dropoff_lat,j.dropoff_lng,'นำทางไปส่ง']:[j.pickup,j.pickup_lat,j.pickup_lng,'นำทางไปร้าน'];
+const MORE=j=>`<button class="secondary ico" data-act="sheet" data-id="menu:${esc(j.id)}" aria-label="ตัวเลือกงาน"><svg class="ic"><use href="#i-more"/></svg></button>`;
+const navBtn=j=>{const d=dest(j);return `<a class="secondary" target="_blank" rel="noopener" href="${mapUrl(d[0],d[1],d[2])}"><svg class="ic" style="width:16px;height:16px"><use href="#i-nav"/></svg>${d[3]}</a>`};
+const STATUS={pending:'รอรับงาน',accepted:'รับงานแล้ว',picked:'รับของแล้ว',delivered:'ส่งสำเร็จ'};
+
+/* ============ หน้าจอ ============ */
+function jobCard(j,withAct){
+  let act='';
+  if(withAct){
+    if(j.status==='pending')act=`<div class="row">${navBtn(j)}<button class="primary" data-act="accept" data-id="${esc(j.id)}">รับงานนี้</button>${MORE(j)}</div>`;
+    if(j.status==='accepted')act=`<div class="row">${navBtn(j)}<button class="primary" data-act="picked" data-id="${esc(j.id)}">รับของแล้ว</button>${MORE(j)}</div>`;
+    if(j.status==='picked')act=`<div class="row">${navBtn(j)}<button class="primary" data-act="delivered" data-id="${esc(j.id)}">ส่งสำเร็จ</button>${MORE(j)}</div>`;
+  }
+  return `<div class="card"><div class="jobhead"><div class="avatar"><svg class="ic"><use href="#i-scooter"/></svg></div><div><strong>${esc(j.shop)}</strong><span class="muted">${esc(STATUS[j.status]||j.status)} · ${esc(j.distance_km)} กม.</span></div><div class="amount">${baht(j.fee)}</div></div>
+  <div class="timeline"><div class="stop">${esc(j.pickup)}<small>จุดรับของ</small></div><div class="stop">${esc(j.dropoff)}<small>จุดส่งของ</small></div></div>${j.customer_name?`<div class="muted" style="margin:0 0 10px">ลูกค้า: ${esc(j.customer_name)}</div>`:''}${act}</div>`;
+}
+function homeView(){
+  const a=active(),p=pending(),d=done(),t=d.filter(j=>isToday(j.delivered_at));
+  return `<div class="sectiontitle"><h1>แดชบอร์ด</h1><span class="pill">${isLocal()?'โหมดทดลอง':'เชื่อมฐานข้อมูลแล้ว'}</span></div>
+  <div class="switch"><span>สถานะรับงาน</span><button class="${online?'':'off'}" data-act="toggle"><i class="dot"></i>${online?'ออนไลน์ แตะเพื่อปิด':'ออฟไลน์ แตะเพื่อเปิด'}</button></div>
+  <div class="dash-stats"><button data-go="jobs"><strong>${p.length}</strong><span>งานรอรับ</span></button><button data-go="jobs"><strong>${a?1:0}</strong><span>กำลังส่ง</span></button><button data-go="history"><strong>${t.length}</strong><span>ส่งแล้ววันนี้</span></button></div>
+  <h2 style="font-size:15px;margin:4px 0 0">งานรอรับ (${p.length})</h2>${p.length?p.slice(0,3).map(j=>jobCard(j,true)).join('')+(p.length>3?'<button class="secondary full" data-go="jobs">ดูงานรอรับทั้งหมด</button>':''):'<div class="empty">ยังไม่มีงานรอรับ ระบบจะแจ้งเตือนเมื่อมีงานใหม่</div>'}`;
+}
+function jobsView(){
+  const a=active(),p=pending();
+  return `<div class="sectiontitle"><h1>งาน</h1><button class="secondary" data-act="refresh"><svg class="ic" style="width:16px;height:16px"><use href="#i-refresh"/></svg>รีเฟรช</button></div>
+  ${online?'':'<div class="state">คุณออฟไลน์อยู่ เปิดสถานะออนไลน์ที่หน้าหลักก่อนรับงาน</div>'}
+  
+  <h2 style="font-size:15px">งานรอรับ (${p.length})</h2>
+  ${p.length?p.map(j=>jobCard(j,true)).join(''):'<div class="empty">ตอนนี้ยังไม่มีงานใหม่ ระบบจะรีเฟรชให้ทุก 5 วินาทีขณะออนไลน์</div>'}`;
+}
+function historyView(){
+  const d=done();
+  return `<div class="sectiontitle"><h1>ประวัติ</h1><span class="pill">${d.length} งาน · ${baht(sum(d))}</span></div>
+  <div class="card">${d.length?d.map(j=>`<div class="hist"><div>${esc(j.shop)}<div class="muted">${esc(j.dropoff)} · ${j.delivered_at?new Date(j.delivered_at).toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'}):''}</div><div class="hacts">${j.rider_rating?`<span>ให้คะแนนลูกค้า ★ ${j.rider_rating}</span>`:`<button class="linkbtn" data-act="sheet" data-id="rate:${esc(j.id)}">ให้คะแนนลูกค้า</button>`}<button class="linkbtn" data-act="sheet" data-id="menu:${esc(j.id)}">รายงาน / บล็อก</button></div></div><b>${baht(j.fee)}</b></div>`).join(''):'<div class="empty">ยังไม่มีงานที่ส่งสำเร็จ</div>'}</div>`;
+}
+function settingsView(){
+  const slot=i=>{const u=prof.photos[i];return `<div class="slotw"><label class="slot"><input type="file" accept="image/*" data-slot="p${i}" hidden>${u?`<img src="${esc(u)}" alt="">`:'<svg class="ic"><use href="#i-plus"/></svg>'}</label>${u?`<button class="x" data-act="rmPhoto" data-id="p${i}" aria-label="ลบรูป"><svg class="ic"><use href="#i-x"/></svg></button>`:''}</div>`};
+  return `<div class="sectiontitle"><h1>ตั้งค่า</h1></div>
+  <div class="card"><div class="profhead"><div class="bigav">${prof.avatar_url?`<img src="${esc(prof.avatar_url)}" alt="">`:'<svg class="ic" style="width:32px;height:32px"><use href="#i-user"/></svg>'}<label class="camera"><input type="file" accept="image/*" data-slot="avatar" hidden><svg class="ic"><use href="#i-camera"/></svg></label></div><div><strong>รูปโปรไฟล์</strong><span class="muted">แตะไอคอนกล้องเพื่อเปลี่ยนรูป</span></div></div>
+  <label>ชื่อที่แสดง<input data-f="name" value="${esc(prof.name)}"></label></div>
+  <div class="card"><h2><svg class="ic"><use href="#i-camera"/></svg>รูปส่วนตัว</h2><div class="gal">${[0,1,2,3].map(slot).join('')}</div></div>
+  <div class="card"><h2><svg class="ic"><use href="#i-bank"/></svg>บัญชีธนาคาร</h2>
+  <label>ธนาคาร<select data-f="bank_name"><option value="">เลือกธนาคาร</option>${BANKS.map(b=>`<option value="${b}" ${prof.bank_name===b?'selected':''}>${b}</option>`).join('')}</select></label>
+  <label>เลขบัญชี<input data-f="bank_account" inputmode="numeric" value="${esc(prof.bank_account)}"></label>
+  <label>ชื่อบัญชี<input data-f="bank_holder" value="${esc(prof.bank_holder)}"></label></div>
+  <div class="card"><h2><svg class="ic"><use href="#i-pin"/></svg>ที่อยู่</h2><label>ที่อยู่ปัจจุบัน<textarea data-f="address" rows="3">${esc(prof.address)}</textarea></label></div>
+  <div class="card"><h2><svg class="ic"><use href="#i-phone"/></svg>ผู้ติดต่อฉุกเฉิน</h2><label>ชื่อ<input data-f="emergency_name" value="${esc(prof.emergency_name)}"></label><label>เบอร์โทร<input data-f="emergency_phone" inputmode="tel" value="${esc(prof.emergency_phone)}"></label></div>
+  <button class="primary full" data-act="saveProfile">บันทึกข้อมูล</button>
+  <div class="card"><h2><svg class="ic"><use href="#i-ban"/></svg>ลูกค้าที่บล็อก</h2>${prof.blocked.length?prof.blocked.map(b=>`<div class="hist"><div>${esc(b.name)}</div><button class="linkbtn" data-act="unblock" data-id="${esc(b.id)}">เลิกบล็อก</button></div>`).join(''):'<span class="muted">ยังไม่มีลูกค้าที่ถูกบล็อก</span>'}</div>
+  <div class="card"><h2><svg class="ic"><use href="#i-palette"/></svg>ธีม</h2><span class="muted">สีหลัก</span>
+  <div class="swatches">${Object.entries(ACC).map(([k,v])=>`<button class="sw" style="background:${v[0]}" data-act="theme" data-id="a:${k}" aria-label="${v[3]}" aria-pressed="${prof.theme_accent===k}"></button>`).join('')}</div><span class="muted">พื้นหลัง</span>
+  <div class="swatches">${Object.entries(SUR).map(([k,v])=>`<button class="opt" data-act="theme" data-id="s:${k}" aria-pressed="${prof.theme_surface===k}">${v.n}</button>`).join('')}</div></div>
+  <div class="card"><h2><svg class="ic"><use href="#i-bell"/></svg>แจ้งเตือนงานใหม่</h2>
+  <div class="switch"><span>เสียงและการสั่น</span><button class="${prof.sound?'':'off'}" data-act="sound"><i class="dot"></i>${prof.sound?'เปิด':'ปิด'}</button></div>
+  <button class="secondary full" data-act="testAlert">ทดสอบการแจ้งเตือน</button></div>`;
+}
+
+/* ============ เรนเดอร์และการควบคุม ============ */
+function render(){
+  const v={home:homeView,jobs:jobsView,history:historyView,settings:settingsView}[tab]();
+  $('#screen').innerHTML=v;
+  const n=pending().length;
+  $('#nav').innerHTML=[['home','home','หน้าหลัก'],['jobs','box','งาน'+(n?` (${n})`:'')],['history','receipt','ประวัติ'],['settings','sliders','ตั้งค่า']]
+    .map(([k,i,l])=>`<button class="${tab===k?'active':''}" data-go="${k}"><span class="tile"><svg class="ic"><use href="#i-${i}"/></svg></span>${l}</button>`).join('');
+  const s=$('#topStatus');s.className='online-status'+(online?' on':'');s.lastElementChild.textContent=online?'ออนไลน์':'ออฟไลน์';
+  const ja=active();document.body.classList.toggle('hasbar',!!ja);
+  $('#jobbar').innerHTML=ja?`<div class="barcard"><div class="jobhead"><div class="avatar"><svg class="ic"><use href="#i-scooter"/></svg></div><div class="barinfo"><strong>${esc(ja.shop)}</strong><span class="muted">${ja.status==='picked'?'กำลังไปส่ง':'รอไปรับของ'} · ${esc(dest(ja)[0])}</span></div><div class="amount" style="font-size:18px">${baht(ja.fee)}</div></div><div class="row" style="margin-top:10px">${navBtn(ja)}<button class="primary" data-act="${ja.status==='picked'?'delivered':'picked'}" data-id="${esc(ja.id)}">${ja.status==='picked'?'ส่งสำเร็จ':'รับของแล้ว'}</button>${MORE(ja)}</div></div>`:'';
+  const sH=sheetHTML();if(sH!==shHTML){$('#sheet').innerHTML=sH;shHTML=sH}
+  $('#riderName').textContent=prof.name;
+  $('#miniAv').innerHTML=prof.avatar_url?`<img src="${esc(prof.avatar_url)}" alt="">`:esc((prof.name||'ร').trim().charAt(0));
+  const dn=done(),td=dn.filter(j=>isToday(j.delivered_at));
+  $('#mapStats').innerHTML=`<div><span>รายได้วันนี้</span><strong>${baht(sum(td))}</strong></div><div><span>รายได้สะสม</span><strong>${baht(sum(dn))}</strong></div><div><span>งานสำเร็จ</span><strong>${dn.length} งาน</strong></div>`;
+  if(lastErr)$('#notice').textContent=lastErr;
+}
+function toast(m){clearTimeout(noticeTimer);$('#notice').textContent=m;noticeTimer=setTimeout(()=>{$('#notice').textContent=lastErr},3500)}
+function go(t){tab=t;render();scrollTo(0,0)}
+async function refresh(){
+  try{jobs=await DB.jobs();lastErr='';detect()}catch(e){lastErr='เชื่อมต่อฐานข้อมูลไม่ได้ ('+e.message+') ตรวจสอบที่แท็บตั้งค่า'}
+  render();
+}
+const need=id=>jobs.find(j=>j.id===id);
+const actions={
+  async toggle(){online=!online;if(online&&window.Notification&&Notification.permission==='default')try{Notification.requestPermission()}catch(e){}await DB.presence(online);toast(online?'เปิดรับงานแล้ว':'ปิดรับงานแล้ว')},
+  async accept(id){
+    if(!online){toast('เปิดสถานะออนไลน์ก่อนรับงาน');return false}
+    if(active()){toast('ส่งงานปัจจุบันให้เสร็จก่อนรับงานใหม่');return false}
+    if(await DB.claim(id)){tab='home';toast('รับงานแล้ว');return true}else{toast('งานนี้ถูกไรเดอร์คนอื่นรับไปแล้ว');return false}
+  },
+  async picked(id){await DB.patch(id,{status:'picked'});toast('บันทึกว่ารับของแล้ว')},
+  async delivered(id){await DB.patch(id,{status:'delivered',delivered_at:new Date().toISOString()});toast('ส่งสำเร็จ รายได้ถูกบันทึกแล้ว');sh={t:'rate',job:id,f:{stars:5,detail:'',reason:'',alsoBlock:false},msg:''}},
+  async refresh(){},
+  async saveProfile(){await DB.saveProfile(prof);toast('บันทึกข้อมูลแล้ว')},
+  async rmPhoto(id){prof.photos[+id.slice(1)]=null;await DB.saveProfile(prof)},
+  async theme(id){const[k,v]=id.split(':');prof[k==='a'?'theme_accent':'theme_surface']=v;applyTheme();await DB.saveProfile(prof)},
+  async sound(){prof.sound=!prof.sound;await DB.saveProfile(prof);if(prof.sound)beep()},
+  async testAlert(){notify({id:'TEST',shop:'ร้านตัวอย่าง',pickup:'ตลาดสดกระนวน',dropoff:'บ้านโนนสวรรค์ หมู่ 4',distance_km:2.5,fee:40})},
+  async dismiss(){nextAlert()},
+  async sheet(id){const i=id.indexOf(':'),t=i<0?id:id.slice(0,i),job=i<0?'':id.slice(i+1);sh={t,job:job||null,f:{stars:5,detail:'',reason:'',alsoBlock:false},msg:''}},
+  async sfset(id){const i=id.indexOf(':'),k=id.slice(0,i),v=id.slice(i+1);sh.f[k]=k==='alsoBlock'?v==='1':k==='stars'?+v:v;sh.msg=''},
+  async closeSheet(){sh=null},
+  async doCancel(){const j=jobOf(sh.job);if(!j){sh=null;return}if(!sh.f.reason){sh.msg='เลือกเหตุผลก่อนยกเลิก';return}
+    const was=j.status;await DB.patch(j.id,{status:was==='picked'?'cancelled':'pending',rider_id:was==='picked'?cfg.riderId:null,cancel_reason:sh.f.reason+(sh.f.detail?' - '+sh.f.detail:''),cancelled_by:cfg.riderId,cancelled_at:new Date().toISOString()});sh=null;toast('ยกเลิกงานแล้ว')},
+  async doReport(){const j=jobOf(sh.job);if(!sh.f.reason){sh.msg='เลือกเหตุผลก่อนส่งรายงาน';return}
+    await DB.log('report',{job_id:sh.job,customer_id:j?cust(j).id:null,reason:sh.f.reason,detail:sh.f.detail});if(sh.f.alsoBlock&&j)await blockCust(j);sh=null;toast('ส่งรายงานแล้ว ทีมงานจะตรวจสอบ')},
+  async doBlock(){const j=jobOf(sh.job);if(j)await blockCust(j);sh=null;toast('บล็อกลูกค้าแล้ว')},
+  async doRate(){const j=jobOf(sh.job);if(j)await DB.patch(j.id,{rider_rating:sh.f.stars,rider_rating_note:sh.f.detail||null});sh=null;toast('ขอบคุณสำหรับคะแนน')},
+  async doComplaint(){if(!sh.f.reason){sh.msg='เลือกหัวข้อก่อนส่งเรื่อง';return}await DB.log('complaint',{job_id:sh.job,reason:sh.f.reason,detail:sh.f.detail});sh=null;toast('ส่งเรื่องร้องเรียนแล้ว')},
+  async sendSos(){await DB.log('sos',{lat:pos&&pos.lat,lng:pos&&pos.lng,detail:'ไรเดอร์กดปุ่ม SOS'});sh.msg=isLocal()?'บันทึก SOS แล้ว (โหมดทดลอง ยังไม่ส่งถึงฝ่ายดูแลจริง) โทรขอความช่วยเหลือได้ทันที':'ส่งสัญญาณ SOS พร้อมตำแหน่งถึงฝ่ายดูแลแล้ว โทรขอความช่วยเหลือเพิ่มเติมได้ทันที'},
+  async shareLoc(){if(!pos){sh.msg='ยังไม่พบตำแหน่ง GPS กรุณาเปิดสิทธิ์ตำแหน่ง';return}
+    const u='https://www.google.com/maps/search/?api=1&query='+pos.lat+','+pos.lng,t='ตำแหน่งของฉัน (ไรเดอร์กระนวน)';
+    try{if(navigator.share)await navigator.share({title:t,text:t,url:u});else{await navigator.clipboard.writeText(u);sh.msg='คัดลอกลิงก์ตำแหน่งแล้ว นำไปวางส่งให้คนที่ไว้ใจได้'}}catch(e){}},
+  async unblock(id){prof.blocked=prof.blocked.filter(b=>b.id!==id);await DB.saveProfile(prof)},
+  async takeAlert(){
+ const j=cur;if(!j||alertBusy)return;
+ if(j.id==='TEST'){nextAlert();return toast('นี่คือการทดสอบ ระบบแจ้งเตือนทำงานปกติ')}
+ alertBusy=true;clearInterval(alertTimer);setAlertButtons(true);
+ try{const ok=await actions.accept(j.id);if(ok){queue=[];nextAlert()}else{jobs=await DB.jobs();if(!pending().some(x=>x.id===j.id))nextAlert()}}
+ finally{alertBusy=false;setAlertButtons(false);if(cur)startAlertClock()}
+}
+};
+document.addEventListener('click',async e=>{
+  unlockAudio();const g=e.target.closest('[data-go]');if(g)return go(g.dataset.go);
+  const b=e.target.closest('[data-act]');if(!b)return;
+  b.disabled=true;
+  try{await actions[b.dataset.act](b.dataset.id)}catch(err){toast('เกิดข้อผิดพลาด: '+err.message);if(sh)sh.msg='เกิดข้อผิดพลาด: '+err.message}
+  b.disabled=false;
+  if(['sheet','sfset','closeSheet','dismiss'].includes(b.dataset.act))render();else await refresh();
+});
+
+/* ============ แจ้งเตือนงานใหม่ ============ */
+let queue=[],cur=null,alertTimer,ac,alertDeadline=0,alertBusy=false,alertFocus=null,oldOverflow='',alertLocked=false;
+const ALERT_DURATION=30000;
+/* กำลังใจอัตโนมัติ: สุ่มไม่ซ้ำจนกว่าจะครบทุกประโยค */
+const ISAN_CHEERS=[
+'ไหวบ่อาววว! แอดมินส่งแฮงใจมาให้เด้อ ✨',
+'สู้เด้อ บ้านเฮามันแร้ง! แต่อย่าลืมกินน้ำเด้อ ☀️',
+'งานมาแล้วเด้อ คนเก่งของกระนวน 🧡',
+'มื้อนี้ขอให้หมาน ๆ งานเข้า เงินเข้าเด้อ!',
+'ค่อย ๆ ไปเด้อ ถึงปลอดภัย แอดมินกะดีใจแล้ว',
+'เมื่อยกะพักก่อนเด้อ แฮงใจทางนี้มีให้คือเก่า',
+'อีกจักรอบ กะใกล้ฮอดเป้าแล้ว สู้ ๆ เด้อ!',
+'บ่ต้องฟ้าวหลาย ขี่ปลอดภัยไว้ก่อนเด้อ 🛵',
+'คนทางบ้านถ่าอยู่เด้อ ขี่รถดี ๆ นำ',
+'ขอบใจหลาย ๆ ที่ซ่อยส่งความแซ่บให้บ้านเฮา',
+'แดดสิฮ้อนปานใด๋ แอดมินกะส่งใจไปซ่อยเด้อ',
+'มื้อนี้เจ้าสุดยอดหลาย ฮู้โตบ่! 🌟',
+'งานเด้งแล้วเด้อ พร้อมบ่คนเก่ง!',
+'ขอให้ทางโล่ง ไฟเขียว ลูกค้ายิ้มให้เด้อ',
+'กินข้าวแล้วบ่ อย่ามัวแต่แล่นงานจนลืมเด้อ',
+'น้ำเย็นจักอึก แล้วค่อยไปต่อเด้อ 🧊',
+'แอดมินอยู่ทางนี้ ส่งแฮงใจไปฮอดเจ้าเด้อ',
+'ฝนสิตกกะระวังทางมื่นนำเด้อ เป็นห่วงหลาย',
+'มื้อนี้เฮ็ดดีแล้วเด้อ ภูมิใจในโตเองนำ',
+'ทีละงาน ทีละก้าว เฮาค่อย ๆ ไปนำกันเด้อ',
+'คนขยันคือเจ้า สมควรได้ยิ้มกว้าง ๆ เด้อ 😊',
+'บ่แม่นแค่ส่งของ เจ้ากำลังส่งรอยยิ้มเด้อ',
+'ฮ้อนกะหลบฮ่มก่อนเด้อ งานถัดไปค่อยว่ากัน',
+'งานนี้มีแฮงใจแถมให้เต็มกระเป๋าเลยเด้อ!',
+'ให้มื้อนี้เป็นมื้อดี ๆ ของเจ้าเด้อ 🧡',
+'ไปรับความแซ่บ แล้วส่งฮอดมือเขาเด้อ',
+'ขี่ดี ๆ เด้อ อย่าลืมใส่หมวกกันน็อกนำ',
+'บ่ต้องเก่งทุกมื้อ แค่ดูแลโตเองกะเก่งแล้ว',
+'ขอให้ลูกค้าน่าฮัก ร้านเฮ็ดไว มื้อนี้เด้อ',
+'แฮงใจบ่เคยหมด ส่งให้เจ้าตลอดเด้อ!',
+'เงินกะอยากได้ แต่ความปลอดภัยต้องมาก่อนเด้อ',
+'มื้อนี้ได้เท่าใด๋ กะขอบใจที่ตั้งใจเด้อ',
+'พักหายใจจักหน่อย แล้วค่อยลุยต่อเด้อ',
+'หมาน ๆ เด้อ ขอให้มีแต่เรื่องม่วนใจ',
+'ยิ้มให้โตเองจักเทื่อ เจ้าพยายามหลายแล้ว',
+'ไปดีมาดีเด้อ แอดมินคอยเชียร์อยู่ 🛵',
+'กระนวนบ้านเฮา มีเจ้าคอยส่งกะอุ่นใจหลาย',
+'ร้านพร้อมแล้ว แฮงใจแอดมินกะพร้อมคือกัน!',
+'บ่ไหวกะข้ามได้เด้อ เอาที่เจ้าสะดวกเลย',
+'สู้เด้อคนขยัน แต่อย่าฝืนร่างกายเด้อ',
+'ขอให้รับง่าย ส่งคล่อง ตลอดมื้อนี้เด้อ',
+'มื้อใด๋เมื่อย กะจำไว้ว่าเจ้ายังมีคนเชียร์',
+'งานเด้งติ๊ง ๆ แอดมินส่งใจปิ๊ง ๆ ให้เด้อ ✨',
+'ขอบใจที่เป็นแฮงสำคัญของบ้านเฮาเด้อ',
+'ค่อย ๆ สะสมไปเด้อ ความตั้งใจบ่เสียเปล่า',
+'อย่าลืมยืดแขนยืดขานำเด้อ คนเก่ง',
+'ขอให้ทุกเส้นทางพาเจ้ากลับเฮือนปลอดภัยเด้อ',
+'ใจพร้อม รถพร้อม กะไปได้เด้อ บ่พร้อมกะพักก่อน',
+'แซ่บคัก ๆ กำลังถ่าให้เจ้าไปส่งเด้อ!',
+'มื้อนี้บ่ได้สู้ผู้เดียวเด้อ แอดมินเชียร์อยู่',
+'เก็บแฮงไว้ยิ้มตอนเลิกงานนำเด้อ 😊',
+'ฮักแพงโตเองนำเด้อ ไรเดอร์บ้านเฮา',
+'ถึงช้าจักหน่อยบ่เป็นหยัง เอาปลอดภัยเด้อ',
+'ขอให้มื้อนี้มีเรื่องให้ยิ้มหลายกว่าเรื่องเมื่อย',
+'แอดมินยกนิ้วให้เลยเด้อ ตั้งใจคักหลาย 👍',
+'หิวกะกิน เมื่อยกะพัก แฮงใจบ่หนีไปไสเด้อ',
+'ลุยได้กะลุย บ่ไหวกะพัก เฮาเข้าใจเด้อ',
+'อีกหนึ่งงาน อีกหนึ่งรอยยิ้มของบ้านเฮา 🧡',
+'ขอให้รถดี ทางดี มีแต่คนใจดีเด้อ',
+'พร้อมยามใด๋ค่อยไปเด้อ แอดมินส่งแฮงใจให้คือเก่า'
+];
+let cheerBag=[],lastCheer='';
+function randomCheer(){
+ if(!cheerBag.length){cheerBag=[...ISAN_CHEERS];for(let i=cheerBag.length-1;i>0;i--){const k=Math.floor(Math.random()*(i+1));[cheerBag[i],cheerBag[k]]=[cheerBag[k],cheerBag[i]]}if(cheerBag.at(-1)===lastCheer)[cheerBag[0],cheerBag[cheerBag.length-1]]=[cheerBag.at(-1),cheerBag[0]]}
+ return lastCheer=cheerBag.pop();
+}
+// ภาพวาดสำรองฝังในไฟล์ ใช้เมื่อไม่มีรูปจริงหรือโหลดรูปไม่ได้.
+const SHOP_PLACEHOLDER='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450"><rect width="800" height="450" fill="#302c29"/><circle cx="655" cy="90" r="95" fill="#e95f2b" opacity=".14"/><path d="M0 360Q400 290 800 360V450H0" fill="#403630"/><rect x="210" y="130" width="380" height="240" rx="12" fill="#fff0d2"/><rect x="235" y="90" width="330" height="64" rx="12" fill="#e95f2b"/><path d="M200 170H600L570 225H230Z" fill="#ffaf71"/><path d="M240 170H290L280 225H230M340 170H390L385 225H330M440 170H490L495 225H440M540 170H580L600 225H550" fill="#e95f2b"/><rect x="245" y="250" width="175" height="90" rx="6" fill="#52483e"/><rect x="450" y="250" width="100" height="120" rx="6" fill="#8b674d"/><circle cx="530" cy="310" r="5" fill="#ffe1a1"/><path d="M275 300h110M292 280h75" stroke="#ffcf90" stroke-width="8" stroke-linecap="round"/><path d="M175 375h450" stroke="#e95f2b" stroke-width="10" stroke-linecap="round"/></svg>');
+function jobPhoto(j){
+ for(const [value,label] of [[j.shop_image_url,'ภาพหน้าร้าน'],[j.shop_image,'ภาพหน้าร้าน'],[j.product_image_url,'ภาพสินค้า'],[j.product_image,'ภาพสินค้า'],[j.image_url,'ภาพประกอบงาน']]){
+  if(typeof value!=='string'||!value.trim())continue;
+  try{const u=new URL(value,document.baseURI);if(['http:','https:'].includes(u.protocol)||/^data:image\/(png|jpeg|webp|gif);base64,/i.test(value))return {url:u.href,label}}catch(e){}
+ }
+ return {url:SHOP_PLACEHOLDER,label:'ภาพประกอบ · ยังไม่มีรูปจริง'};
+}
+function unlockAudio(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();ac.resume()}catch(e){}}
+function beep(){if(!prof.sound)return;try{unlockAudio();[880,1175,880,1175].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+i*.22;o.frequency.value=f;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.25,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+.2);o.start(t);o.stop(t+.21)});navigator.vibrate&&navigator.vibrate([300,120,300])}catch(e){}}
+function detect(){
+ const p=pending(),ids=new Set(p.map(j=>j.id));
+ queue=queue.filter(j=>j.id==='TEST'||(online&&!active()&&ids.has(j.id)));
+ if(cur&&cur.id!=='TEST'&&!alertBusy&&(!online||active()||!ids.has(cur.id)))nextAlert();
+ if(!seen){seen=ids;return}
+ p.filter(j=>!seen.has(j.id)).forEach(j=>{seen.add(j.id);if(online&&!active())notify(j)});
+}
+function notify(j){
+ if(j.id!=='TEST'&&(!online||active()))return;
+ if(cur?.id===j.id||queue.some(x=>x.id===j.id))return;
+ queue.push(j);if(!cur)nextAlert();beep();
+ const n=$('#alertQueue');if(n)n.textContent=queue.length?'รออีก '+queue.length+' งาน':'งานใหม่สำหรับคุณ';
+ try{if(document.hidden&&window.Notification&&Notification.permission==='granted')new Notification('งานใหม่ '+baht(j.fee),{body:j.shop+' → '+j.dropoff})}catch(e){}
+}
+function lockAlert(on){
+ if(on===alertLocked)return;alertLocked=on;
+ if(on){alertFocus=document.activeElement;oldOverflow=document.body.style.overflow;document.body.style.overflow='hidden'}
+ document.querySelectorAll('.app > :not(#alert)').forEach(el=>{if(on){el.dataset.alertWasInert=el.inert?'1':'0';el.inert=true}else{el.inert=el.dataset.alertWasInert==='1';delete el.dataset.alertWasInert}});
+ if(!on){document.body.style.overflow=oldOverflow;if(alertFocus?.isConnected&&!alertFocus.disabled)alertFocus.focus();else $('#nav button')?.focus()}
+}
+function setAlertButtons(disabled){$('#alert').querySelectorAll('button').forEach(b=>b.disabled=disabled)}
+function startAlertClock(){
+ clearInterval(alertTimer);
+ const tick=()=>{if(!cur||alertBusy)return;const left=Math.max(0,alertDeadline-Date.now());if(!left){nextAlert();return}const n=$('#alertSeconds'),bar=$('#alertProgress');if(n)n.textContent=Math.ceil(left/1000);if(bar)bar.style.width=left/ALERT_DURATION*100+'%'};
+ alertTimer=setInterval(tick,250);tick();
+}
+function nextAlert(){
+ clearInterval(alertTimer);cur=queue.shift()||null;const el=$('#alert');
+ if(!cur){el.innerHTML='';lockAlert(false);return}
+ const j=cur,photo=jobPhoto(j);alertDeadline=Date.now()+ALERT_DURATION;
+ el.innerHTML='<section class="alertcard"><div class="alertscroll">'+
+ '<header class="alerthead"><div class="avatar"><svg class="ic"><use href="#i-bell"/></svg></div><div class="alertheading"><h2 id="alertTitle">งานใหม่เข้าแล้ว!</h2><small id="alertQueue">'+(queue.length?'รออีก '+queue.length+' งาน':'งานใหม่สำหรับคุณ')+'</small></div><div class="alertfee"><small>ค่ารอบ</small><strong>'+baht(j.fee)+'</strong></div></header>'+
+ '<figure class="alertphoto"><img id="alertPhoto" src="'+esc(photo.url)+'" alt="'+esc(photo.label+' — '+j.shop)+'"><span class="photochip" id="alertPhotoLabel">'+esc(photo.label)+'</span><figcaption>'+esc(j.shop)+'</figcaption></figure>'+
+ '<div class="alertbody"><div class="admincheer"><div class="adminav"><svg class="ic"><use href="#i-chat"/></svg></div><div class="adminbubble"><small>แอดมินกระนวน · กำลังใจอัตโนมัติ 🧡</small><p id="alertCheer">'+esc(randomCheer())+'</p></div></div>'+
+ '<div class="timeline"><div class="stop"><small>จุดรับของ · ระยะทาง '+esc(j.distance_km??'–')+' กม.</small>'+esc(j.pickup)+'</div><div class="stop"><small>จุดส่งของ</small>'+esc(j.dropoff)+'</div></div></div>'+
+ '</div><footer class="alertfooter"><div class="alertclock"><span>ตัดสินใจภายใน</span><strong><span id="alertSeconds">30</span> วินาที</strong></div><div class="row"><button class="secondary" data-act="dismiss">ข้ามงานนี้</button><button class="primary" data-act="takeAlert">'+(j.id==='TEST'?'ทดสอบรับงาน':'รับงานนี้')+'</button></div><div class="alertbar" aria-hidden="true"><i id="alertProgress"></i></div><p>จอดรถให้ปลอดภัยก่อนกดรับงานเด้อ</p></footer></section>';
+ const img=$('#alertPhoto');img.onerror=()=>{img.onerror=null;img.src=SHOP_PLACEHOLDER;img.alt='ภาพประกอบร้าน — ยังไม่มีรูปจริง';$('#alertPhotoLabel').textContent='โหลดรูปไม่ได้ · ภาพประกอบ'};
+ lockAlert(true);el.querySelector('[data-act="takeAlert"]').focus();startAlertClock();
+}
+ document.addEventListener('keydown',e=>{
+ if(!cur)return;
+ if(e.key==='Escape'){e.preventDefault();if(!alertBusy)nextAlert();return}
+ if(e.key==='Tab'){const buttons=[...$('#alert').querySelectorAll('button:not(:disabled)')];if(!buttons.length){e.preventDefault();return}const first=buttons[0],last=buttons.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}
+});
+
+
+/* ============ ลูกค้า / ยกเลิกงาน / ร้องเรียน / ฉุกเฉิน ============ */
+let sh=null,shHTML='';
+const REASONS={
+  cancel:['ลูกค้าติดต่อไม่ได้','หาที่อยู่ไม่เจอ / ที่อยู่ไม่ชัดเจน','รถเสีย / เกิดอุบัติเหตุ','ร้านปิดหรือของหมด','รู้สึกไม่ปลอดภัย','เหตุผลอื่น'],
+  report:['พูดจาไม่สุภาพ / คุกคาม','ที่อยู่หรือข้อมูลเท็จ','ไม่รับสาย / ไม่อยู่ตามนัด','พยายามโกงหรือชำระเงินผิดปกติ','ล่วงละเมิด / ไม่ปลอดภัย','เหตุผลอื่น'],
+  complaint:['ปัญหาร้านค้า','ปัญหาลูกค้า','รายได้ / ค่าตอบแทน','ระบบหรือแอปมีปัญหา','อุบัติเหตุระหว่างทำงาน','เรื่องอื่นๆ']
+};
+const EMER=[['191','ตำรวจ แจ้งเหตุด่วนเหตุร้าย'],['1669','การแพทย์ฉุกเฉิน'],['199','ดับเพลิง กู้ภัย'],['1193','ตำรวจทางหลวง']];
+const jobOf=id=>jobs.find(j=>j.id===id);
+const cust=j=>({id:j.customer_id||j.customer_name||'job-'+j.id,name:j.customer_name||'ลูกค้า'});
+async function blockCust(j){const c=cust(j);if(!prof.blocked.some(b=>b.id===c.id)){prof.blocked.push({id:c.id,name:c.name});await DB.saveProfile(prof)}}
+function sheetHTML(){
+  if(!sh)return '';
+  const j=sh.job?jobOf(sh.job):null,c=j?cust(j):{name:'ลูกค้า'},f=sh.f,t=sh.t;
+  const head=(a,b)=>`<h3>${a}</h3><p class="muted" style="margin:0 0 10px">${b||''}</p>`;
+  const ch=l=>`<div class="chips">${l.map(r=>`<button class="opt" data-act="sfset" data-id="reason:${r}" aria-pressed="${f.reason===r}">${r}</button>`).join('')}</div>`;
+  const note=`<label>รายละเอียดเพิ่มเติม (ถ้ามี)<textarea data-sf="detail" rows="3">${esc(f.detail)}</textarea></label>`;
+  const msg=sh.msg?`<div class="state">${esc(sh.msg)}</div>`:'';
+  const foot=(act,label,cls='primary')=>`${msg}<div class="row" style="margin-top:12px"><button class="secondary" data-act="closeSheet">${t==='rate'?'ข้าม':'ปิด'}</button><button class="${cls}" data-act="${act}">${label}</button></div>`;
+  const mr=(ic,label,id,cls='')=>`<button class="mrow ${cls}" data-act="sheet" data-id="${esc(id)}"><span><svg class="ic"><use href="#i-${ic}"/></svg>${label}</span></button>`;
+  const tel=(n,l)=>`<a class="mrow" href="tel:${esc(n.replace(/[^0-9+]/g,''))}"><span>${l}</span><b>${esc(n)}</b></a>`;
+  let b='';
+  if(t==='menu'){
+    const live=j&&j.rider_id===cfg.riderId&&(j.status==='accepted'||j.status==='picked'),blocked=prof.blocked.some(x=>x.id===c.id),id=j?j.id:'';
+    b=head('ตัวเลือกงาน',j?`${esc(j.shop)} · ลูกค้า ${esc(c.name)}`:'')+(live?mr('x','ยกเลิกงานนี้','cancel:'+id,'danger'):'')+(j&&j.status==='delivered'&&!j.rider_rating?mr('star','ให้คะแนนลูกค้า','rate:'+id):'')+mr('flag','รายงานลูกค้า','report:'+id)+(blocked?'<p class="muted">ลูกค้ารายนี้ถูกบล็อกอยู่แล้ว</p>':mr('ban','บล็อกลูกค้า','block:'+id))+mr('chat','ร้องเรียน / ขอความช่วยเหลือ','complaint:'+id)+'<button class="secondary full" style="margin-top:10px" data-act="closeSheet">ปิด</button>';
+  }else if(t==='cancel')b=head('ยกเลิกงาน','เลือกเหตุผล การยกเลิกบ่อยอาจมีผลต่อการรับงานของคุณ'+(j&&j.status==='picked'?' · รับของแล้ว หากอยู่ในอันตรายให้กด SOS':''))+ch(REASONS.cancel)+note+foot('doCancel','ยืนยันยกเลิกงาน','primary danger');
+  else if(t==='report')b=head('รายงานลูกค้า',esc(c.name))+ch(REASONS.report)+note+`<button class="opt" data-act="sfset" data-id="alsoBlock:${f.alsoBlock?0:1}" aria-pressed="${!!f.alsoBlock}">บล็อกลูกค้ารายนี้ด้วย</button>`+foot('doReport','ส่งรายงาน');
+  else if(t==='block')b=head('บล็อกลูกค้า',`คุณจะไม่เห็นงานจาก ${esc(c.name)} อีก เลิกบล็อกได้ที่หน้าตั้งค่า`)+foot('doBlock','บล็อกลูกค้า','primary danger');
+  else if(t==='rate')b=head('ให้คะแนนลูกค้า',`${esc(c.name)} · ${esc(j?j.shop:'')}`)+`<div class="stars">${[1,2,3,4,5].map(n=>`<button class="${f.stars>=n?'on':''}" data-act="sfset" data-id="stars:${n}" aria-label="${n} ดาว"><svg class="ic"><use href="#i-star"/></svg></button>`).join('')}</div><div class="starlbl">${['','แย่มาก','แย่','พอใช้','ดี','ดีมาก'][f.stars]}</div>`+note+foot('doRate','ส่งคะแนน');
+  else if(t==='complaint')b=head('ร้องเรียน','เลือกหัวข้อ ทีมงานจะติดต่อกลับ')+ch(REASONS.complaint)+note+foot('doComplaint','ส่งเรื่อง');
+  else if(t==='sos')b=head('ฉุกเฉิน','ถ้าอยู่ในอันตราย โทรขอความช่วยเหลือก่อน')+EMER.map(e=>tel(e[0],e[1])).join('')+(prof.emergency_phone?tel(prof.emergency_phone,'ผู้ติดต่อฉุกเฉิน '+esc(prof.emergency_name)):'')+(cfg.support?tel(cfg.support,'ฝ่ายดูแลไรเดอร์'):'')
+    +'<button class="mrow" data-act="shareLoc"><span><svg class="ic"><use href="#i-pin"/></svg>แชร์ตำแหน่งปัจจุบัน</span></button><button class="mrow danger" data-act="sendSos"><span><svg class="ic"><use href="#i-alert"/></svg>ส่งสัญญาณ SOS ถึงฝ่ายดูแล</span></button>'
+    +mr('chat','ร้องเรียน / แจ้งปัญหา','complaint:'+(active()?active().id:''))+msg+'<button class="secondary full" style="margin-top:10px" data-act="closeSheet">ปิด</button>';
+  return `<div class="shbg" data-act="closeSheet"></div><div class="shpanel">${b}</div>`;
+}
+
+/* ============ โปรไฟล์ รูปภาพ ============ */
+document.addEventListener('input',e=>{const f=e.target.dataset&&e.target.dataset.f;if(f)prof[f]=e.target.value;const g=e.target.dataset&&e.target.dataset.sf;if(g&&sh){sh.f[g]=e.target.value;shHTML=sheetHTML()}});
+function shrink(file,max=640){return new Promise((res,rej)=>{const im=new Image(),u=URL.createObjectURL(file);im.onload=()=>{const r=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*r;c.height=im.height*r;c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',.78))};im.onerror=rej;im.src=u})}
+document.addEventListener('change',async e=>{
+  const f=e.target.files&&e.target.files[0],sl=e.target.dataset&&e.target.dataset.slot;if(!f||!sl)return;
+  try{toast('กำลังอัปโหลดรูป...');const url=await DB.photo(sl,await shrink(f));
+    if(sl==='avatar')prof.avatar_url=url;else prof.photos[+sl.slice(1)]=url;
+    await DB.saveProfile(prof);toast('บันทึกรูปแล้ว')}catch(err){toast('อัปโหลดรูปไม่ได้: '+err.message)}
+  render();
+});
+async function loadProfile(){try{const r=await DB.getProfile();if(!r)return;Object.keys(r).forEach(k=>{if(r[k]!=null&&k in prof)prof[k]=r[k]});if(!Array.isArray(prof.photos)||prof.photos.length!==4)prof.photos=[null,null,null,null];normProf();applyTheme();render()}catch(e){}}
+
+/* ============ แผนที่และ GPS ============ */
+let map,pin;
+function initMap(){
+  if(map||!window.L)return;
+  map=L.map('realMap',{zoomControl:false,attributionControl:false,dragging:!L.Browser.mobile,tap:false}).setView([16.706,103.078],15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,className:'dark-map-tiles'}).addTo(map);
+  pin=L.marker([16.706,103.078],{icon:L.divIcon({className:'',html:'<div style="background:var(--ac);width:24px;height:24px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 12px var(--ac)"></div>',iconSize:[24,24],iconAnchor:[12,12]})}).addTo(map);
+}
+function watchGps(){
+  const st=$('#mapGpsStatus');
+  if(!navigator.geolocation){st.textContent='อุปกรณ์ไม่รองรับ GPS';return}
+  navigator.geolocation.watchPosition(p=>{
+    pos={lat:p.coords.latitude,lng:p.coords.longitude};
+    if(pin)pin.setLatLng([pos.lat,pos.lng]);if(map)map.panTo([pos.lat,pos.lng]);
+    st.textContent=`พิกัดสด ${pos.lat.toFixed(4)}, ${pos.lng.toFixed(4)}`;
+    if(online&&Date.now()-lastPush>15000){lastPush=Date.now();DB.presence(true).catch(()=>{})}
+  },()=>{st.textContent='กรุณาเปิดสิทธิ์ GPS';st.style.color='#ff5252'},{enableHighAccuracy:true,timeout:20000});
+}
+
+/* ============ เริ่มทำงาน ============ */
+/* เริ่มผ่าน rider-bridge.js หลังตรวจบัญชีแล้ว */
+</script>
+<script src="/api.js"></script><script src="/rider-bridge.js"></script></body>
+</html>
