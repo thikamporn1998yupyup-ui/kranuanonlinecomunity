@@ -599,11 +599,11 @@ function initMap(){
   if(map||!window.L)return;
   map=L.map('realMap',{zoomControl:false,attributionControl:false,dragging:!L.Browser.mobile,tap:false}).setView([16.706,103.078],15);
   
-  // ใช้ Stamen Toner (โทนขาวดำเข้มข้น ไม่ติด API Key และไม่โดนบล็อก 403)
-  L.tileLayer('https://stamen-tiles.a.ssl.fastly.net/toner/{z}/{x}/{y}{r}.png', {
-    maxZoom: 20,
+  // ใช้ CartoDB Voyager โหมดเรียบง่าย โหลดไว ไม่ติด API Key และแสดงผลชัวร์
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19,
     subdomains: 'abcd',
-    attribution: 'Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under ODbL.'
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
   }).addTo(map);
 
   pin=L.marker([16.706,103.078],{icon:L.divIcon({className:'',html:'<div style="background:var(--ac);width:24px;height:24px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 12px var(--ac)"></div>',iconSize:[24,24],iconAnchor:[12,12]})}).addTo(map);
