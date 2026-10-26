@@ -979,8 +979,8 @@ function submitRealDelivery(e) {
   const order = {
     id: Date.now().toString(36),
     areaId,
-    status: 'ready',
-    type: ride ? 'ride' : 'market',
+    status: 'waiting',
+    type: 'food' ? 'ride' : 'market',
     item: ride ? ('ส่งคน: ' + (d.receiverName || 'ผู้โดยสาร') + ' (รับ: ' + d.pickup.address + ')') : ('ส่งของ: ' + d.itemDesc + ' (รับ: ' + d.pickup.address + ')'),
     note: notes.filter(Boolean).join(' · '),
     receiver: { name: d.receiverName, phone: d.receiverPhone },
