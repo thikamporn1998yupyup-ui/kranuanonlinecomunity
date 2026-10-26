@@ -655,7 +655,7 @@ function deliveryFormHtml() {
 
       ${ride ? rideBlock : parcelBlock}
 
-      <button type="submit" id="submitDeliveryBtn" class="btn-delivery-submit" disabled>
+     <button type="button" id="submitDeliveryBtn" class="btn-delivery-submit" disabled onclick="window.handleDeliverySubmit(event)">
         ${icon('rider')} <span id="submitLabel">${e ? 'ยืนยันเรียกไรเดอร์ · ' + e.fee + ' ฿' : 'เลือกจุดรับและจุดหมายก่อน'}</span>
       </button>
     </form>
@@ -1316,72 +1316,82 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
 
-<!-- ▼▼▼ delivery-fix-v3 ▼▼▼ -->
+<!-- ▼▼▼ delivery-fix-v4 ▼▼▼ -->
 <script>
 (function(){
 'use strict';
-if(window.__deliveryFixV3)return;
-window.__deliveryFixV3=true;
+if(window.__deliveryFixV4)return;
+window.__deliveryFixV4=true;
 
-function log(l,m,...r){const c={ok:'#0a0',warn:'#c80',error:'#c00',info:'#888'}[l]||'#333';console.log('%c[fix-v3] '+m,'color:'+c+';font-weight:bold',...r);}
+function log(l,m,...r){const c={ok:'#0a0',warn:'#c80',error:'#c00',info:'#888'}[l]||'#333';console.log('%c[fix-v4] '+m,'color:'+c+';font-weight:bold',...r);}
 function fs(){if(window.db&&window.db.collection)return window.db;if(window.firestore&&window.firestore.collection)return window.firestore;if(window.firestoreDb&&window.firestoreDb.collection)return window.firestoreDb;try{if(window.firebase){const d=(window.firebase.firestore&&window.firebase.firestore())||(window.firebase.app&&window.firebase.app().firestore&&window.firebase.app().firestore());if(d&&d.collection)return d;}}catch(e){}return null;}
 
-async function viaFs(o){const d=fs();if(!d){log('info','ไม่พบ Firestore');return false;}try{await d.collection('orders').add({...o,areaId:o.areaId||(typeof areaId!=='undefined'?areaId:'khon-kaen-kranuan'),createdAt:Date.now(),syncedAt:Date.now(),source:'delivery-web-fallback-v3'});log('ok','via Firestore โดยตรง (ข้าม API)');return true;}catch(e){log('warn','Firestore: '+(e&&e.message||e));return false;}}
-
-async function pub(o){if(!o||(o.type!=='ride'&&o.type!=='market'))return;
-  log('info','ตรวจพบออเดอร์: '+o.id+' ('+o.type+')');
-  if(await viaFs(o))return;
-  log('error','ไม่สามารถส่งข้อมูลได้');
-}
-
-let n=0;
-const boot=()=>{
-  if(typeof state!=='undefined' && state && state.orders && !state.orders.__hooked_v3){
-    
-    // ดักจับตอนแอปบันทึกออเดอร์ลงเครื่อง
-    const origPush = state.orders.push;
-    state.orders.push = function(...args){
-      const res = origPush.apply(this, args);
-      args.forEach(o => pub(o)); 
-      return res;
-    };
-    state.orders.__hooked_v3 = true;
-    
-    // ดักจับตอนกดปุ่ม Submit (ดัก Error 403/TypeError ไว้)
-    const origSubmit = window.submitRealDelivery;
-    if (typeof origSubmit === 'function' && !origSubmit.__hooked_v3) {
-        window.submitRealDelivery = function(ev) {
-            if(ev && ev.preventDefault) ev.preventDefault(); // หยุดการโหลดหน้า
-            try {
-                origSubmit(ev); // ลองเรียกโค้ดเดิม
-            } catch(e) {
-                console.warn('[fix-v3] โค้ดเดิมแครช, กำลังใช้ระบบสำรอง...', e.message);
-                // ถ้าโค้ดเดิมแครช ให้เราดึงข้อมูลจาก deliveryDraft มาสร้างออเดอร์เองเลย
-                if (typeof deliveryDraft !== 'undefined' && deliveryDraft.pickup && deliveryDraft.drop) {
-                    const mockOrder = {
-                        id: Date.now().toString(36),
-                        type: deliveryDraft.mode === 'ride' ? 'ride' : 'market',
-                        status: 'ready',
-                        item: deliveryDraft.receiverName || 'งานด่วน',
-                        deliveryFee: 25
-                    };
-                    pub(mockOrder);
-                }
-            }
-        }
-        window.submitRealDelivery.__hooked_v3 = true;
-    }
-
-    log('ok','ติดตั้งสำเร็จ (ระบบกันพัง v3)');
+async function pub(o){
+  const d=fs();
+  if(!d){log('error','ไม่พบ Firestore instance');return false;}
+  try{
+    await d.collection('orders').add(o);
+    log('ok','via Firestore โดยตรง (ข้าม API)');
     return true;
+  }catch(e){
+    log('error','Firestore Error: '+(e&&e.message||e));
+    return false;
   }
-  return false;
-};
-if(!boot()){
-  const timer = setInterval(()=>{ n++; if(boot() || n>50) clearInterval(timer); }, 200);
 }
+
+window.handleDeliverySubmit = async function(e) {
+  if(e && e.preventDefault) e.preventDefault();
+  const btn = document.getElementById('submitDeliveryBtn');
+  if(btn.disabled) return;
+
+  const d = typeof deliveryDraft !== 'undefined' ? deliveryDraft : null;
+  if(!d || !d.pickup || !d.drop){
+    alert('กรุณาเลือกจุดรับและจุดหมายก่อนครับ');
+    return;
+  }
+
+  const ride = d.mode === 'ride';
+  const order = {
+    id: Date.now().toString(36),
+    areaId: typeof areaId !== 'undefined' ? areaId : 'khon-kaen-kranuan',
+    status: 'ready',
+    type: ride ? 'ride' : 'market',
+    item: ride ? ('ส่งคน: ' + (d.receiverName || 'ผู้โดยสาร')) : ('ส่งของ: ' + (d.itemDesc || 'พัสดุ')),
+    note: d.itemNote || '',
+    receiver: { name: d.receiverName || '', phone: d.receiverPhone || '' },
+    pickupInfo: { address: d.pickup.address, note: d.pickup.note },
+    dropInfo: { address: d.drop.address, note: d.drop.note },
+    coordinates: { pickup: { lat: d.pickup.lat, lng: d.pickup.lng }, drop: { lat: d.drop.lat, lng: d.drop.lng }, isSample: false },
+    deliveryFee: 25,
+    createdAt: Date.now()
+  };
+
+  btn.disabled = true;
+  const oldText = btn.innerHTML;
+  btn.innerHTML = '⏳ กำลังส่งข้อมูล...';
+
+  const ok = await pub(order);
+
+  if(ok){
+    alert('🎉 เรียกไรเดอร์สำเร็จ! ข้อมูลถูกส่งเข้าระบบแล้ว');
+    if(typeof state !== 'undefined' && state.orders){
+      state.orders.push(order);
+      if(typeof save === 'function') save();
+    }
+    if(typeof deliveryDraft !== 'undefined' && typeof emptyDraft === 'function'){
+      deliveryDraft = emptyDraft(d.mode);
+    }
+    if(typeof go === 'function') go('ออเดอร์ของฉัน');
+  }else{
+    alert('❌ ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+    btn.disabled = false;
+    btn.innerHTML = oldText;
+  }
+};
+
+log('ok','ติดตั้งสำเร็จ (ระบบส่งข้อมูลตรง v4)');
 })();
 </script>
-<!-- ▲▲▲ delivery-fix-v3 ▲▲▲ -->
+<!-- ▲▲▲ delivery-fix-v4 ▲▲▲ -->
 </body>
 </html>
