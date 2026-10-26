@@ -1316,52 +1316,59 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
 
-<!-- ▼▼▼ delivery-fix-v5 ▼▼▼ -->
+<!-- ▼▼▼ delivery-fix-v8 ▼▼▼ -->
 <script>
 (function(){
 'use strict';
-if(window.__deliveryFixV5)return;
-window.__deliveryFixV5=true;
+if(window.__deliveryFixV8)return;
+window.__deliveryFixV8=true;
 
-function log(l,m,...r){const c={ok:'#0a0',warn:'#c80',error:'#c00',info:'#888'}[l]||'#333';console.log('%c[fix-v5] '+m,'color:'+c+';font-weight:bold',...r);}
-
-// ดักจับการส่งข้อมูล (fetch) เพื่อแนบ Token ของ LINE ไปด้วย
-const originalFetch = window.fetch;
+// ดักจับการ fetch เพื่อแก้ Token และโชว์ Error ที่แท้จริง
+const origFetch = window.fetch;
 window.fetch = async function(url, options) {
     if (typeof url === 'string' && url.includes('/api/orders')) {
         options = options || {};
         options.headers = options.headers || {};
         
-        // ดึง Token จาก LINE LIFF
         let token = '';
         try {
             if (typeof liff !== 'undefined' && liff.isLoggedIn()) {
-                token = liff.getAccessToken();
+                // ลองใช้ ID Token ก่อน (ที่หลังบ้านมักจะต้องการ)
+                if (typeof liff.getIDToken === 'function') {
+                    token = liff.getIDToken();
+                }
+                if (!token && typeof liff.getAccessToken === 'function') {
+                    token = liff.getAccessToken();
+                }
             }
         } catch(e) {}
         
         if (token) {
             options.headers['Authorization'] = 'Bearer ' + token;
-            log('info', 'แนบ Token ของ LINE เรียบร้อย');
-        } else {
-            log('warn', 'ไม่พบ Token LINE (คุณล็อกอินหรือยัง?)');
+        }
+
+        // ดักจับ Response ว่าหลังบ้านตอบอะไรกลับมา
+        try {
+            const response = await origFetch(url, options);
+            if (!response.ok) {
+                const clone = response.clone();
+                clone.text().then(text => {
+                    alert("⚠️ หลังบ้านตอบกลับ (403):\n" + text);
+                    console.error("หลังบ้านตอบ:", text);
+                });
+            }
+            return response;
+        } catch (err) {
+            console.error("Fetch Error:", err);
+            throw err;
         }
     }
-    return originalFetch(url, options);
+    return origFetch(url, options);
 };
 
-// ตรวจสอบสถานะการล็อกอินก่อนกดส่ง
-document.addEventListener('submit', function(e) {
-    if (e.target && e.target.classList.contains('route-card')) {
-        if (typeof state !== 'undefined' && !state.currentUser) {
-            alert('⚠️ กรุณากดปุ่ม "เข้าสู่ระบบ" ที่มุมขวาบนด้วย LINE ก่อนครับ');
-        }
-    }
-}, true);
-
-log('ok','ติดตั้งสำเร็จ (ระบบแนบ Token v5)');
+console.log('%c[fix-v8] ติดตั้งสำเร็จ (ระบบแก้ Token + ดักจับ Error)', 'color:#0a0;font-weight:bold');
 })();
 </script>
-<!-- ▲▲▲ delivery-fix-v5 ▲▲▲ -->
+<!-- ▲▲▲ delivery-fix-v8 ▲▲▲ -->
 </body>
 </html>
