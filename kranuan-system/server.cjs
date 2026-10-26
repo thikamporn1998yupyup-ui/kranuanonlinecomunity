@@ -6,7 +6,7 @@ const publicDir=path.join(__dirname,'public');
 const db=new DatabaseSync(':memory:');db.exec(fs.readFileSync(path.join(__dirname,'schema.sql'),'utf8'));db.exec('PRAGMA busy_timeout=5000');
 const now=()=>new Date().toISOString(),id=()=>crypto.randomUUID(),hash=s=>crypto.createHash('sha256').update(s).digest('hex');
 const get=(sql,...v)=>db.prepare(sql).get(...v),all=(sql,...v)=>db.prepare(sql).all(...v),run=(sql,...v)=>db.prepare(sql).run(...v);
-const FIREBASE_TABLES=['users','shops','menus','sessions','orders','order_events','reports','audit'];
+const FIREBASE_TABLES=['users','shops','menus','sessions','orders','order_events','reports','audit','market_listings','market_comments','market_reports'];
 let firebaseRef=null,saveQueue=Promise.resolve(),firebaseBaseline='';
 function serializeState(){const tables={};for(const table of FIREBASE_TABLES){const rows=all('SELECT * FROM '+table);tables[table]=Object.fromEntries(rows.map((r,i)=>[String(r.id??i),r]))}return JSON.stringify({version:1,tables})}
 async function persistState(){if(!firebaseRef)return;const state=serializeState();if(state===firebaseBaseline)return;await firebaseRef.set(JSON.parse(state));firebaseBaseline=state}
@@ -30,16 +30,16 @@ function passHash(pass){const salt=crypto.randomBytes(16).toString('hex');return
 function checkPass(pass,stored){try{const [salt,key]=stored.split(':');const a=crypto.scryptSync(pass,salt,64),b=Buffer.from(key,'hex');return a.length===b.length&&crypto.timingSafeEqual(a,b)}catch{return false}}
 const production=process.env.NODE_ENV==='production';
 if(production&&!process.env.APP_ORIGIN)throw Error('Set APP_ORIGIN for production.');
-function publicUser(u){return {id:u.id,username:u.username,role:u.role,name:u.name,shop_id:u.shop_id,online:!!u.online}}
+function publicUser(u){return {id:u.id,username:u.username,role:u.role,name:u.name,shop_id:u.shop_id,online:!!u.online,accepts_rides:!!u.accepts_rides}}
 function session(req){const token=(req.headers.cookie||'').split(';').map(s=>s.trim()).find(s=>s.startsWith('kranuan_session='))?.slice(16);if(!token)return null;return get('SELECT s.csrf,s.token_hash,u.* FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires>?',hash(token),Date.now())||null}
 function newSession(res,userId){const token=crypto.randomBytes(32).toString('hex'),csrf=crypto.randomBytes(24).toString('hex');run('INSERT INTO sessions VALUES(?,?,?,?)',hash(token),userId,csrf,Date.now()+30*86400000);res.setHeader('Set-Cookie','kranuan_session='+token+'; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000'+(production?'; Secure':''));return {user:publicUser(get('SELECT * FROM users WHERE id=?',userId)),csrf}}
 function needUser(u,roles){if(!u)fail(401,'กรุณาเข้าสู่ระบบ');if(roles&&!roles.includes(u.role))fail(403,'บัญชีนี้ไม่มีสิทธิ์ทำรายการ');return u}
 function ownShop(u,shopId){needUser(u,['admin','merchant']);if(u.role==='merchant'&&u.shop_id!==shopId)fail(403,'แก้ไขได้เฉพาะร้านของคุณ')}
 function audit(u,action,target){run('INSERT INTO audit(actor_id,action,target,created_at) VALUES(?,?,?,?)',u.id,action,target,now())}
 function shopView(s){return {...s,opt_in:!!s.opt_in,accepting:!!s.accepting}}
-function orderView(o,u){const snap=JSON.parse(o.snapshot);return {id:o.id,shop_id:o.shop_id,rider_id:o.rider_id,status:o.status,type:o.kind,shop:snap.shop,shop_image_url:snap.shop_image_url||'',product_image_url:snap.items?.[0]?.image_url||'',items:snap.items||[],item:snap.items?.map(i=>i.name+' × '+i.quantity).join(', ')||snap.description,pickup:o.pickup,pickup_lat:snap.pickup_lat??null,pickup_lng:snap.pickup_lng??null,dropoff:o.dropoff,customer_name:o.customer_name,phone:u.role==='rider'&&o.rider_id!==u.id?'':o.phone,dropoff_lat:o.lat,dropoff_lng:o.lng,note:o.note,image:o.image,insideImage:o.inside_image,goods_total:o.goods_satang/100,fee:o.fee_satang/100,deliveryFee:o.fee_satang/100,total:(o.goods_satang+o.fee_satang)/100,created_at:o.created_at,updated_at:o.updated_at,order_mode:snap.order_mode}}
-function visibleOrders(u){if(u.role==='admin')return all('SELECT * FROM orders ORDER BY created_at DESC LIMIT 300');if(u.role==='merchant')return all('SELECT * FROM orders WHERE shop_id=? ORDER BY created_at DESC LIMIT 100',u.shop_id);if(u.role==='rider')return all("SELECT * FROM orders WHERE rider_id=? OR (status='ready' AND rider_id IS NULL) ORDER BY created_at DESC LIMIT 100",u.id);return all('SELECT * FROM orders WHERE customer_id=? ORDER BY created_at DESC LIMIT 100',u.id)}
-function canReadOrder(u,o){return u.role==='admin'||o.customer_id===u.id||o.rider_id===u.id||(u.role==='merchant'&&o.shop_id===u.shop_id)}
+function orderView(o,u){const snap=JSON.parse(o.snapshot);return {id:o.id,shop_id:o.shop_id,rider_id:o.rider_id,status:o.status,customer_id:o.customer_id,seller_id:snap.seller_id||null,listingId:snap.listing_id||null,paymentMethod:snap.payment_method||null,type:o.kind,passenger_count:snap.passenger_count||null,service_label:o.kind==='ride'?'รับ–ส่งผู้โดยสาร':o.kind==='parcel'?'รับ–ส่งของ':'อาหารจากร้าน',shop:snap.shop,shop_image_url:snap.shop_image_url||'',product_image_url:snap.items?.[0]?.image_url||'',items:snap.items||[],item:snap.items?.map(i=>i.name+' × '+i.quantity).join(', ')||snap.description,pickup:o.pickup,pickup_phone:snap.seller_phone||snap.shop_phone||'',pickup_lat:snap.pickup_lat??null,pickup_lng:snap.pickup_lng??null,dropoff:o.dropoff,customer_name:o.customer_name,phone:u.role==='rider'&&o.rider_id!==u.id?'':o.phone,dropoff_lat:o.lat,dropoff_lng:o.lng,note:o.note,image:o.image,insideImage:o.inside_image,goods_total:o.goods_satang/100,fee:o.fee_satang/100,deliveryFee:o.fee_satang/100,total:(o.goods_satang+o.fee_satang)/100,created_at:o.created_at,updated_at:o.updated_at,order_mode:snap.order_mode}}
+function visibleOrders(u){if(u.role==='admin')return all('SELECT * FROM orders ORDER BY created_at DESC LIMIT 300');if(u.role==='merchant')return all("SELECT * FROM orders WHERE shop_id=? OR (kind='market' AND json_extract(snapshot,'$.seller_id')=?) ORDER BY created_at DESC LIMIT 100",u.shop_id,u.id);if(u.role==='rider')return all("SELECT * FROM orders WHERE rider_id=? OR (status='ready' AND rider_id IS NULL AND (kind<>'ride' OR ?=1)) ORDER BY created_at DESC LIMIT 100",u.id,u.accepts_rides?1:0);return all("SELECT * FROM orders WHERE customer_id=? OR (kind='market' AND json_extract(snapshot,'$.seller_id')=?) ORDER BY created_at DESC LIMIT 100",u.id,u.id)}
+function canReadOrder(u,o){return u.role==='admin'||o.customer_id===u.id||o.rider_id===u.id||(u.role==='merchant'&&o.shop_id===u.shop_id)||(o.kind==='market'&&JSON.parse(o.snapshot).seller_id===u.id)}
 const clients=new Map();function emit(){for(const [res] of clients){try{res.write('event: refresh\ndata: {}\n\n')}catch{clients.delete(res)}}}
 function transaction(fn){db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result}catch(e){db.exec('ROLLBACK');throw e}}
 function addEvent(orderId,u,status,note=''){run('INSERT INTO order_events(order_id,actor_id,status,note,created_at) VALUES(?,?,?,?,?)',orderId,u.id,status,note,now())}
@@ -92,16 +92,18 @@ function importShops(u,data){
  for(const m of r.menus){const old=get('SELECT * FROM menus WHERE shop_id=? AND name=?',sid,m.name);if(old){if(!old.image_url&&m.image_url){run('UPDATE menus SET image_url=? WHERE id=?',m.image_url,old.id);images_added++}continue}run('INSERT INTO menus(id,shop_id,name,price_satang,image_url,available) VALUES(?,?,?,?,?,0)',id(),sid,m.name,Math.round(m.price*100),m.image_url);menus_added++;if(m.image_url)images_added++}
  }audit(u,'import shops and media',String(added))});emit();return {added,skipped,images_added,menus_added,total:plan.length,note:'เติมเฉพาะรูปที่ขาด ไม่เปลี่ยนสถานะร้าน เมนูนำเข้าใหม่พักขายไว้จนกว่าจะตรวจราคาและเปิดขาย'};
 }
+const marketApi=require('./market.cjs')({get,all,run,fail,text,required,coord,imageURL,id,now,transaction,audit,emit,send,orderView});
 async function api(req,res,url){
  checkOrigin(req);let u=session(req);const method=req.method,p=url.pathname;limit(req,p==='/api/login'?'login':'api:'+(u?.id||'public'),p==='/api/login'?10:240);
  if(p==='/api/session'&&method==='POST'){if(u)return send(res,200,{user:publicUser(u),csrf:u.csrf});const uid=id();run('INSERT INTO users(id,role,name,created_at) VALUES(?,?,?,?)',uid,'customer','ลูกค้ากระนวน',now());return send(res,201,newSession(res,uid))}
  if(p==='/api/shops'&&method==='GET')return send(res,200,all('SELECT * FROM shops ORDER BY name').map(s=>{const v=shopView(s);delete v.survey_note;delete v.verified_by;return v}));
  if(p==='/api/menus'&&method==='GET'){const shopId=required(url.searchParams.get('shop'),'ร้าน');return send(res,200,all('SELECT id,shop_id,name,price_satang,image_url,available FROM menus WHERE shop_id=? ORDER BY name',shopId).map(m=>({...m,price:m.price_satang/100,available:!!m.available})))}
- if(p==='/api/config'&&method==='GET')return send(res,200,{delivery_fee:Number(process.env.DELIVERY_FEE_THB||25)});
+ if(p==='/api/config'&&method==='GET')return send(res,200,{delivery_fee:Number(process.env.DELIVERY_FEE_THB||25),ride_fee:Number(process.env.RIDE_FEE_THB||process.env.DELIVERY_FEE_THB||25),ride_passenger_limit:1});
  if(p==='/api/health')return send(res,200,{ok:true});
  needUser(u);
  if(!['GET','HEAD'].includes(method)&&req.headers['x-csrf-token']!==u.csrf)fail(403,'เซสชันเปลี่ยน กรุณาโหลดหน้าใหม่');
  const b=['POST','PATCH','PUT'].includes(method)?await body(req):{};
+ if(p.startsWith('/api/market/'))return marketApi(req,res,url,u,b);
  if(p==='/api/login'&&method==='POST'){
  const user=get('SELECT * FROM users WHERE username=?',text(b.username,80));if(!user?.password_hash||!checkPass(text(b.password,200),user.password_hash))fail(401,'ชื่อบัญชีหรือรหัสผ่านไม่ถูกต้อง');
  for(const [stream,s] of clients)if(s.token===u.token_hash){stream.end();clients.delete(stream)}run('DELETE FROM sessions WHERE token_hash=?',u.token_hash);return send(res,200,newSession(res,user.id));
@@ -110,23 +112,24 @@ async function api(req,res,url){
  if(p==='/api/events'&&method==='GET'){
  if([...clients.values()].filter(s=>s.token===u.token_hash).length>=3)fail(429,'เปิดหน้าจอแจ้งเตือนมากเกินไป');res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache, no-transform','Connection':'keep-alive','X-Accel-Buffering':'no'});res.write('event: refresh\ndata: {}\n\n');clients.set(res,{token:u.token_hash});req.on('close',()=>clients.delete(res));return;
  }
- if(p==='/api/presence'&&method==='POST'){needUser(u,['rider']);run('UPDATE users SET online=? WHERE id=?',b.online?1:0,u.id);return send(res,200,{ok:true})}
+ if(p==='/api/presence'&&method==='POST'){needUser(u,['rider']);if(b.accepts_rides!==undefined&&typeof b.accepts_rides!=='boolean')fail(400,'สถานะรับส่งคนไม่ถูกต้อง');const online=b.online===undefined?!!u.online:b.online===true,rides=b.accepts_rides===undefined?!!u.accepts_rides:b.accepts_rides;run('UPDATE users SET online=?,accepts_rides=? WHERE id=?',online?1:0,rides?1:0,u.id);return send(res,200,{ok:true,user:publicUser(get('SELECT * FROM users WHERE id=?',u.id))})}
  if(p==='/api/reports'&&method==='POST'){run('INSERT INTO reports VALUES(?,?,?,?,?)',id(),u.id,text(b.kind,50),JSON.stringify(b).slice(0,10000),now());return send(res,201,{ok:true,message:'บันทึกเรื่องแล้ว ยังไม่มีระบบโทรหรือแจ้งเจ้าหน้าที่ภายนอก'})}
  if(p==='/api/orders'&&method==='GET')return send(res,200,visibleOrders(u).map(o=>orderView(o,u)));
  if(p==='/api/orders'&&method==='POST'){
  const idem=required(req.headers['idempotency-key'],'รหัสคำขอ',100),old=get('SELECT * FROM orders WHERE customer_id=? AND idempotency_key=?',u.id,idem);if(old)return send(res,200,orderView(old,u));
  needUser(u,['customer']);const name=required(b.customer_name,'ชื่อผู้รับ',100),phone=required(b.phone,'เบอร์โทร',30),dropoff=required(b.dropoff,'ที่อยู่ปลายทาง',500);if(!/^\+?[0-9]{9,15}$/.test(phone))fail(400,'เบอร์โทรไม่ถูกต้อง');
  const lat=coord(b.lat,-90,90),lng=coord(b.lng,-180,180);if((lat===null)!==(lng===null))fail(400,'ต้องระบุพิกัดทั้งสองค่า');
+ if(b.kind!==undefined&&!['food','parcel','ride'].includes(b.kind))fail(400,'ประเภทงานไม่ถูกต้อง');const isRide=b.kind==='ride',isTransport=isRide||b.kind==='parcel';
  const orderId=transaction(()=>{
- const oid=id();let shop=null,items=[],goods=0,status='ready',snapshot,kind='parcel',pickup=required(b.kind==='parcel'?b.pickup:'ร้านต้นทาง','ต้นทาง',500);
- if(b.kind!=='parcel'){
+ const oid=id();let shop=null,items=[],goods=0,status='ready',snapshot,kind=isRide?'ride':'parcel',pickup=required(isTransport?b.pickup:'ร้านต้นทาง','จุดรับ',500);
+ if(!isTransport){
  shop=get('SELECT * FROM shops WHERE id=?',text(b.shop_id));if(!shop||shop.verification!=='verified'||!shop.opt_in||!shop.accepting)fail(409,'ร้านนี้ยังไม่เปิดรับออเดอร์');
  if(!Array.isArray(b.items)||!b.items.length||b.items.length>20)fail(400,'เลือกสินค้า 1–20 รายการ');const menuIds=new Set();
  for(const line of b.items){if(menuIds.has(line.menu_id))fail(400,'รายการสินค้าซ้ำ');menuIds.add(line.menu_id);const m=get('SELECT * FROM menus WHERE id=? AND shop_id=?',text(line.menu_id),shop.id);if(!m?.available)fail(409,'บางรายการหมดหรือเปลี่ยนแปลง กรุณาเลือกใหม่');const q=Number(line.quantity);if(!Number.isInteger(q)||q<1||q>20)fail(400,'จำนวนต้องอยู่ระหว่าง 1–20');items.push({menu_id:m.id,name:m.name,quantity:q,price:m.price_satang/100,image_url:m.image_url});goods+=m.price_satang*q}
  if(goods>1000000)fail(400,'ยอดสินค้าสูงเกินวงเงิน 10,000 บาท');kind='food';pickup=shop.address||shop.name;status=shop.order_mode==='merchant_confirm'?'waiting':'ready';
- snapshot={shop:shop.name,shop_image_url:shop.image_url,items,order_mode:shop.order_mode,pickup_lat:shop.lat,pickup_lng:shop.lng};
- }else {const pickupLat=coord(b.pickup_lat,-90,90),pickupLng=coord(b.pickup_lng,-180,180);if((pickupLat===null)!==(pickupLng===null))fail(400,'ระบุพิกัดจุดรับให้ครบทั้งสองค่า');snapshot={shop:'เรียกไรเดอร์รับ–ส่งของ',description:required(b.description,'รายละเอียดสิ่งของ',300),items:[],order_mode:'rider_purchase',pickup_lat:pickupLat,pickup_lng:pickupLng};}
- const fee=Math.round(Number(process.env.DELIVERY_FEE_THB||25)*100);if(!Number.isInteger(fee)||fee<0)fail(500,'ตั้งค่าค่าส่งไม่ถูกต้อง');
+ snapshot={shop:shop.name,shop_image_url:shop.image_url,shop_phone:shop.phone,items,order_mode:shop.order_mode,pickup_lat:shop.lat,pickup_lng:shop.lng};
+ }else {const pickupLat=coord(b.pickup_lat,-90,90),pickupLng=coord(b.pickup_lng,-180,180);if((pickupLat===null)!==(pickupLng===null))fail(400,'ระบุพิกัดจุดรับให้ครบทั้งสองค่า');if(isRide&&Number(b.passenger_count??1)!==1)fail(400,'รับ–ส่งผู้โดยสารได้ 1 คนต่อคำขอ');snapshot={shop:isRide?'เรียกรถรับ–ส่งผู้โดยสาร':'เรียกไรเดอร์รับ–ส่งของ',description:isRide?'ผู้โดยสาร 1 คน'+(text(b.description,200)?' · '+text(b.description,200):''):required(b.description,'รายละเอียดสิ่งของ',300),items:[],order_mode:'rider_purchase',pickup_lat:pickupLat,pickup_lng:pickupLng,passenger_count:isRide?1:null};}
+ const fee=Math.round(Number(isRide?(process.env.RIDE_FEE_THB||process.env.DELIVERY_FEE_THB||25):(process.env.DELIVERY_FEE_THB||25))*100);if(!Number.isInteger(fee)||fee<0)fail(500,'ตั้งค่าค่าส่งไม่ถูกต้อง');
  run('INSERT INTO orders(id,customer_id,shop_id,status,kind,snapshot,pickup,dropoff,customer_name,phone,lat,lng,note,image,inside_image,goods_satang,fee_satang,created_at,updated_at,idempotency_key) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',oid,u.id,shop?.id||null,status,kind,JSON.stringify(snapshot),pickup,dropoff,name,phone,lat,lng,text(b.note,500),imageURL(b.image),imageURL(b.inside_image),goods,fee,now(),now(),idem);
  addEvent(oid,u,status);return oid;
  });emit();return send(res,201,orderView(get('SELECT * FROM orders WHERE id=?',orderId),u));
@@ -141,7 +144,7 @@ async function api(req,res,url){
  if(method==='POST'){if(o.customer_id!==u.id)fail(403,'เฉพาะผู้สั่งที่ให้คะแนนได้');if(o.status!=='done')fail(409,'ให้คะแนนและทิปได้เมื่อส่งสำเร็จแล้ว');let rating=oldFeedback.rating??null,tip=oldFeedback.tip_amount??null;if(b.rating!==undefined){rating=Number(b.rating);if(!Number.isInteger(rating)||rating<1||rating>5)fail(400,'คะแนนต้องเป็น 1–5');}if(b.tip_amount!==undefined){tip=Number(b.tip_amount);if(!Number.isInteger(tip)||tip<1||tip>10000)fail(400,'ทิปต้องเป็นจำนวนเต็ม 1–10,000 บาท');}if(b.rating===undefined&&b.tip_amount===undefined)fail(400,'ระบุคะแนนหรือจำนวนทิป');const payload={order_id:oid,rider_id:o.rider_id,rating,comment:b.comment===undefined?(oldFeedback.comment||''):text(b.comment,500),tip_amount:tip,tip_method:'direct',tip_status:tip?'intent':null,updated_at:now()};if(found)run('UPDATE reports SET payload=? WHERE id=?',JSON.stringify(payload),found.id);else run('INSERT INTO reports VALUES(?,?,?,?,?)',id(),u.id,'customer_feedback',JSON.stringify(payload),now());return send(res,200,{ok:true,paid:false,feedback:payload})}
  }
  if(action==='claim'&&method==='POST'){
- needUser(u,['rider']);if(!u.online)fail(409,'เปิดออนไลน์ก่อนรับงาน');
+ needUser(u,['rider']);if(!u.online)fail(409,'เปิดออนไลน์ก่อนรับงาน');if(o.kind==='ride'&&!u.accepts_rides)fail(409,'เปิดรับงานส่งคนก่อนรับงานผู้โดยสาร');
  transaction(()=>{if(get("SELECT id FROM orders WHERE rider_id=? AND status IN ('assigned','picked')",u.id))fail(409,'ส่งงานปัจจุบันให้เสร็จก่อน');const r=run("UPDATE orders SET status='assigned',rider_id=?,updated_at=? WHERE id=? AND status='ready' AND rider_id IS NULL",u.id,now(),oid);if(!r.changes)fail(409,'งานถูกยกเลิกหรือไรเดอร์คนอื่นรับแล้ว');addEvent(oid,u,'assigned')});emit();return send(res,200,orderView(get('SELECT * FROM orders WHERE id=?',oid),u));
  }
  if(action==='status'&&method==='POST'){
@@ -151,7 +154,7 @@ async function api(req,res,url){
  if(o.customer_id===u.id)allowed=['waiting','ready'].includes(o.status)&&next==='cancelled';
  if(u.role==='admin')allowed=['waiting','ready','assigned'].includes(o.status)&&next==='cancelled';
  if(!allowed)fail(409,'เปลี่ยนสถานะนี้ไม่ได้ หรือคุณไม่มีสิทธิ์');
- transaction(()=>{const r=run('UPDATE orders SET status=?,updated_at=? WHERE id=? AND status=?',next,now(),oid,o.status);if(!r.changes)fail(409,'สถานะเปลี่ยนแล้ว กรุณาโหลดใหม่');addEvent(oid,u,next,text(b.note,500))});emit();return send(res,200,orderView(get('SELECT * FROM orders WHERE id=?',oid),u));
+ transaction(()=>{const r=run('UPDATE orders SET status=?,updated_at=? WHERE id=? AND status=?',next,now(),oid,o.status);if(!r.changes)fail(409,'สถานะเปลี่ยนแล้ว กรุณาโหลดใหม่');addEvent(oid,u,next,text(b.note,500));if(o.kind==='market'){const listing=JSON.parse(o.snapshot).listing_id;if(next==='done')run("UPDATE market_listings SET stock='sold',updated_at=? WHERE id=?",Date.now(),listing);else if(next==='cancelled')run("UPDATE market_listings SET stock='available',updated_at=? WHERE id=? AND stock='reserved'",Date.now(),listing)}});emit();return send(res,200,orderView(get('SELECT * FROM orders WHERE id=?',oid),u));
  }
  }
  if(p==='/api/admin/shops'&&method==='GET'){needUser(u,['admin','merchant']);return send(res,200,(u.role==='admin'?all('SELECT * FROM shops ORDER BY name'):all('SELECT * FROM shops WHERE id=?',u.shop_id)).map(shopView))}

@@ -215,7 +215,7 @@ textarea:focus{border-color:var(--ac)}
 
 @media(min-width:650px){.app{margin:24px auto;border-radius:32px;overflow:hidden}}
 </style>
-<link rel="stylesheet" href="/system.css"></head>
+<link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/dense-layout.css?v=20261027-3px"></head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></symbol>
@@ -270,9 +270,9 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const baht=n=>'฿'+Number(n||0).toLocaleString('th-TH');
 const JOB_KEY='kranuan_jobs2',PROF_KEY='kranuan_profile';
-const cfg={mode:'local',url:'',key:'',riderId:'rider-1',support:''};
+const cfg={mode:'central',url:'',key:'',riderId:'rider-1',support:''};
 let tab='home',online=false,jobs=[],seen=null,pos=null,lastErr='',noticeTimer,lastPush=0;
-const isLocal=()=>cfg.mode!=='supabase';
+const isLocal=()=>cfg.mode==='local';
 function seed(){
   const now=Date.now(),mk=(i,shop,pickup,dropoff,km,fee,cn,min)=>({id:'J'+i,shop,pickup,dropoff,distance_km:km,fee,status:'pending',rider_id:null,customer_id:'c'+i,customer_name:cn,created_at:new Date(now-min*60000).toISOString()});
   return [
@@ -362,7 +362,7 @@ const done=()=>mine().filter(j=>j.status==='delivered').sort((a,b)=>String(b.del
 const isToday=s=>s&&new Date(s).toDateString()===new Date().toDateString();
 const sum=l=>l.reduce((s,j)=>s+Number(j.fee||0),0);
 const mapUrl=(t,la,ln)=>'https://www.google.com/maps/dir/?api=1&dir_action=navigate&travelmode=two-wheeler&destination='+encodeURIComponent(la!=null&&la!==''&&ln!=null&&ln!==''?la+','+ln:t+' กระนวน ขอนแก่น');
-const dest=j=>j.status==='picked'?[j.dropoff,j.dropoff_lat,j.dropoff_lng,'นำทางไปส่ง']:[j.pickup,j.pickup_lat,j.pickup_lng,'นำทางไปร้าน'];
+const dest=j=>j.status==='picked'?[j.dropoff,j.dropoff_lat,j.dropoff_lng,'นำทางไปส่ง']:[j.pickup,j.pickup_lat,j.pickup_lng,j.type==='ride'?'นำทางไปรับผู้โดยสาร':j.type==='parcel'?'นำทางไปรับของ':'นำทางไปร้าน'];
 const MORE=j=>`<button class="secondary ico" data-act="sheet" data-id="menu:${esc(j.id)}" aria-label="ตัวเลือกงาน"><svg class="ic"><use href="#i-more"/></svg></button>`;
 const navBtn=j=>{const d=dest(j);return `<a class="secondary" target="_blank" rel="noopener" href="${mapUrl(d[0],d[1],d[2])}"><svg class="ic" style="width:16px;height:16px"><use href="#i-nav"/></svg>${d[3]}</a>`};
 const STATUS={pending:'รอรับงาน',accepted:'รับงานแล้ว',picked:'รับของแล้ว',delivered:'ส่งสำเร็จ'};
@@ -371,11 +371,11 @@ function jobCard(j,withAct){
   let act='';
   if(withAct){
     if(j.status==='pending')act=`<div class="row">${navBtn(j)}<button class="primary" data-act="accept" data-id="${esc(j.id)}">รับงานนี้</button>${MORE(j)}</div>`;
-    if(j.status==='accepted')act=`<div class="row">${navBtn(j)}<button class="primary" data-act="picked" data-id="${esc(j.id)}">รับของแล้ว</button>${MORE(j)}</div>`;
+    if(j.status==='accepted')act=`<div class="row">${navBtn(j)}<button class="primary" data-act="picked" data-id="${esc(j.id)}">${j.type==='ride'?'รับผู้โดยสารแล้ว':'รับของแล้ว'}</button>${MORE(j)}</div>`;
     if(j.status==='picked')act=`<div class="row">${navBtn(j)}<button class="primary" data-act="delivered" data-id="${esc(j.id)}">ส่งสำเร็จ</button>${MORE(j)}</div>`;
   }
-  return `<div class="card"><div class="jobhead"><div class="avatar"><svg class="ic"><use href="#i-scooter"/></svg></div><div><strong>${esc(j.shop)}</strong><span class="muted">${esc(STATUS[j.status]||j.status)} · ${esc(j.distance_km)} กม.</span></div><div class="amount">${baht(j.fee)}</div></div>
-  <div class="timeline"><div class="stop">${esc(j.pickup)}<small>จุดรับของ</small></div><div class="stop">${esc(j.dropoff)}<small>จุดส่งของ</small></div></div>${j.customer_name?`<div class="muted" style="margin:0 0 10px">ลูกค้า: ${esc(j.customer_name)}</div>`:''}${act}</div>`;
+  return `<div class="card"><div class="jobhead"><div class="avatar"><svg class="ic"><use href="#i-scooter"/></svg></div><div><strong>${esc(j.shop)}</strong><span class="muted">${esc(j.type==='ride'?({pending:'รอรับผู้โดยสาร',accepted:'กำลังไปรับผู้โดยสาร',picked:'กำลังเดินทาง',delivered:'ถึงจุดหมายแล้ว'}[j.status]||j.status):(STATUS[j.status]||j.status))} · ${esc(j.distance_km)} กม.</span></div><div class="amount">${baht(j.fee)}</div></div>
+  <div class="timeline"><div class="stop">${esc(j.pickup)}<small>${j.type==='ride'?'จุดขึ้นรถ':'จุดรับของ'}</small></div><div class="stop">${esc(j.dropoff)}<small>${j.type==='ride'?'จุดลงรถ':'จุดส่งของ'}</small></div></div>${j.customer_name?`<div class="muted" style="margin:0 0 10px">ลูกค้า: ${esc(j.customer_name)}</div>`:''}${act}</div>`;
 }
 
 function homeView(){
@@ -430,7 +430,7 @@ function render(){
     .map(([k,i,l])=>`<button class="${tab===k?'active':''}" data-go="${k}"><span class="tile"><svg class="ic"><use href="#i-${i}"/></svg></span>${l}</button>`).join('');
   const s=$('#topStatus');s.className='online-status'+(online?' on':'');s.lastElementChild.textContent=online?'ออนไลน์':'ออฟไลน์';
   const ja=active();document.body.classList.toggle('hasbar',!!ja);
-  $('#jobbar').innerHTML=ja?`<div class="barcard"><div class="jobhead"><div class="avatar"><svg class="ic"><use href="#i-scooter"/></svg></div><div class="barinfo"><strong>${esc(ja.shop)}</strong><span class="muted">${ja.status==='picked'?'กำลังไปส่ง':'รอไปรับของ'} · ${esc(dest(ja)[0])}</span></div><div class="amount" style="font-size:18px">${baht(ja.fee)}</div></div><div class="row" style="margin-top:12px">${navBtn(ja)}<button class="primary" data-act="${ja.status==='picked'?'delivered':'picked'}" data-id="${esc(ja.id)}">${ja.status==='picked'?'ส่งสำเร็จ':'รับของแล้ว'}</button> ${MORE(ja)}</div></div>`:'';
+  $('#jobbar').innerHTML=ja?`<div class="barcard"><div class="jobhead"><div class="avatar"><svg class="ic"><use href="#i-scooter"/></svg></div><div class="barinfo"><strong>${esc(ja.shop)}</strong><span class="muted">${ja.status==='picked'?(ja.type==='ride'?'กำลังเดินทาง':'กำลังไปส่ง'):(ja.type==='ride'?'ไปรับผู้โดยสาร':'รอไปรับของ')} · ${esc(dest(ja)[0])}</span></div><div class="amount" style="font-size:18px">${baht(ja.fee)}</div></div><div class="row" style="margin-top:12px">${navBtn(ja)}<button class="primary" data-act="${ja.status==='picked'?'delivered':'picked'}" data-id="${esc(ja.id)}">${ja.status==='picked'?(ja.type==='ride'?'ถึงจุดหมายแล้ว':'ส่งสำเร็จ'):(ja.type==='ride'?'รับผู้โดยสารแล้ว':'รับของแล้ว')}</button> ${MORE(ja)}</div></div>`:'';
   const sH=sheetHTML();if(sH!==shHTML){$('#sheet').innerHTML=sH;shHTML=sH}
   $('#riderName').textContent=prof.name;
   $('#miniAv').innerHTML=prof.avatar_url?`<img src="${esc(prof.avatar_url)}" alt="">`:esc((prof.name||'ร').trim().charAt(0));
@@ -500,31 +500,31 @@ document.addEventListener('click',async e=>{
 let queue=[],cur=null,alertTimer,ac,alertDeadline=0,alertBusy=false,alertFocus=null,oldOverflow='',alertLocked=false;
 const ALERT_DURATION=30000;
 const ISAN_CHEERS=[
-'ไหวบ่อาววว! แอดมินส่งแฮงใจมาให้เด้อ ✨',
-'สู้เด้อ บ้านเฮามันแร้ง! แต่อย่าลืมกินน้ำเด้อ ☀️',
-'งานมาแล้วเด้อ คนเก่งของกระนวน 🧡',
+'ไหวบ่อาววว! แอดมินส่งแฮงใจมาให้เด้อ ',
+'สู้เด้อ บ้านเฮามันแร้ง! แต่อย่าลืมกินน้ำเด้อ ',
+'งานมาแล้วเด้อ คนเก่งของกระนวน ',
 'มื้อนี้ขอให้หมาน ๆ งานเข้า เงินเข้าเด้อ!',
 'ค่อย ๆ ไปเด้อ ถึงปลอดภัย แอดมินกะดีใจแล้ว',
 'เมื่อยกะพักก่อนเด้อ แฮงใจทางนี้มีให้คือเก่า',
 'อีกจักรอบ กะใกล้ฮอดเป้าแล้ว สู้ ๆ เด้อ!',
-'บ่ต้องฟ้าวหลาย ขี่ปลอดภัยไว้ก่อนเด้อ 🛵',
+'บ่ต้องฟ้าวหลาย ขี่ปลอดภัยไว้ก่อนเด้อ ',
 'คนทางบ้านถ่าอยู่เด้อ ขี่รถดี ๆ นำ',
 'ขอบใจหลาย ๆ ที่ซ่อยส่งความแซ่บให้บ้านเฮา',
 'แดดสิฮ้อนปานใด๋ แอดมินกะส่งใจไปซ่อยเด้อ',
-'มื้อนี้เจ้าสุดยอดหลาย ฮู้โตบ่! 🌟',
+'มื้อนี้เจ้าสุดยอดหลาย ฮู้โตบ่! ',
 'งานเด้งแล้วเด้อ พร้อมบ่คนเก่ง!',
 'ขอให้ทางโล่ง ไฟเขียว ลูกค้ายิ้มให้เด้อ',
 'กินข้าวแล้วบ่ อย่ามัวแต่แล่นงานจนลืมเด้อ',
-'น้ำเย็นจักอึก แล้วค่อยไปต่อเด้อ 🧊',
+'น้ำเย็นจักอึก แล้วค่อยไปต่อเด้อ ',
 'แอดมินอยู่ทางนี้ ส่งแฮงใจไปฮอดเจ้าเด้อ',
 'ฝนสิตกกะระวังทางมื่นนำเด้อ เป็นห่วงหลาย',
 'มื้อนี้เฮ็ดดีแล้วเด้อ ภูมิใจในโตเองนำ',
 'ทีละงาน ทีละก้าว เฮาค่อย ๆ ไปนำกันเด้อ',
-'คนขยันคือเจ้า สมควรได้ยิ้มกว้าง ๆ เด้อ 😊',
+'คนขยันคือเจ้า สมควรได้ยิ้มกว้าง ๆ เด้อ ',
 'บ่แม่นแค่ส่งของ เจ้ากำลังส่งรอยยิ้มเด้อ',
 'ฮ้อนกะหลบฮ่มก่อนเด้อ งานถัดไปค่อยว่ากัน',
 'งานนี้มีแฮงใจแถมให้เต็มกระเป๋าเลยเด้อ!',
-'ให้มื้อนี้เป็นมื้อดี ๆ ของเจ้าเด้อ 🧡',
+'ให้มื้อนี้เป็นมื้อดี ๆ ของเจ้าเด้อ ',
 'ไปรับความแซ่บ แล้วส่งฮอดมือเขาเด้อ',
 'ขี่ดี ๆ เด้อ อย่าลืมใส่หมวกกันน็อกนำ',
 'บ่ต้องเก่งทุกมื้อ แค่ดูแลโตเองกะเก่งแล้ว',
@@ -535,14 +535,14 @@ const ISAN_CHEERS=[
 'พักหายใจจักหน่อย แล้วค่อยลุยต่อเด้อ',
 'หมาน ๆ เด้อ ขอให้มีแต่เรื่องม่วนใจ',
 'ยิ้มให้โตเองจักเทื่อ เจ้าพยายามหลายแล้ว',
-'ไปดีมาดีเด้อ แอดมินคอยเชียร์อยู่ 🛵',
+'ไปดีมาดีเด้อ แอดมินคอยเชียร์อยู่ ',
 'กระนวนบ้านเฮา มีเจ้าคอยส่งกะอุ่นใจหลาย',
 'ร้านพร้อมแล้ว แฮงใจแอดมินกะพร้อมคือกัน!',
 'บ่ไหวกะข้ามได้เด้อ เอาที่เจ้าสะดวกเลย',
 'สู้เด้อคนขยัน แต่อย่าฝืนร่างกายเด้อ',
 'ขอให้รับง่าย ส่งคล่อง ตลอดมื้อนี้เด้อ',
 'มื้อใด๋เมื่อย กะจำไว้ว่าเจ้ายังมีคนเชียร์',
-'งานเด้งติ๊ง ๆ แอดมินส่งใจปิ๊ง ๆ ให้เด้อ ✨',
+'งานเด้งติ๊ง ๆ แอดมินส่งใจปิ๊ง ๆ ให้เด้อ ',
 'ขอบใจที่เป็นแฮงสำคัญของบ้านเฮาเด้อ',
 'ค่อย ๆ สะสมไปเด้อ ความตั้งใจบ่เสียเปล่า',
 'อย่าลืมยืดแขนยืดขานำเด้อ คนเก่ง',
@@ -550,14 +550,14 @@ const ISAN_CHEERS=[
 'ใจพร้อม รถพร้อม กะไปได้เด้อ บ่พร้อมกะพักก่อน',
 'แซ่บคัก ๆ กำลังถ่าให้เจ้าไปส่งเด้อ!',
 'มื้อนี้บ่ได้สู้ผู้เดียวเด้อ แอดมินเชียร์อยู่',
-'เก็บแฮงไว้ยิ้มตอนเลิกงานนำเด้อ 😊',
+'เก็บแฮงไว้ยิ้มตอนเลิกงานนำเด้อ ',
 'ฮักแพงโตเองนำเด้อ ไรเดอร์บ้านเฮา',
 'ถึงช้าจักหน่อยบ่เป็นหยัง เอาปลอดภัยเด้อ',
 'ขอให้มื้อนี้มีเรื่องให้ยิ้มหลายกว่าเรื่องเมื่อย',
-'แอดมินยกนิ้วให้เลยเด้อ ตั้งใจคักหลาย 👍',
+'แอดมินยกนิ้วให้เลยเด้อ ตั้งใจคักหลาย ',
 'หิวกะกิน เมื่อยกะพัก แฮงใจบ่หนีไปไสเด้อ',
 'ลุยได้กะลุย บ่ไหวกะพัก เฮาเข้าใจเด้อ',
-'อีกหนึ่งงาน อีกหนึ่งรอยยิ้มของบ้านเฮา 🧡',
+'อีกหนึ่งงาน อีกหนึ่งรอยยิ้มของบ้านเฮา ',
 'ขอให้รถดี ทางดี มีแต่คนใจดีเด้อ',
 'พร้อมยามใด๋ค่อยไปเด้อ แอดมินส่งแฮงใจให้คือเก่า'
 ];
@@ -612,9 +612,9 @@ function nextAlert(){
  el.innerHTML='<section class="alertcard"><div class="alertscroll">'+
  '<header class="alerthead"><div class="avatar"><svg class="ic"><use href="#i-bell"/></svg></div><div class="alertheading"><h2 id="alertTitle">งานใหม่เข้าแล้ว!</h2><small id="alertQueue">'+(queue.length?'รออีก '+queue.length+' งาน':'งานใหม่สำหรับคุณ')+'</small></div><div class="alertfee"><small>ค่ารอบ</small><strong>'+baht(j.fee)+'</strong></div></header>'+
  '<figure class="alertphoto"><img id="alertPhoto" src="'+esc(photo.url)+'" alt=""><span class="photochip" id="alertPhotoLabel">'+esc(photo.label)+'</span><figcaption>'+esc(j.shop)+'</figcaption></figure>'+
- '<div class="alertbody"><div class="admincheer"><div class="adminav"><svg class="ic"><use href="#i-chat"/></svg></div><div class="adminbubble"><small>VeloSync · กำลังใจอัตโนมัติ 🧡</small><p id="alertCheer">'+esc(randomCheer())+'</p></div></div>'+
- '<div class="timeline"><div class="stop"><small>จุดรับของ · ระยะทาง '+esc(j.distance_km??'–')+' กม.</small>'+esc(j.pickup)+'</div><div class="stop"><small>จุดส่งของ</small>'+esc(j.dropoff)+'</div></div></div>'+
- '</div><footer class="alertfooter"><div class="alertclock"><span>ตัดสินใจภายใน</span><strong><span id="alertSeconds">30</span> วินาที</strong></div><div class="row"><button class="secondary" data-act="dismiss">ข้ามงานนี้</button><button class="primary" data-act="takeAlert">'+(j.id==='TEST'?'ทดสอบรับงาน':'รับงานนี้')+'</button></div><div class="alertbar" aria-hidden="true"><i id="alertProgress"></i></div><p>ขับขี่ปลอดภัย ตรวจสอบเส้นทางก่อนรับงาน</p></footer></section>';
+ '<div class="alertbody"><div class="admincheer"><div class="adminav"><svg class="ic"><use href="#i-chat"/></svg></div><div class="adminbubble"><small>VeloSync · กำลังใจอัตโนมัติ </small><p id="alertCheer">'+esc(randomCheer())+'</p></div></div>'+
+ '<div class="timeline"><div class="stop"><small>'+(j.type==='ride'?'จุดขึ้นรถ':'จุดรับของ')+' · ระยะทาง '+esc(j.distance_km??'–')+' กม.</small>'+esc(j.pickup)+'</div><div class="stop"><small>'+(j.type==='ride'?'จุดลงรถ':'จุดส่งของ')+'</small>'+esc(j.dropoff)+'</div></div></div>'+
+ '</div><footer class="alertfooter"><div class="alertclock"><span>ตัดสินใจภายใน</span><strong><span id="alertSeconds">30</span> วินาที</strong></div><div class="row"><button class="secondary" data-act="dismiss">ข้ามงานนี้</button><button class="primary" data-act="takeAlert">'+(j.id==='TEST'?'ทดสอบรับงาน':j.type==='ride'?'รับงานส่งคน 1 คน':'รับงานนี้')+'</button></div><div class="alertbar" aria-hidden="true"><i id="alertProgress"></i></div><p>ขับขี่ปลอดภัย ตรวจสอบเส้นทางก่อนรับงาน</p></footer></section>';
  const img=$('#alertPhoto');img.onerror=()=>{img.onerror=null;img.src=SHOP_PLACEHOLDER;$('#alertPhotoLabel').textContent='ภาพประกอบ'};
  lockAlert(true);el.querySelector('[data-act="takeAlert"]').focus();startAlertClock();
 }
@@ -674,14 +674,15 @@ async function loadProfile(){try{const r=await DB.getProfile();if(!r)return;Obje
 let map,pin;
 function initMap(){
   if(map||!window.L)return;
-  map=L.map('realMap',{zoomControl:false,attributionControl:false,dragging:!L.Browser.mobile,tap:false}).setView([16.706,103.078],15);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,className:'dark-map-tiles'}).addTo(map);
+  map=L.map('realMap',{zoomControl:false,attributionControl:true,dragging:!L.Browser.mobile,tap:false}).setView([16.706,103.078],15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,className:'dark-map-tiles',attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
   pin=L.marker([16.706,103.078],{icon:L.divIcon({className:'',html:'<div style="background:var(--ac);width:26px;height:26px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 16px var(--ac)"></div>',iconSize:[26,26],iconAnchor:[13,13]})}).addTo(map);
 }
 function watchGps(){
+  if(window.__kranuanGpsWatch!=null)return;
   const st=$('#mapGpsStatus');
   if(!navigator.geolocation){st.textContent='อุปกรณ์ไม่รองรับ GPS';return}
-  navigator.geolocation.watchPosition(p=>{
+  window.__kranuanGpsWatch=navigator.geolocation.watchPosition(p=>{
     pos={lat:p.coords.latitude,lng:p.coords.longitude};
     if(pin)pin.setLatLng([pos.lat,pos.lng]);if(map)map.panTo([pos.lat,pos.lng]);
     st.textContent=`GPS ${pos.lat.toFixed(3)}, ${pos.lng.toFixed(3)}`;
