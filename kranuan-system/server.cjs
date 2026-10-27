@@ -93,6 +93,7 @@ function importShops(u,data){
  }audit(u,'import shops and media',String(added))});emit();return {added,skipped,images_added,menus_added,total:plan.length,note:'เติมเฉพาะรูปที่ขาด ไม่เปลี่ยนสถานะร้าน เมนูนำเข้าใหม่พักขายไว้จนกว่าจะตรวจราคาและเปิดขาย'};
 }
 const staffApi=require('./staff.cjs')({get,all,run,fail,text,required,id,now,transaction,audit,emit,send});
+const myActivity=require('./activity.cjs')({all,now});
 const marketApi=require('./market.cjs')({get,all,run,fail,text,required,coord,imageURL,id,now,transaction,audit,emit,send,orderView});
 async function api(req,res,url){
  checkOrigin(req);let u=session(req);const method=req.method,p=url.pathname;limit(req,p==='/api/login'?'login':'api:'+(u?.id||'public'),p==='/api/login'?10:240);
@@ -101,7 +102,7 @@ async function api(req,res,url){
  if(p==='/api/menus'&&method==='GET'){const shopId=required(url.searchParams.get('shop'),'ร้าน');return send(res,200,all('SELECT id,shop_id,name,price_satang,image_url,available FROM menus WHERE shop_id=? ORDER BY name',shopId).map(m=>({...m,price:m.price_satang/100,available:!!m.available})))}
  if(p==='/api/config'&&method==='GET')return send(res,200,{delivery_fee:Number(process.env.DELIVERY_FEE_THB||25),ride_fee:Number(process.env.RIDE_FEE_THB||process.env.DELIVERY_FEE_THB||25),ride_passenger_limit:1});
 
- if(p==='/api/catalog'&&method==='GET'){const pictures=all("SELECT shop_id,image_url FROM menus WHERE image_url<>'' ORDER BY available DESC,name");const ratings=all('SELECT shop_id,COUNT(*) AS review_count,ROUND(AVG(rating),1) AS rating FROM shop_reviews GROUP BY shop_id');return send(res,200,all('SELECT id,image_url FROM shops').map(s=>({id:s.id,images:[...new Set([s.image_url,...pictures.filter(m=>m.shop_id===s.id).map(m=>m.image_url)].filter(Boolean))].slice(0,3),rating:ratings.find(r=>r.shop_id===s.id)?.rating??null,review_count:ratings.find(r=>r.shop_id===s.id)?.review_count||0})))}
+ if(p==='/api/catalog'&&method==='GET'){const pictures=all("SELECT shop_id,name,image_url FROM menus ORDER BY available DESC,name");const ratings=all('SELECT shop_id,COUNT(*) AS review_count,ROUND(AVG(rating),1) AS rating FROM shop_reviews GROUP BY shop_id');return send(res,200,all('SELECT id,image_url FROM shops').map(s=>({id:s.id,menu_names:pictures.filter(m=>m.shop_id===s.id).map(m=>m.name).slice(0,100),images:[...new Set([s.image_url,...pictures.filter(m=>m.shop_id===s.id).map(m=>m.image_url)].filter(Boolean))].slice(0,3),rating:ratings.find(r=>r.shop_id===s.id)?.rating??null,review_count:ratings.find(r=>r.shop_id===s.id)?.review_count||0})))}
  if(p==='/api/shop-reviews'&&method==='GET'){const sid=required(url.searchParams.get('shop'),'ร้าน');return send(res,200,all('SELECT rating,comment,created_at FROM shop_reviews WHERE shop_id=? ORDER BY created_at DESC LIMIT 20',sid))}
  const publicRiderPhoto=p.match(/^\/api\/riders\/([^/]+)\/photo\/(avatar|p[0-3])$/);if(publicRiderPhoto&&method==='GET'){const image=staffApi.publicPhoto(publicRiderPhoto[1],publicRiderPhoto[2]);if(!image)fail(404,'ยังไม่เผยแพร่รูปนี้');const match=image.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);if(!match)fail(404,'รูปไม่พร้อมใช้งาน');res.writeHead(200,{'Content-Type':match[1],'Cache-Control':'private, no-store'});return res.end(Buffer.from(match[2],'base64'))}
  if(p==='/api/riders'&&method==='GET')return send(res,200,{riders:staffApi.publicList(),vip:{available:false,price:299,currency:'THB',billing_period:null}});
@@ -109,6 +110,7 @@ async function api(req,res,url){
  needUser(u);
  if(!['GET','HEAD'].includes(method)&&req.headers['x-csrf-token']!==u.csrf)fail(403,'เซสชันเปลี่ยน กรุณาโหลดหน้าใหม่');
  const b=['POST','PATCH','PUT'].includes(method)?await body(req):{};
+ if(p==='/api/my-activity'&&method==='GET')return send(res,200,myActivity(u.id));
  if(p==='/api/orders'&&method==='POST'&&(b.preferred_rider_id||b.selected_rider_id))fail(409,'ระบบเลือกไรเดอร์สำหรับ VIP ยังไม่เปิดใช้งาน');
 
  if(p==='/api/shop-reviews'&&method==='POST'){const order=get("SELECT * FROM orders WHERE id=? AND customer_id=? AND status='done' AND shop_id IS NOT NULL",text(b.order_id),u.id);if(!order)fail(403,'รีวิวร้านได้หลังออเดอร์ของคุณจัดส่งสำเร็จเท่านั้น');const rating=Number(b.rating);if(!Number.isInteger(rating)||rating<1||rating>5)fail(400,'คะแนนต้องเป็น 1–5');run('INSERT INTO shop_reviews(id,shop_id,order_id,user_id,rating,comment,created_at) VALUES(?,?,?,?,?,?,?) ON CONFLICT(order_id) DO UPDATE SET rating=excluded.rating,comment=excluded.comment',id(),order.shop_id,order.id,u.id,rating,text(b.comment,500),now());emit();return send(res,200,{ok:true})}
@@ -146,6 +148,7 @@ async function api(req,res,url){
  }
  const orderMatch=p.match(/^\/api\/orders\/([^/]+)(?:\/(claim|status|events|feedback))?$/);
  if(orderMatch){const oid=orderMatch[1],action=orderMatch[2],o=get('SELECT * FROM orders WHERE id=?',oid);if(!o)fail(404,'ไม่พบงาน');
+ if(!action&&method==='GET'){if(!canReadOrder(u,o))fail(403,'ไม่มีสิทธิ์ดูงาน');return send(res,200,orderView(o,u))}
  if(action==='events'&&method==='GET'){if(!canReadOrder(u,o))fail(403,'ไม่มีสิทธิ์ดูงาน');return send(res,200,all('SELECT status,note,created_at FROM order_events WHERE order_id=? ORDER BY id',oid))}
  if(action==='feedback'){
  if(!canReadOrder(u,o))fail(403,'ไม่มีสิทธิ์ดูความคิดเห็นของออเดอร์นี้');
