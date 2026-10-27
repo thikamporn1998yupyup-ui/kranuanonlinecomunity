@@ -405,7 +405,7 @@ function settingsView(){
   return `<div class="sectiontitle"><h1>ตั้งค่า</h1></div>
   <div class="card"><div class="profhead"><div class="bigav">${prof.avatar_url?`<img src="${esc(prof.avatar_url)}" alt="">`:'<svg class="ic" style="width:36px;height:36px"><use href="#i-user"/></svg>'}<label class="camera"><input type="file" accept="image/*" data-slot="avatar" hidden><svg class="ic"><use href="#i-camera"/></svg></label></div><div><strong>รูปโปรไฟล์</strong><span class="muted">แตะไอคอนกล้องเพื่อเปลี่ยนรูป</span></div></div>
   <label>ชื่อที่แสดง<input data-f="name" value="${esc(prof.name)}"></label></div>
-  <div class="card"><h2><svg class="ic"><use href="#i-camera"/></svg>รูปส่วนตัว</h2><div class="gal">${[0,1,2,3].map(slot).join('')}</div></div>
+  <div class="card"><h2><svg class="ic"><use href="#i-camera"/></svg>รูปแกลเลอรีโปรไฟล์</h2><div class="gal">${[0,1,2,3].map(slot).join('')}</div></div>
   <div class="card"><h2><svg class="ic"><use href="#i-bank"/></svg>บัญชีธนาคาร</h2>
   <label>ธนาคาร<select data-f="bank_name"><option value="">เลือกธนาคาร</option>${BANKS.map(b=>`<option value="${b}" ${prof.bank_name===b?'selected':''}>${b}</option>`).join('')}</select></label>
   <label>เลขบัญชี<input data-f="bank_account" inputmode="numeric" value="${esc(prof.bank_account)}"></label>
@@ -698,5 +698,5 @@ window.addEventListener('DOMContentLoaded',async()=>{
   setInterval(refresh,5000);
 });
 </script>
-<script src="/api.js"></script><script src="/rider-bridge.js"></script><script src="/staff-rider.js?v=20261027-1"></script><script src="/app-zoom-lock.js?v=20261027-2"></script></body>
+<script src="/api.js"></script><script src="/rider-bridge.js"></script><script src="/staff-rider.js?v=20261027-gallery"></script><script src="/app-zoom-lock.js?v=20261027-2"></script></body>
 </html>
