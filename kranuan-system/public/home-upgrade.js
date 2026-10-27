@@ -238,7 +238,7 @@
   if (!document.getElementById('eatPopCss')) {
     var st = document.createElement('style'); st.id = 'eatPopCss';
     st.textContent = `
-#eatFab{position:fixed;right:12px;bottom:calc(104px + env(safe-area-inset-bottom));z-index:60;width:76px;height:112px;border:0;background:none;padding:0;cursor:pointer;transform-origin:50% 0;translate:0 0;rotate:0deg;animation:eatDrop .8s cubic-bezier(.3,1.5,.5,1) both,eatSwing 3.4s ease-in-out .8s infinite;-webkit-tap-highlight-color:transparent}
+#eatFab{position:fixed;right:12px;bottom:calc(240px + env(safe-area-inset-bottom));z-index:100;width:76px;height:112px;border:0;background:none;padding:0;cursor:pointer;transform-origin:50% 0;translate:0 0;rotate:0deg;animation:eatDrop .8s cubic-bezier(.3,1.5,.5,1) both,eatSwing 3.4s ease-in-out .8s infinite;-webkit-tap-highlight-color:transparent}
 #eatFab .hook{position:absolute;left:50%;top:0;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:#2b1d14}
 #eatFab .cord{position:absolute;left:50%;top:5px;width:2.5px;height:30px;margin-left:-1.25px;background:#2b1d14}
 #eatFab .badge{position:absolute;left:50%;top:32px;width:62px;height:62px;margin-left:-31px;border-radius:50%;background:#f9d35b;border:3px solid #2b1d14;box-shadow:0 5px 0 #2b1d1433;display:grid;place-items:center;padding:7px}
