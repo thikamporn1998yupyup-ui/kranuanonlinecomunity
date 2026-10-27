@@ -174,7 +174,11 @@ p{line-height:1.7}
 
 </style>
 <link rel="stylesheet" href="/system.css">
-<link rel="stylesheet" href="/commerce.css?v=20261027"><link rel="stylesheet" href="/market.css?v=20261027-market"><link rel="stylesheet" href="/dense-layout.css?v=20261027-balanced"><link rel="stylesheet" href="/mobile-catalog.css?v=20261027-3"><link rel="stylesheet" href="/rider-profiles.css?v=20261027"><link rel="stylesheet" href="/compact-activity.css?v=20261027"><link rel="stylesheet" href="/rider-team-board.css?v=20261027"></head>
+<link rel="stylesheet" href="/commerce.css?v=20261027"><link rel="stylesheet" href="/market.css?v=20261027-market"><link rel="stylesheet" href="/dense-layout.css?v=20261027-balanced"><link rel="stylesheet" href="/mobile-catalog.css?v=20261027-3"><link rel="stylesheet" href="/rider-profiles.css?v=20261027"><link rel="stylesheet" href="/compact-activity.css?v=20261027"><link rel="stylesheet" href="/rider-team-board.css?v=20261027"><link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#16a34a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="กระนวน">
+<link rel="apple-touch-icon" href="/icon-192.png"></head>
 <body>
 
 <div id="lineAuthModal" class="modal-overlay" style="display:none;">
@@ -791,5 +795,9 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 <script src="/api.js"></script><script src="/customer.js"></script>
-<script src="/commerce-media.js?v=20261027"></script><script src="/commerce-customer.js?v=20261027"></script><script src="/market.js?v=20261027-market"></script><script src="/app-zoom-lock.js?v=20261027-2"></script><script src="/courier-grab-ui.js?v=20261027-2"></script><script src="/mobile-catalog.js?v=20261027-3"></script><script src="/rider-profiles.js?v=20261027"></script><script src="/compact-activity.js?v=20261027"></script><script src="/rider-team-board.js?v=20261027"></script></body>
+<script src="/commerce-media.js?v=20261027"></script><script src="/commerce-customer.js?v=20261027"></script><script src="/market.js?v=20261027-market"></script><script src="/app-zoom-lock.js?v=20261027-2"></script><script src="/courier-grab-ui.js?v=20261027-2"></script><script src="/mobile-catalog.js?v=20261027-3"></script><script src="/rider-profiles.js?v=20261027"></script><script src="/compact-activity.js?v=20261027"></script><script src="/rider-team-board.js?v=20261027"></script><script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js');
+}
+</script></body>
 </html>
