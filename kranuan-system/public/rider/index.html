@@ -38,7 +38,7 @@
 html,body{height:100%}
 body{margin:0;overflow:hidden;background:var(--bg);color:var(--tx);font:400 14px/1.55 Sora,Seed,"Noto Sans Thai",Tahoma,sans-serif;-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font:inherit}button{cursor:pointer}
-html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
+html,body{position:fixed;inset:0;width:100%;overflow:hidden;overscroll-behavior:none;touch-action:pan-y;-webkit-text-size-adjust:100%}
 @media(max-width:979px){input,select,textarea{font-size:16px!important}}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 .app{position:static;max-width:none;min-height:0;margin:0;padding:0;background:none;box-shadow:none;border-radius:0;overflow:visible}
@@ -119,13 +119,17 @@ body.dragging .fab,body.dragging .leaflet-bottom,body.dragging .content{transiti
 @keyframes radar{from{transform:scale(.3);opacity:1}to{transform:scale(1.45);opacity:0}}
 
 /* ---------- แผงข้อมูล (bottom sheet) ---------- */
+.content::-webkit-scrollbar{display:none}
+.content,.content *{max-width:100%}
+.content #screen{min-width:0;overflow-x:clip}
+.content img{max-width:100%}
 .s0{--sheetH:64px}
 .s1{--sheetH:max(64px,min(30dvh,calc(100dvh - 210px - var(--navspace) - var(--jb))))}
 .s2{--sheetH:max(64px,calc(100dvh - 96px - env(safe-area-inset-top,0px) - var(--navspace) - var(--jb)))}
-.content{position:fixed;z-index:10;left:10px;right:10px;bottom:calc(var(--navspace) + var(--jb));height:var(--sheetH);margin:0;padding:0 14px 22px;overflow-y:auto;overscroll-behavior:contain;border-radius:28px;
+.content{position:fixed;z-index:10;left:10px;right:10px;bottom:calc(var(--navspace) + var(--jb));height:var(--sheetH);margin:0;padding:0 16px 24px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y;scrollbar-width:none;border-radius:28px;
   background:var(--glass);-webkit-backdrop-filter:blur(26px) saturate(1.5);backdrop-filter:blur(26px) saturate(1.5);border:1px solid var(--e1);box-shadow:var(--lift);
   transition:height .35s cubic-bezier(.22,.9,.3,1),bottom .25s}
-.grab{position:sticky;top:0;z-index:5;display:flex;justify-content:center;width:calc(100% + 28px);margin:0 -14px;padding:10px 0 8px;border:0;touch-action:none;background:linear-gradient(to bottom,rgba(var(--fade),.97) 60%,rgba(var(--fade),0))}
+.grab{position:sticky;top:0;z-index:5;display:flex;justify-content:center;width:calc(100% + 32px);max-width:none;margin:0 -16px;padding:10px 0 8px;border:0;touch-action:none;background:linear-gradient(to bottom,rgba(var(--fade),.97) 60%,rgba(var(--fade),0))}
 .grab i{display:block;width:44px;height:5px;border-radius:3px;background:var(--ln2)}
 #notice{position:fixed;z-index:40;left:50%;transform:translateX(-50%);top:calc(76px + env(safe-area-inset-top,0px));width:min(calc(100% - 20px),440px);padding:10px 14px 10px 16px;border-radius:14px;font-size:12px;font-weight:600;color:var(--tx);
   background:var(--s1);border:1px solid var(--ln);border-left:4px solid var(--ac);box-shadow:var(--lift)}
@@ -181,7 +185,7 @@ textarea{resize:vertical}
 .switch button:not(.off) .dot{animation:pulse 1.8s infinite;color:var(--ok)}
 
 /* การ์ดสถิติ */
-.dash-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.dash-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}
 .dash-stats button{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:12px 12px 14px;text-align:left;border:1px solid var(--ln);border-radius:18px;background:var(--card);color:var(--tx);overflow:hidden;transition:transform .2s,border-color .2s}
 .dash-stats button:hover{transform:translateY(-2px);border-color:var(--c)}
 .dash-stats button:nth-child(1){--c:var(--ac)}.dash-stats button:nth-child(2){--c:var(--cy)}.dash-stats button:nth-child(3){--c:var(--ok)}
@@ -190,7 +194,7 @@ textarea{resize:vertical}
 .dash-stats strong{display:block;font-size:28px;line-height:1;font-weight:700;color:var(--tx);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .dash-stats span{display:block;font-size:11px;color:var(--tx2);margin-top:2px}
 
-.insight{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.insight{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin:12px 0}
 .insight .card{margin:0;padding:14px}
 .donut{position:relative;width:86px;height:86px;margin:2px auto 10px}
 .ring{width:100%;height:100%;transform:rotate(-90deg)}
@@ -211,7 +215,7 @@ textarea{resize:vertical}
 
 .chart .chead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px}
 .chart .big{display:block;font-size:26px;line-height:1.2;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
-.wk{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;height:126px;align-items:end}
+.wk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;height:126px;align-items:end}
 .wk>div{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;height:100%;min-width:0}
 .wk em{font-style:normal;font-size:9.5px;font-weight:600;color:var(--tx2);font-variant-numeric:tabular-nums;white-space:nowrap}
 .wk i{display:block;width:100%;height:calc(var(--h)*.6);min-height:5px;border-radius:8px 8px 4px 4px;background:linear-gradient(to top,rgba(23,179,230,.6),rgba(139,108,255,.38))}
@@ -325,6 +329,14 @@ pre{white-space:pre-wrap;font-size:10px;background:var(--s2);padding:12px;border
   #notice{left:20px;transform:none;top:92px;width:440px;z-index:40}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* ---------- ล็อกไม่ให้เลื่อนซ้ายขวาทุกหน้า/ทุกหน้าต่าง ---------- */
+.shpanel,.alertscroll,.alertcard,.barcard,#jobbar{overflow-x:hidden;max-width:100%}
+.shpanel,.alertscroll{touch-action:pan-y;overscroll-behavior-x:none}
+.jobhead>div:not(.avatar):not(.amount),.barinfo{min-width:0}
+.jobhead strong,.stop,.hist>div,.mrow span,.adminbubble p,.chip,.muted{overflow-wrap:anywhere}
+.chips,.row,.hacts,.swatches{max-width:100%}
+.content>*{max-width:100%}
 </style>
 </head>
 <body class="s1">
