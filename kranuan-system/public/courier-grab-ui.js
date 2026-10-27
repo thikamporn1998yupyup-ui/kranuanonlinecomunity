@@ -83,6 +83,20 @@
     '.gx-confirm.drop{background:linear-gradient(135deg,#ff7a4a,#e04f22);box-shadow:0 6px 16px rgba(200,76,35,.38)}',
     '.gx-dot{width:20px;height:20px;border-radius:50%;border:4px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)}',
     '.gx-dot.pickup{background:#00b14f}.gx-dot.drop{background:#e95e30;border-radius:7px}',
+    '.gx-map{height:380px!important}',
+    '.gx-hint{display:none!important}',
+    '.gx-search{position:absolute;left:14px;right:14px;top:66px;z-index:620}',
+    '.gx-sbar{display:flex;align-items:center;gap:8px;background:#fff;border-radius:14px;padding:4px 4px 4px 12px;box-shadow:0 4px 14px rgba(0,0,0,.18)}',
+    '.gx-sbar svg{width:18px;height:18px;flex:none;fill:none;stroke:#8a7b6b;stroke-width:2;stroke-linecap:round}',
+    '.gx-sbar input{flex:1;min-width:0;border:0;outline:0;background:none;font-size:14px;padding:9px 0;color:#332e29;margin:0!important;border-radius:0!important}',
+    '.gx-sbar button{border:0;border-radius:10px;background:#e95e30;color:#fff;font-weight:700;font-size:12px;padding:9px 12px}',
+    '.gx-sugg{margin-top:6px;background:#fff;border-radius:14px;box-shadow:0 8px 20px rgba(0,0,0,.2);max-height:190px;overflow:auto}',
+    '.gx-sugg:empty{display:none}',
+    '.gx-sugg button{display:block;width:100%;text-align:left;border:0;background:none;padding:10px 14px;border-bottom:1px solid #f3ebe0}',
+    '.gx-sugg button:last-child{border:0}',
+    '.gx-sugg b{display:block;font-size:13px;color:#332e29}',
+    '.gx-sugg small{display:block;font-size:11px;color:#8a7b6b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.gx-sg-msg{padding:12px 14px;font-size:12px;color:#7a6b5c}',
     /* ---------- ช่องไฟ: ทับ dense-layout.css ให้ไม่ชิดขอบ ---------- */
     '.c-courier.gx{padding:0 16px 8px!important;box-sizing:border-box}',
     '.c-courier.gx .c-page-title{margin:6px 4px 16px!important}',
@@ -206,6 +220,49 @@
     });
   }
 
+  /* ช่องค้นหาสถานที่ → เลื่อนแผนที่ + ปักหมุดให้ (ใช้ OpenStreetMap Nominatim) */
+  function initSearch(f, box) {
+    var wrap = document.createElement('div'), tm, ctl;
+    wrap.className = 'gx-search';
+    wrap.innerHTML = '<div class="gx-sbar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 5 5"/></svg><input id="gxSearch" type="search" enterkeyhint="search" autocomplete="off" placeholder="ค้นหาสถานที่ เช่น วัด โรงเรียน ตลาด ร้านค้า"><button type="button" id="gxSearchBtn">ค้นหา</button></div><div class="gx-sugg" id="gxSugg"></div>';
+    box.appendChild(wrap);
+    var inp = wrap.querySelector('input'), sg = wrap.querySelector('#gxSugg');
+    function msg(t) { sg.innerHTML = ''; var d = document.createElement('div'); d.className = 'gx-sg-msg'; d.textContent = t; sg.appendChild(d); }
+    function pick(p, name) {
+      var t = gx.target;
+      sg.innerHTML = ''; inp.value = name;
+      if (!gx.map) return;
+      gx.map.setView([+p.lat, +p.lon], 17, { animate: false });
+      confirmPin(f);
+      var addr = f.elements[FIELDS[t][2]];
+      if (addr && !addr.value.trim()) { addr.value = name; addr.dispatchEvent(new Event('input', { bubbles: true })); }
+    }
+    function find() {
+      var q = inp.value.trim();
+      if (q.length < 2) { sg.innerHTML = ''; return; }
+      msg('กำลังค้นหา…');
+      if (ctl) ctl.abort();
+      ctl = new AbortController();
+      fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&countrycodes=th&accept-language=th&viewbox=102.85,16.95,103.30,16.45&q=' + encodeURIComponent(q), { signal: ctl.signal })
+        .then(function (r) { return r.json(); })
+        .then(function (rows) {
+          if (!rows.length) { msg('ไม่พบสถานที่ ลองพิมพ์ชื่ออื่น หรือเลื่อนแผนที่เองได้เลย'); return; }
+          sg.innerHTML = '';
+          rows.forEach(function (p) {
+            var parts = p.display_name.split(', '), b = document.createElement('button');
+            b.type = 'button'; b.innerHTML = '<b></b><small></small>';
+            b.firstChild.textContent = parts[0]; b.lastChild.textContent = parts.slice(1, 4).join(', ');
+            b.onclick = function () { pick(p, parts[0]); };
+            sg.appendChild(b);
+          });
+        })
+        .catch(function (e) { if (e.name !== 'AbortError') msg('ค้นหาไม่ได้ในตอนนี้ ลองเลื่อนแผนที่เพื่อปักหมุดแทนครับ'); });
+    }
+    inp.addEventListener('input', function () { clearTimeout(tm); tm = setTimeout(find, 650); });
+    inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); clearTimeout(tm); find(); } });
+    wrap.querySelector('#gxSearchBtn').addEventListener('click', function () { clearTimeout(tm); find(); });
+  }
+
   function mount() {
     var sec = document.querySelector('#app .c-courier'), f = document.getElementById('courierRequestForm');
     if (!sec || !f || f.dataset.gx) return;
@@ -232,6 +289,7 @@
     box.querySelectorAll('.gx-seg button').forEach(function (b) { b.onclick = function () { setTarget(f, b.dataset.gxT); }; });
     box.querySelector('.gx-gps').onclick = goMyLocation;
     box.querySelector('#gxConfirm').onclick = function () { confirmPin(f); };
+    initSearch(f, box);
     sec.classList.add('gx', 'gx-map-on');
 
     /* พิกัดที่ปักไว้ เทียบกับค่าในช่อง: ถ้าตรงกันถือว่ายังล็อกอยู่ */
