@@ -7,9 +7,9 @@ const db=new DatabaseSync(':memory:');db.exec(fs.readFileSync(path.join(__dirnam
 const now=()=>new Date().toISOString(),id=()=>crypto.randomUUID(),hash=s=>crypto.createHash('sha256').update(s).digest('hex');
 const get=(sql,...v)=>db.prepare(sql).get(...v),all=(sql,...v)=>db.prepare(sql).all(...v),run=(sql,...v)=>db.prepare(sql).run(...v);
 const FIREBASE_TABLES=['users','shops','menus','sessions','orders','order_events','reports','audit','market_listings','market_comments','market_reports','staff_profiles','shop_reviews','rider_gallery'];
-let firebaseRef=null,saveQueue=Promise.resolve(),firebaseBaseline='';
-function serializeState(){const tables={};for(const table of FIREBASE_TABLES){const rows=all('SELECT * FROM '+table);tables[table]=Object.fromEntries(rows.map((r,i)=>[String(r.id??i),r]))}return JSON.stringify({version:1,tables})}
-async function persistState(){if(!firebaseRef)return;const state=serializeState();if(state===firebaseBaseline)return;await firebaseRef.set(JSON.parse(state));firebaseBaseline=state}
+let firebaseRef=null,saveQueue=Promise.resolve(),firebaseBaseline={};
+function serializeTables(){const tables={};for(const table of FIREBASE_TABLES){const rows=all('SELECT * FROM '+table);tables[table]=JSON.stringify(Object.fromEntries(rows.map((r,i)=>[String(r.id??i),r])))}return tables}
+async function persistState(){if(!firebaseRef)return;const current=serializeTables(),updates={};for(const table of FIREBASE_TABLES)if(current[table]!==firebaseBaseline[table])updates['tables/'+table]=JSON.parse(current[table]);if(!Object.keys(updates).length)return;updates.version=1;/* update() touches only the listed tables, so tables this version does not know are never deleted */await firebaseRef.update(updates);firebaseBaseline=current}
 async function initialize(){
  db.exec(fs.readFileSync(path.join(__dirname,'schema.sql'),'utf8'));
  if(process.env.KRANUAN_TEST_SQLITE==='1')return seedAdmin();
@@ -18,7 +18,7 @@ async function initialize(){
  const app=admin.apps[0]||admin.initializeApp({credential,databaseURL:process.env.FIREBASE_DATABASE_URL});
  firebaseRef=app.database().ref('/kranuanonline/backend_v1/state');const saved=(await firebaseRef.get()).val();
  if(saved?.version===1&&saved.tables){db.exec('BEGIN');try{for(const table of [...FIREBASE_TABLES].reverse())db.exec('DELETE FROM '+table);for(const table of FIREBASE_TABLES){for(const row of Object.values(saved.tables[table]||{})){const columns=Object.keys(row);run('INSERT INTO '+table+'('+columns.join(',')+') VALUES('+columns.map(()=>'?').join(',')+')',...columns.map(k=>row[k]))}}db.exec('COMMIT')}catch(e){db.exec('ROLLBACK');throw e}}
- firebaseBaseline=serializeState();seedAdmin();await persistState();
+ firebaseBaseline=serializeTables();seedAdmin();await persistState();
 }
 function seedAdmin(){if(!get("SELECT id FROM users WHERE role='admin'")){const pass=process.env.ADMIN_PASSWORD;if(!pass||pass.length<12)throw Error('Set ADMIN_PASSWORD to at least 12 characters before first start.');run('INSERT INTO users(id,username,password_hash,role,name,created_at) VALUES(?,?,?,?,?,?)',id(),process.env.ADMIN_USERNAME||'admin',passHash(pass),'admin','ผู้ดูแลกระนวน',now())}}
 function fail(status,message){throw Object.assign(new Error(message),{status})}
