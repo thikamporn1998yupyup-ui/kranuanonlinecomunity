@@ -83,7 +83,17 @@
     '.gx-confirm.drop{background:linear-gradient(135deg,#ff7a4a,#e04f22);box-shadow:0 6px 16px rgba(200,76,35,.38)}',
     '.gx-dot{width:20px;height:20px;border-radius:50%;border:4px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)}',
     '.gx-dot.pickup{background:#00b14f}.gx-dot.drop{background:#e95e30;border-radius:7px}',
-    '@media (max-width:380px){.c-courier.gx #courierRequestForm{padding:18px 14px 20px}.gx-hint{font-size:10px}}'
+    /* ---------- ช่องไฟ: ทับ dense-layout.css ให้ไม่ชิดขอบ ---------- */
+    '.c-courier.gx{padding:0 16px 8px!important;box-sizing:border-box}',
+    '.c-courier.gx .c-page-title{margin:6px 4px 16px!important}',
+    '.c-courier.gx .c-service-switch{gap:10px!important;margin:0 0 16px!important}',
+    '.c-courier.gx #courierRequestForm{padding:22px 20px 24px!important;gap:20px!important}',
+    '#courierRequestForm > section.c-courier-location{padding:18px!important;gap:14px!important}',
+    '#courierRequestForm input:not([type=checkbox]),#courierRequestForm textarea{padding:13px 16px!important}',
+    '#courierRequestForm > details.c-courier-photos{padding:16px 18px!important}',
+    '#courierRequestForm > .c-courier-price{padding:14px 18px!important}',
+    '#courierRequestForm > button[type=submit]{padding:17px!important}',
+    '@media (max-width:380px){.c-courier.gx{padding:0 12px 8px!important}.c-courier.gx #courierRequestForm{padding:20px 16px 22px!important}.gx-hint{font-size:10px}}'
   ].join('\n');
 
   function num(v) { return v !== '' && v != null && isFinite(Number(v)) ? Number(v) : null; }
@@ -185,7 +195,10 @@
       try {
         var start = readPoint(f, gx.target) || readPoint(f, 'pickup') || readPoint(f, 'drop') || DEFAULT_CENTER;
         gx.map = L.map(el, { zoomControl: false, attributionControl: true }).setView([start.lat, start.lng], 16);
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(gx.map);
+        var tl = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap', referrerPolicy: 'origin' });
+        /* เว็บตั้งค่าไม่ส่ง Referer ทำให้ OpenStreetMap บล็อก → บังคับส่งชื่อเว็บไปกับภาพแผนที่ทุกแผ่น */
+        if (tl.on) tl.on('tileloadstart', function (ev) { try { ev.tile.referrerPolicy = 'origin'; } catch (e) {} });
+        tl.addTo(gx.map);
         var ld = document.querySelector('.gx-loading'); if (ld) ld.remove();
         drawMarkers(f);
         setTimeout(function () { if (gx.map) gx.map.invalidateSize(); }, 60);

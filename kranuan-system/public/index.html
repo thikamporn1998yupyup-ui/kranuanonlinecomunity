@@ -811,7 +811,9 @@ function dvInitMap(){
     try {
       const c = dlvPins[dlvTarget] || dlvPins.pickup || dlvPins.drop || userLiveLocation;
       dlvMap = L.map(el, { zoomControl: false, attributionControl: true }).setView([c.lat, c.lng], 16);
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(dlvMap);
+      const tl = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap', referrerPolicy: 'origin' });
+      if(tl.on) tl.on('tileloadstart', ev => { try { ev.tile.referrerPolicy = 'origin'; } catch(e) {} });
+      tl.addTo(dlvMap);
       dvDrawMarkers();
       setTimeout(() => { if(dlvMap) dlvMap.invalidateSize(); }, 60);
     } catch(e) { dlvMap = null; }
@@ -1189,5 +1191,5 @@ window.addEventListener('DOMContentLoaded', () => {
 </script>
 <script src="/api.js"></script><script src="/customer.js"></script>
 <script src="/commerce-media.js?v=20261027"></script><script src="/commerce-customer.js?v=20261027"></script><script src="/market.js?v=20261027-market"></script>
-<script src="/courier-grab-ui.js?v=20261027-grab3"></script></body>
+<script src="/courier-grab-ui.js?v=20261027-grab4"></script></body>
 </html>
