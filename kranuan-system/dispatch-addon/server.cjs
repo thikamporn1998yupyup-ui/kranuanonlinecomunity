@@ -2,9 +2,9 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),promptpay=require('./promptpay.cjs');
 module.exports=function createDispatch({db,clock=()=>Date.now(),persist=async()=>{},testMode=false}){
  const tables=['dispatch_payees','dispatch_messages','dispatch_payments','dispatch_notices'];let queue=Promise.resolve(),dirty=false;const streams=new Map(),buckets=new Map();
- const get=(sql,...values)=>db.prepare(sql).get(...values),all=(sql,...values)=>db.prepare(sql).all(...values),write=(sql,...values)=>{const result=db.prepare(sql).run(...values);if(result.changes)dirty=true;return result},now=()=>new Date(clock()).toISOString(),uid=()=>crypto.randomUUID(),digest=s=>crypto.createHash('sha256').update(s).digest('hex');
+ const plain=r=>r&&typeof r==='object'?{...r}:r,get=(sql,...values)=>plain(db.prepare(sql).get(...values)),all=(sql,...values)=>db.prepare(sql).all(...values).map(plain),write=(sql,...values)=>{const result=db.prepare(sql).run(...values);if(result.changes)dirty=true;return result},now=()=>new Date(clock()).toISOString(),uid=()=>crypto.randomUUID(),digest=s=>crypto.createHash('sha256').update(s).digest('hex');
  const fail=(status,message)=>{throw Object.assign(Error(message),{status})},text=(v,max=200)=>typeof v==='string'?v.trim().slice(0,max):'';
- function snapshot(){return {version:1,tables:Object.fromEntries(tables.map(table=>[table,all('SELECT * FROM '+table)]))}}
+ function snapshot(){return JSON.parse(JSON.stringify({version:1,tables:Object.fromEntries(tables.map(table=>[table,all('SELECT * FROM '+table)]))}))}
  async function save(){if(dirty){await persist(snapshot());dirty=false}}
  function notify(users){for(const [res,client]of streams)if(!users||users.includes(client.id)){if(!get('SELECT user_id FROM sessions WHERE token_hash=? AND expires>?',client.token,clock())){res.end();streams.delete(res);continue}try{res.write('event: refresh\ndata: {}\n\n')}catch{streams.delete(res)}}}
  function notice(user,order,kind,title,body,key=uid()){write('INSERT OR IGNORE INTO dispatch_notices(id,user_id,order_id,kind,title,body,created_at) VALUES(?,?,?,?,?,?,?)',key,user,order,kind,title,body,now())}
