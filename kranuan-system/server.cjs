@@ -6,7 +6,7 @@ const publicDir=path.join(__dirname,'public');
 const db=new DatabaseSync(':memory:');db.exec(fs.readFileSync(path.join(__dirname,'schema.sql'),'utf8'));db.exec('PRAGMA busy_timeout=5000');
 const now=()=>new Date().toISOString(),id=()=>crypto.randomUUID(),hash=s=>crypto.createHash('sha256').update(s).digest('hex');
 const get=(sql,...v)=>db.prepare(sql).get(...v),all=(sql,...v)=>db.prepare(sql).all(...v),run=(sql,...v)=>db.prepare(sql).run(...v);
-const FIREBASE_TABLES=['users','shops','menus','sessions','orders','order_events','reports','audit','market_listings','market_comments','market_reports','staff_profiles','shop_reviews','rider_gallery'];
+const FIREBASE_TABLES=['users','shops','menus','sessions','orders','order_events','reports','audit','market_listings','market_comments','market_reports','staff_profiles','shop_reviews','rider_gallery','ads'];
 let firebaseRef=null,saveQueue=Promise.resolve(),firebaseBaseline={};
 function serializeTables(){const tables={};for(const table of FIREBASE_TABLES){const rows=all('SELECT * FROM '+table);tables[table]=JSON.stringify(Object.fromEntries(rows.map((r,i)=>[String(r.id??i),r])))}return tables}
 async function persistState(){if(!firebaseRef)return;const current=serializeTables(),updates={};for(const table of FIREBASE_TABLES)if(current[table]!==firebaseBaseline[table])updates['tables/'+table]=JSON.parse(current[table]);if(!Object.keys(updates).length)return;updates.version=1;/* update() touches only the listed tables, so tables this version does not know are never deleted */await firebaseRef.update(updates);firebaseBaseline=current}
@@ -36,6 +36,9 @@ function newSession(res,userId){const token=crypto.randomBytes(32).toString('hex
 function needUser(u,roles){if(!u)fail(401,'กรุณาเข้าสู่ระบบ');if(roles&&!roles.includes(u.role))fail(403,'บัญชีนี้ไม่มีสิทธิ์ทำรายการ');return u}
 function ownShop(u,shopId){needUser(u,['admin','merchant']);if(u.role==='merchant'&&u.shop_id!==shopId)fail(403,'แก้ไขได้เฉพาะร้านของคุณ')}
 function audit(u,action,target){run('INSERT INTO audit(actor_id,action,target,created_at) VALUES(?,?,?,?)',u.id,action,target,now())}
+function adsToday(){return new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Bangkok'})}
+function adView(a,admin){const img=a.image_url.startsWith('data:')?'/api/ads/'+a.id+'/image?v='+encodeURIComponent(a.updated_at):a.image_url;const v={id:a.id,kind:a.kind,title:a.title,text:a.text,tag:a.tag,image:img,link:a.link_url,linkLabel:a.link_label};if(admin)Object.assign(v,{enabled:!!a.enabled,start_date:a.start_date,end_date:a.end_date,sort_order:a.sort_order});return v}
+function adsPublic(){const t=adsToday();return all('SELECT * FROM ads WHERE enabled=1 ORDER BY sort_order,created_at').filter(a=>(!a.start_date||t>=a.start_date)&&(!a.end_date||t<=a.end_date)).map(a=>adView(a))}
 function shopView(s){return {...s,opt_in:!!s.opt_in,accepting:!!s.accepting}}
 function orderView(o,u){const snap=JSON.parse(o.snapshot);return {rider:staffApi.publicInfo(o.rider_id),id:o.id,shop_id:o.shop_id,rider_id:o.rider_id,status:o.status,customer_id:o.customer_id,seller_id:snap.seller_id||null,listingId:snap.listing_id||null,paymentMethod:snap.payment_method||null,type:o.kind,passenger_count:snap.passenger_count||null,service_label:o.kind==='ride'?'รับ–ส่งผู้โดยสาร':o.kind==='parcel'?'รับ–ส่งของ':'อาหารจากร้าน',shop:snap.shop,shop_image_url:snap.shop_image_url||'',product_image_url:snap.items?.[0]?.image_url||'',items:snap.items||[],item:snap.items?.map(i=>i.name+' × '+i.quantity).join(', ')||snap.description,pickup:o.pickup,pickup_phone:snap.seller_phone||snap.shop_phone||'',pickup_lat:snap.pickup_lat??null,pickup_lng:snap.pickup_lng??null,dropoff:o.dropoff,customer_name:o.customer_name,phone:u.role==='rider'&&o.rider_id!==u.id?'':o.phone,dropoff_lat:o.lat,dropoff_lng:o.lng,note:o.note,image:o.image,insideImage:o.inside_image,goods_total:o.goods_satang/100,fee:o.fee_satang/100,deliveryFee:o.fee_satang/100,total:(o.goods_satang+o.fee_satang)/100,created_at:o.created_at,updated_at:o.updated_at,order_mode:snap.order_mode}}
 function visibleOrders(u){if(u.role==='admin')return all('SELECT * FROM orders ORDER BY created_at DESC LIMIT 300');if(u.role==='merchant')return all("SELECT * FROM orders WHERE shop_id=? OR (kind='market' AND json_extract(snapshot,'$.seller_id')=?) ORDER BY created_at DESC LIMIT 100",u.shop_id,u.id);if(u.role==='rider')return all("SELECT * FROM orders WHERE rider_id=? OR (status='ready' AND rider_id IS NULL AND (kind<>'ride' OR ?=1)) ORDER BY created_at DESC LIMIT 100",u.id,u.accepts_rides?1:0);return all("SELECT * FROM orders WHERE customer_id=? OR (kind='market' AND json_extract(snapshot,'$.seller_id')=?) ORDER BY created_at DESC LIMIT 100",u.id,u.id)}
@@ -106,6 +109,8 @@ async function api(req,res,url){
  if(p==='/api/shop-reviews'&&method==='GET'){const sid=required(url.searchParams.get('shop'),'ร้าน');return send(res,200,all('SELECT rating,comment,created_at FROM shop_reviews WHERE shop_id=? ORDER BY created_at DESC LIMIT 20',sid))}
  const publicRiderPhoto=p.match(/^\/api\/riders\/([^/]+)\/photo\/(avatar|p[0-3])$/);if(publicRiderPhoto&&method==='GET'){const image=staffApi.publicPhoto(publicRiderPhoto[1],publicRiderPhoto[2]);if(!image)fail(404,'ยังไม่เผยแพร่รูปนี้');const match=image.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);if(!match)fail(404,'รูปไม่พร้อมใช้งาน');res.writeHead(200,{'Content-Type':match[1],'Cache-Control':'private, no-store'});return res.end(Buffer.from(match[2],'base64'))}
  if(p==='/api/riders'&&method==='GET')return send(res,200,{riders:staffApi.publicList(),vip:{available:false,price:299,currency:'THB',billing_period:null}});
+ if(p==='/api/ads'&&method==='GET')return send(res,200,{ads:adsPublic()});
+ const adImg=p.match(/^\/api\/ads\/([A-Za-z0-9-]+)\/image$/);if(adImg&&method==='GET'){const row=get('SELECT image_url FROM ads WHERE id=?',adImg[1]),m=row&&row.image_url.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);if(!m)fail(404,'ไม่พบรูปโฆษณา');res.writeHead(200,{'Content-Type':m[1],'Cache-Control':'public, max-age=86400'});return res.end(Buffer.from(m[2],'base64'))}
  if(p==='/api/health')return send(res,200,{ok:true});
  needUser(u);
  if(!['GET','HEAD'].includes(method)&&req.headers['x-csrf-token']!==u.csrf)fail(403,'เซสชันเปลี่ยน กรุณาโหลดหน้าใหม่');
@@ -193,6 +198,23 @@ async function api(req,res,url){
  run('INSERT INTO menus(id,shop_id,name,price_satang,image_url,available) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,price_satang=excluded.price_satang,image_url=excluded.image_url,available=excluded.available',mid,sid,required(b.name,'ชื่อเมนู'),Math.round(price*100),imageURL(b.image_url),b.available===false?0:1);
  if(!get('SELECT id FROM menus WHERE shop_id=? AND available=1',sid))run('UPDATE shops SET accepting=0 WHERE id=?',sid);audit(u,'save menu',mid);emit();return send(res,200,{id:mid});
  }
+ if(p==='/api/admin/ads'&&method==='GET'){needUser(u,['admin']);return send(res,200,all('SELECT * FROM ads ORDER BY kind,sort_order,created_at').map(a=>adView(a,true)))}
+ if(p==='/api/admin/ads'&&method==='POST'){
+  needUser(u,['admin']);const kind=text(b.kind);if(!['poster','popup'].includes(kind))fail(400,'ประเภทโฆษณาไม่ถูกต้อง');
+  const aid=text(b.id,64)||id(),existing=get('SELECT * FROM ads WHERE id=?',aid);
+  if(!existing&&get('SELECT COUNT(*) n FROM ads').n>=30)fail(400,'ลงโฆษณาได้ไม่เกิน 30 รายการ');
+  const rawImg=text(b.image_url,1600000),img=/^\/api\/ads\/[A-Za-z0-9-]+\/image/.test(rawImg)?(existing?existing.image_url:''):imageURL(rawImg);
+  if(img.startsWith('data:')&&img.length>700000)fail(400,'รูปโฆษณาใหญ่เกินไป (ไม่เกินประมาณ 500 KB)');
+  const title=text(b.title,100);if(!title&&!img)fail(400,'กรุณาระบุหัวข้อหรือรูปโฆษณา');
+  const link=text(b.link_url,500);if(link&&!/^https?:\/\//i.test(link))fail(400,'ลิงก์ต้องขึ้นต้นด้วย https:// หรือ http://');
+  const sd=text(b.start_date,10),ed=text(b.end_date,10),okDate=v=>v===''||/^\d{4}-\d{2}-\d{2}$/.test(v);
+  if(!okDate(sd)||!okDate(ed))fail(400,'รูปแบบวันที่ไม่ถูกต้อง');if(sd&&ed&&sd>ed)fail(400,'วันสิ้นสุดต้องไม่ก่อนวันเริ่ม');
+  const order=Math.max(-1000,Math.min(10000,Math.round(Number(b.sort_order)||0))),stamp=now();
+  run('INSERT INTO ads(id,kind,title,text,tag,image_url,link_url,link_label,start_date,end_date,sort_order,enabled,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET kind=excluded.kind,title=excluded.title,text=excluded.text,tag=excluded.tag,image_url=excluded.image_url,link_url=excluded.link_url,link_label=excluded.link_label,start_date=excluded.start_date,end_date=excluded.end_date,sort_order=excluded.sort_order,enabled=excluded.enabled,updated_at=excluded.updated_at',aid,kind,title,text(b.text,300),text(b.tag,30),img,link,text(b.link_label,40),sd,ed,order,b.enabled===false?0:1,stamp,stamp);
+  audit(u,'save ad',aid);emit();return send(res,200,{id:aid});
+ }
+ const adDel=p.match(/^\/api\/admin\/ads\/([A-Za-z0-9-]+)\/delete$/);
+ if(adDel&&method==='POST'){needUser(u,['admin']);if(!get('SELECT id FROM ads WHERE id=?',adDel[1]))fail(404,'ไม่พบโฆษณา');run('DELETE FROM ads WHERE id=?',adDel[1]);audit(u,'delete ad',adDel[1]);emit();return send(res,200,{ok:true})}
  if(p==='/api/admin/users'&&method==='GET'){needUser(u,['admin']);return send(res,200,all("SELECT id,username,role,name,shop_id,online FROM users WHERE role<>'customer'"))}
  if(p==='/api/admin/users'&&method==='POST'){
  needUser(u,['admin']);const role=text(b.role),username=required(b.username,'ชื่อบัญชี',80),password=required(b.password,'รหัสผ่าน',200);if(!['rider','merchant'].includes(role))fail(400,'สร้างได้เฉพาะไรเดอร์หรือร้านค้า');if(password.length<12)fail(400,'รหัสผ่านอย่างน้อย 12 ตัวอักษร');if(get('SELECT id FROM users WHERE username=?',username))fail(409,'ชื่อบัญชีซ้ำ');const sid=role==='merchant'?required(b.shop_id,'ร้าน'):null;if(sid&&!get('SELECT id FROM shops WHERE id=?',sid))fail(400,'ไม่พบร้าน');const uid=id();run('INSERT INTO users(id,username,password_hash,role,name,shop_id,created_at) VALUES(?,?,?,?,?,?,?)',uid,username,passHash(password),role,required(b.name,'ชื่อ'),sid,now());audit(u,'create user',uid);return send(res,201,{id:uid});
