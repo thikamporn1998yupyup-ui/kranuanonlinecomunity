@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>กระนวนใกล้บ้าน</title>
 
 <!-- โหลด SDK ของ LINE LIFF -->
@@ -133,94 +133,6 @@ p{line-height:1.7}
 
 .btn-delivery-submit{background:linear-gradient(135deg, #e95e30 0%, #c84c23 100%);color:white;border:0;border-radius:14px;padding:13px;font-size:14px;font-weight:bold;width:100%;box-shadow:0 6px 18px rgba(233,94,48,0.25);margin-top:14px}
 .btn-delivery-submit:disabled{opacity:0.5;cursor:not-allowed}
-/* ===== หน้าเรียกไรเดอร์ (ส่งของ / ส่งคน) — ดีไซน์สไตล์ Grab ===== */
-.dv-wrap{display:flex;flex-direction:column;margin-top:18px}
-.dv-title{margin:0 4px 14px}
-.dv-title h2{margin:0 0 4px;font-size:22px;line-height:1.3}
-.dv-title p{margin:0;font-size:13px;color:#7a6b5c;line-height:1.5}
-
-.dv-tabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-.dv-tab{display:flex;align-items:center;gap:10px;text-align:left;border:2px solid #eadfce;background:#fff;border-radius:20px;padding:12px;min-width:0;color:#4a3f35;transition:all .2s;box-shadow:0 2px 8px rgba(60,40,20,.05)}
-.dv-tab .tile{width:44px;height:44px;border-radius:14px;background:#fff1ca;color:#cf6840;display:grid;place-items:center;flex-shrink:0}
-.dv-tab svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.dv-tab b{display:block;font-size:15px;line-height:1.3}
-.dv-tab small{display:block;font-size:11px;line-height:1.35;color:#8a7b6b;overflow-wrap:anywhere}
-.dv-tab > span{min-width:0}
-.dv-tab.active{background:linear-gradient(135deg,#19c25f,#00a043);border-color:transparent;color:#fff;box-shadow:0 8px 20px rgba(0,160,67,.32)}
-.dv-tab.active .tile{background:rgba(255,255,255,.22);color:#fff}
-.dv-tab.active small{color:rgba(255,255,255,.88)}
-
-.dv-mapbox{position:relative;isolation:isolate;z-index:0;height:310px;border-radius:26px;overflow:hidden;background:#e9e3d8;box-shadow:0 8px 24px rgba(60,40,20,.14)}
-#dvMap{position:absolute;inset:0}
-.dv-maperr{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;font-size:13px;color:#7a6b5c;line-height:1.6}
-.dv-seg{position:absolute;left:14px;right:14px;top:14px;z-index:610;display:grid;grid-template-columns:1fr 1fr;gap:4px;background:rgba(255,255,255,.97);border-radius:16px;padding:4px;box-shadow:0 4px 14px rgba(0,0,0,.16)}
-.dv-seg button{border:0;background:none;border-radius:12px;padding:10px 6px;font-size:13px;font-weight:700;color:#7a6b5c;display:flex;align-items:center;justify-content:center;gap:8px}
-.dv-seg button::before{content:"";width:11px;height:11px;border-radius:50%;background:#00b14f}
-.dv-seg button[data-t=drop]::before{border-radius:3px;background:#e95e30}
-.dv-seg button.on{background:#e7f8ee;color:#007a3a}
-.dv-seg button[data-t=drop].on{background:#ffeee6;color:#c84c23}
-.dv-hint{position:absolute;left:50%;top:68px;transform:translateX(-50%);z-index:610;max-width:calc(100% - 28px);background:rgba(45,36,30,.84);color:#fff;border-radius:999px;padding:6px 14px;font-size:11px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dv-centerpin{position:absolute;left:50%;top:50%;transform:translate(-50%,-100%);z-index:600;pointer-events:none;width:40px;height:50px;filter:drop-shadow(0 5px 5px rgba(0,0,0,.3))}
-.dv-centerpin svg{width:100%;height:100%;display:block}
-.dv-centerpin .pinbody{fill:#00b14f}
-.dv-centerpin.drop .pinbody{fill:#e95e30}
-.dv-gps{position:absolute;right:14px;bottom:78px;z-index:610;width:46px;height:46px;border-radius:50%;border:0;background:#fff;color:#00994a;display:grid;place-items:center;box-shadow:0 4px 12px rgba(0,0,0,.22);padding:0}
-.dv-gps svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round}
-.dv-confirm{position:absolute;left:14px;right:14px;bottom:14px;z-index:610;border:0;border-radius:16px;padding:15px;font-size:15px;font-weight:700;color:#fff;background:linear-gradient(135deg,#19c25f,#00a043);box-shadow:0 6px 16px rgba(0,140,60,.38)}
-.dv-confirm.drop{background:linear-gradient(135deg,#ff7a4a,#e04f22);box-shadow:0 6px 16px rgba(200,76,35,.38)}
-.dv-pinmark{width:20px;height:20px;border-radius:50%;border:4px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)}
-.dv-pinmark.pickup{background:#00b14f}.dv-pinmark.drop{background:#e95e30;border-radius:7px}
-
-.dv-sheet{position:relative;z-index:1;margin-top:-26px;background:#fff;border-radius:28px;padding:22px 18px 24px;box-shadow:0 -8px 24px rgba(60,40,20,.08),0 6px 20px rgba(60,40,20,.06);display:flex;flex-direction:column;gap:20px}
-.dv-block-title{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;color:#332e29;margin:0 0 12px}
-.dv-block-title::before{content:"";width:5px;height:18px;border-radius:3px;background:#00b14f}
-
-.dv-route{position:relative;display:flex;flex-direction:column;gap:12px}
-.dv-route::before{content:'';position:absolute;left:21px;top:36px;bottom:36px;border-left:3px dotted #d6c8b6}
-.dv-row{display:flex;align-items:center;gap:12px;background:#faf5ed;border:2px solid transparent;border-radius:18px;padding:12px 14px 12px 12px;transition:all .15s}
-.dv-row.active{background:#fff;border-color:#00b14f;box-shadow:0 0 0 5px rgba(0,177,79,.12)}
-.dv-row.active.drop{border-color:#e95e30;box-shadow:0 0 0 5px rgba(233,94,48,.12)}
-.dv-dot{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;position:relative;z-index:1;background:#00b14f;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25)}
-.dv-dot.drop{background:#e95e30;border-radius:6px}
-.dv-rowbody{flex:1;min-width:0}
-.dv-rowbody label{display:block;font-size:11px;font-weight:700;color:#8a7b6b;margin-bottom:1px}
-.dv-rowbody input{border:0;background:none;width:100%;font-size:15px;color:#332e29;outline:none;padding:3px 0}
-.dv-tick{font-size:11px;font-weight:700;color:#00994a;white-space:nowrap;display:none}
-.dv-row.has-pin .dv-tick{display:block}
-.dv-dist{margin-top:12px;font-size:12px;color:#7a6b5c;text-align:center}
-
-.dv-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
-.dv-chip{border:2px solid #ebdcc9;background:#fff;border-radius:999px;padding:8px 16px;font-size:13px;font-weight:700;color:#655444}
-.dv-chip.on{border-color:#00b14f;background:#e7f8ee;color:#007a3a}
-.dv-field{background:#faf5ed;border:2px solid transparent;border-radius:18px;padding:11px 14px}
-.dv-field:focus-within{background:#fff;border-color:#00b14f}
-.dv-field label{display:block;font-size:11px;font-weight:700;color:#8a7b6b;margin-bottom:1px}
-.dv-field input{border:0;background:none;width:100%;font-size:15px;color:#332e29;outline:none;padding:3px 0}
-.dv-stack{display:flex;flex-direction:column;gap:12px}
-
-.dv-photos{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.dv-photo{border:2px dashed #cfc0aa;border-radius:18px;background:#faf5ed;padding:16px 10px;text-align:center;cursor:pointer;min-height:98px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
-.dv-photo span{font-size:12px;font-weight:700;color:#8a7b6b;line-height:1.4}
-.dv-photo img{width:100%;height:84px;object-fit:cover;border-radius:10px;display:none}
-
-.dv-pax{display:flex;align-items:center;justify-content:space-between;background:#faf5ed;border-radius:18px;padding:12px 14px}
-.dv-pax strong{font-size:15px;color:#332e29}
-.dv-stepper{display:flex;align-items:center;gap:16px}
-.dv-stepper button{width:38px;height:38px;border-radius:50%;border:2px solid #00b14f;background:#fff;color:#00994a;font-size:22px;font-weight:700;line-height:1;display:grid;place-items:center;padding:0}
-.dv-stepper output{min-width:22px;text-align:center;font-size:19px;font-weight:700}
-
-.dv-policy{display:flex;align-items:flex-start;gap:12px;background:#fffaf0;border:1px solid #f2e3c6;border-radius:16px;padding:14px}
-.dv-policy input{width:22px;height:22px;margin:1px 0 0;flex-shrink:0;accent-color:#00b14f}
-.dv-policy label{font-size:12px;line-height:1.55;color:#6a5b4c}
-.dv-policy small{display:block;margin-top:4px;font-size:11px;color:#9e8d7c}
-
-.dv-footer{display:flex;flex-direction:column;gap:14px}
-.dv-fee{display:flex;justify-content:space-between;align-items:center;background:#e7f8ee;border-radius:16px;padding:12px 16px;font-size:13px;color:#2f6a49}
-.dv-fee strong{font-size:20px;color:#00803c}
-.dv-submit{border:0;border-radius:18px;padding:17px;font-size:16px;font-weight:700;color:#fff;background:linear-gradient(135deg,#19c25f,#00a043);width:100%;box-shadow:0 8px 20px rgba(0,160,67,.35)}
-.dv-submit:disabled{background:#cfc8bd;box-shadow:none;cursor:not-allowed}
-@media (max-width:380px){.dv-tab small{display:none}.dv-sheet{padding:20px 14px 22px}}
-
 
 /* เมนูด้านล่าง */
 .card{padding:19px;background:white;border:1px solid #eee2d3;border-radius:18px;margin:12px 0}
@@ -260,101 +172,9 @@ p{line-height:1.7}
 @media(max-width:360px){.top{padding-left:16px;padding-right:16px}.brandline strong{font-size:16px}.eyebrow{font-size:8px}.logo{width:34px;height:34px}.line-profile-btn{max-width:105px;font-size:10px;padding:4px 6px}.line-profile-btn span{max-width:48px}.location{font-size:8px}.location-search-row{gap:5px}.top h1{font-size:25px}.local-poster{height:205px;padding:15px}.local-poster h3{font-size:26px}main{padding-left:16px;padding-right:16px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important}.top,.top-hero,.category span,.poster-dot{transition:none!important}.hero-scene,.hero-copy,.view-enter,main{animation:none!important}}
 
-/* === Spacing polish only: ปรับเฉพาะระยะห่าง ไม่แตะข้อมูล/เลย์เอาต์หลัก === */
-html {
-  -webkit-text-size-adjust: 100%;
-}
-
-body {
-  touch-action: manipulation;
-}
-
-main {
-  padding: 20px 18px 24px;
-}
-
-.top {
-  padding: 18px 18px 16px;
-}
-
-.brandline,
-.brand-left {
-  gap: 10px;
-}
-
-.location-search-row {
-  gap: 10px;
-  margin-top: 12px;
-}
-
-.searchbox {
-  margin-left: 8px;
-  padding: 4px 12px;
-  gap: 8px;
-}
-
-.categories {
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.category span {
-  margin-bottom: 5px;
-}
-
-.sectionhead {
-  margin: 20px 0 12px;
-}
-
-.shopgrid {
-  gap: 14px;
-}
-
-.market-grid {
-  gap: 12px;
-}
-
-.delivery-container {
-  gap: 16px;
-}
-
-.card-delivery,
-.market-form-card {
-  padding: 18px;
-}
-
-.form-group {
-  margin-bottom: 12px;
-}
-
-.form-row {
-  gap: 12px;
-}
-
-.loc-input-group {
-  gap: 12px;
-}
-
-.location-mode-selector {
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.policy-box {
-  margin-top: 14px;
-  padding: 10px 12px;
-}
-
-.btn-delivery-submit {
-  margin-top: 16px;
-}
-
-.bottomnav {
-  gap: 4px;
-  padding: 10px 8px max(16px, env(safe-area-inset-bottom));
-} </style>
+</style>
 <link rel="stylesheet" href="/system.css">
-<link rel="stylesheet" href="/commerce.css?v=20261027"><link rel="stylesheet" href="/market.css?v=20261027-market"><link rel="stylesheet" href="/dense-layout.css?v=20261027-spaced"></head>
+<link rel="stylesheet" href="/commerce.css?v=20261027"><link rel="stylesheet" href="/market.css?v=20261027-market"><link rel="stylesheet" href="/dense-layout.css?v=20261027-3px"></head>
 <body>
 
 <div id="lineAuthModal" class="modal-overlay" style="display:none;">
@@ -528,312 +348,105 @@ function advance(id,next){
   o.status=next;save();
 }
 
-/* 1. หน้าส่งของ / ส่งคน — ดีไซน์ใหม่สไตล์ Grab
-   (แก้เฉพาะหน้าตา: โครงข้อมูลออเดอร์ที่ส่งให้ไรเดอร์ยังเหมือนเดิมทุกฟิลด์) */
+/* 1. แก้ไขเฉพาะหน้าส่งของตามสั่ง */
 let selectedLocMode = 'current';
 let insideBoxImageBase64 = '';
 let houseImageBase64 = '';
 
-let dlvTab = 'parcel';                 // 'parcel' = ส่งของ, 'ride' = ส่งคน
-let dlvTarget = 'pickup';              // กำลังปักหมุดจุดไหนอยู่
-let dlvPins = { pickup: null, drop: null };
-let dlvDraft = { pickupLoc: '', dropLoc: '', itemDesc: '', itemNote: '', pax: 1, consent: false };
-let dlvMap = null, dlvMarkers = {}, dlvLeafletFailed = false;
-
-const DV_ICON = {
-  box: '<svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>',
-  person: '<svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>',
-  gps: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="8.5"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/></svg>',
-  cam: '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#a89883" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="3.5"/></svg>',
-  pin: '<svg viewBox="0 0 38 48"><path class="pinbody" d="M19 0C8.5 0 0 8.4 0 18.8 0 32 19 48 19 48s19-16 19-29.2C38 8.4 29.5 0 19 0z"/><circle cx="19" cy="19" r="7" fill="#fff"/></svg>'
-};
-
-function dvSaveDraft(){
-  const f = document.querySelector('.dv-sheet');
-  if(!f) return;
-  const g = n => (f.elements[n] ? f.elements[n].value : null);
-  ['pickupLoc','dropLoc','itemDesc','itemNote'].forEach(n => { const v = g(n); if(v !== null) dlvDraft[n] = v; });
-  if(f.elements.pax) dlvDraft.pax = Number(f.elements.pax.value) || 1;
-  const c = document.getElementById('policyConsent');
-  if(c) dlvDraft.consent = c.checked;
-}
-
 function deliveryFormHtml(){
-  const isRide = dlvTab === 'ride';
-  const d = dlvDraft;
-  const esc = s => escapeHtml(String(s || ''));
-  const chips = ['เอกสาร','พัสดุ','อาหาร','อื่นๆ'].map(c =>
-    '<button type="button" class="dv-chip'+(d.itemDesc===c?' on':'')+'" onclick="dvPickChip(\''+c+'\')">'+c+'</button>').join('');
-
-  const parcelBlock = `
-    <div>
-      <div class="dv-block-title">ส่งอะไร</div>
-      <div class="dv-chips">${chips}</div>
-      <div class="dv-field">
-        <label>สิ่งของในกล่อง / ประเภท</label>
-        <input name="itemDesc" required value="${esc(d.itemDesc)}" placeholder="เช่น เอกสาร, กล่องพัสดุ, อาหาร">
-      </div>
-    </div>
-    <div>
-      <div class="dv-block-title">รูปถ่าย</div>
-      <div class="dv-photos">
-        <div class="dv-photo" onclick="document.getElementById('insideBoxInput').click()">
-          ${DV_ICON.cam}<span id="insideBoxText">ถ่ายรูปของในกล่อง</span>
-          <input type="file" id="insideBoxInput" accept="image/*" style="display:none" onchange="previewInsideBox(event)">
-          <img id="insideBoxPreview" class="upload-preview" alt="Inside Box">
-        </div>
-        <div class="dv-photo" onclick="document.getElementById('houseImageInput').click()">
-          ${DV_ICON.cam}<span id="uploadHouseText">แนบรูปหน้าบ้าน</span>
-          <input type="file" id="houseImageInput" accept="image/*" style="display:none" onchange="previewHouseImage(event)">
-          <img id="housePreview" class="upload-preview" alt="House">
-        </div>
-      </div>
-    </div>
-    <div class="dv-field">
-      <label>หมายเหตุถึงไรเดอร์</label>
-      <input name="itemNote" value="${esc(d.itemNote)}" placeholder="เช่น ฝากไว้หน้าบ้าน, บ้านรั้วสีขาว">
-    </div>
-    <div class="dv-policy">
-      <input type="checkbox" id="policyConsent" required ${d.consent?'checked':''} onchange="toggleSubmitButton()">
-      <label for="policyConsent"><strong>ยินยอมเปิดเผยภาพสิ่งของด้านใน</strong> และอนุญาตให้ไรเดอร์ตรวจสอบสภาพพัสดุก่อนจัดส่ง
-        <small>นโยบายของเรา: เพื่อป้องกันการส่งสิ่งของผิดกฎหมายและสารเสพติดอย่างเคร่งครัด</small></label>
-    </div>`;
-
-  const rideBlock = `
-    <div class="dv-stack">
-      <div class="dv-pax">
-        <strong>จำนวนผู้โดยสาร</strong>
-        <div class="dv-stepper">
-          <button type="button" aria-label="ลด" onclick="dvPax(-1)">−</button>
-          <output id="dvPaxOut">${Number(d.pax)||1}</output>
-          <button type="button" aria-label="เพิ่ม" onclick="dvPax(1)">+</button>
-        </div>
-        <input type="hidden" name="pax" value="${Number(d.pax)||1}">
-      </div>
-      <div class="dv-field">
-        <label>หมายเหตุถึงไรเดอร์</label>
-        <input name="itemNote" value="${esc(d.itemNote)}" placeholder="เช่น รอที่หน้าร้าน, ใส่เสื้อสีฟ้า">
-      </div>
-    </div>`;
-
   return `
-  <div class="dv-wrap">
-    <div class="dv-title"><h2>เรียกไรเดอร์</h2><p>ปักหมุดจุดรับ–ส่งบนแผนที่ ไรเดอร์ใกล้บ้านมารับถึงที่</p></div>
-    <div class="dv-tabs" role="tablist">
-      <button type="button" role="tab" aria-selected="${!isRide}" class="dv-tab ${!isRide?'active':''}" onclick="dvSetTab('parcel')"><span class="tile">${DV_ICON.box}</span><span><b>ส่งของ</b><small>อาหาร เอกสาร พัสดุ</small></span></button>
-      <button type="button" role="tab" aria-selected="${isRide}" class="dv-tab ${isRide?'active':''}" onclick="dvSetTab('ride')"><span class="tile">${DV_ICON.person}</span><span><b>ส่งคน</b><small>ผู้โดยสาร 1–4 คน</small></span></button>
+  <div class="delivery-container">
+    <div class="delivery-banner">
+      <h2>ส่งพัสดุ & เดลิเวอรีด่วน</h2>
+      <p>บริการรับส่งสิ่งของ อาหาร เอกสาร ทั่วอำเภอกระนวน</p>
     </div>
 
-    <div class="dv-mapbox">
-      <div id="dvMap"></div>
-      <div class="dv-seg" role="group" aria-label="เลือกจุดที่จะปักหมุด">
-        <button type="button" data-t="pickup" onclick="dvSetTarget('pickup')">${isRide?'จุดรับ':'จุดรับของ'}</button>
-        <button type="button" data-t="drop" onclick="dvSetTarget('drop')">${isRide?'จุดส่ง':'จุดส่งของ'}</button>
+    <form class="card-delivery" onsubmit="submitRealDelivery(event)">
+      <div class="section-title-deliv">
+         กำหนดจุดรับ-ส่งสินค้า
       </div>
-      <div class="dv-hint" id="dvHint"></div>
-      <div class="dv-centerpin" id="dvCenterPin">${DV_ICON.pin}</div>
-      <button type="button" class="dv-gps" aria-label="ใช้ตำแหน่งของฉัน" onclick="dvLocateMe()">${DV_ICON.gps}</button>
-      <button type="button" class="dv-confirm" id="dvConfirmBtn" onclick="dvConfirmPin()"></button>
-    </div>
 
-    <form class="dv-sheet" onsubmit="submitRealDelivery(event)">
-      <div>
-        <div class="dv-block-title">${isRide?'รับที่ไหน ไปที่ไหน':'รับของที่ไหน ส่งไปที่ไหน'}</div>
-        <div class="dv-route">
-          <div class="dv-row pickup" id="dvRowPickup">
-            <span class="dv-dot pickup"></span>
-            <div class="dv-rowbody">
-              <label for="dvPickupInput">${isRide?'จุดรับ (ต้นทาง)':'จุดรับของ (ต้นทาง)'}</label>
-              <input id="dvPickupInput" name="pickupLoc" required value="${esc(d.pickupLoc)}" onfocus="dvSetTarget('pickup')" oninput="this.dataset.auto='0'" placeholder="${isRide?'เช่น หน้าตลาดสด, ที่ทำงาน':'เช่น ตลาดสดเทศบาล, ร้านค้าในอำเภอ'}">
-            </div>
-            <span class="dv-tick">ปักหมุดแล้ว ✓</span>
-          </div>
-          <div class="dv-row drop" id="dvRowDrop">
-            <span class="dv-dot drop"></span>
-            <div class="dv-rowbody">
-              <label for="dvDropInput">${isRide?'จุดส่ง (ปลายทาง)':'จุดส่งของ (ปลายทาง)'}</label>
-              <input id="dvDropInput" name="dropLoc" required value="${esc(d.dropLoc)}" onfocus="dvSetTarget('drop')" oninput="this.dataset.auto='0'" placeholder="บ้านเลขที่ / จุดสังเกตปลายทาง">
-            </div>
-            <span class="dv-tick">ปักหมุดแล้ว ✓</span>
+      <div class="location-mode-selector">
+        <button type="button" class="loc-mode-btn ${selectedLocMode==='current'?'active':''}" onclick="setLocMode('current')">
+           ตำแหน่งของฉัน
+        </button>
+        <button type="button" class="loc-mode-btn ${selectedLocMode==='pin'?'active':''}" onclick="setLocMode('pin')">
+           ปักหมุดในแผนที่
+        </button>
+      </div>
+
+      <div class="loc-input-group">
+        <div class="loc-row">
+          <div class="loc-dot pickup"></div>
+          <div class="loc-field">
+            <label>จุดรับของ (ต้นทาง)</label>
+            <input name="pickupLoc" required placeholder="เช่น ตลาดสดเทศบาล, ร้านค้าในอำเภอ">
           </div>
         </div>
-        <div class="dv-dist" id="dvDist"></div>
+
+        <div class="loc-row" style="margin-top:4px">
+          <div class="loc-dot drop"></div>
+          <div class="loc-field">
+            <label>จุดส่งของ (ปลายทาง)</label>
+            <input name="dropLoc" required value="${selectedLocMode==='current'?'ตำแหน่งปัจจุบันของฉัน (GPS)':'พิกัดจากการปักหมุด'}" placeholder="บ้านเลขที่ / จุดสังเกตปลายทาง">
+          </div>
+        </div>
       </div>
 
-      ${isRide ? rideBlock : parcelBlock}
+      <div style="margin-top:14px">
+        <div class="section-title-deliv" style="font-size:12px;margin-bottom:6px"> รายละเอียดพัสดุ & ถ่ายภาพสิ่งของ</div>
+        <div class="loc-field" style="margin-bottom:8px">
+          <label>สิ่งของในกล่อง / ประเภท</label>
+          <input name="itemDesc" required placeholder="เช่น เอกสาร, กล่องพัสดุ, อาหาร">
+        </div>
 
-      <div class="dv-footer">
-        <div class="dv-fee"><span>ค่าบริการ</span><strong>25 บาท</strong></div>
-        <button type="submit" id="submitDeliveryBtn" class="dv-submit" ${isRide?'':'disabled'}>${isRide?'ยืนยันเรียกไรเดอร์รับส่งคน':'ยืนยันเรียกไรเดอร์มารับของ'}</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div class="upload-box" onclick="document.getElementById('insideBoxInput').click()">
+            <div style="font-size:11px;font-weight:bold;color:#8a7b6b" id="insideBoxText"> ถ่ายรูปของในกล่อง</div>
+            <input type="file" id="insideBoxInput" accept="image/*" style="display:none" onchange="previewInsideBox(event)">
+            <img id="insideBoxPreview" class="upload-preview" alt="Inside Box">
+          </div>
+
+          <div class="upload-box" onclick="document.getElementById('houseImageInput').click()">
+            <div style="font-size:11px;font-weight:bold;color:#8a7b6b" id="uploadHouseText"> แนบรูปหน้าบ้าน</div>
+            <input type="file" id="houseImageInput" accept="image/*" style="display:none" onchange="previewHouseImage(event)">
+            <img id="housePreview" class="upload-preview" alt="House">
+          </div>
+        </div>
+        
+        <div class="loc-field">
+          <label>หมายเหตุเพิ่มเติมถึงไรเดอร์</label>
+          <input name="itemNote" placeholder="เช่น ฝากไว้หน้าบ้าน, บ้านรั้วสีขาว">
+        </div>
       </div>
+
+      <!-- นโยบายความยินยอมถ่ายรูปสิ่งของในกล่อง -->
+      <div class="policy-box">
+        <input type="checkbox" id="policyConsent" required onchange="toggleSubmitButton()">
+        <label for="policyConsent">
+          <strong>ยินยอมเปิดเผยถ่ายภาพสิ่งของด้านใน</strong> และอนุญาตให้ไรเดอร์ตรวจสอบสภาพพัสดุก่อนจัดส่ง 
+          <br><span style="color:#9e8d7c;font-size:9px;">* นโยบายของเรา: เพื่อป้องกันการส่งสิ่งของผิดกฎหมายและสารเสพติดอย่างเคร่งครัด</span>
+        </label>
+      </div>
+
+      <button type="submit" id="submitDeliveryBtn" class="btn-delivery-submit" disabled>
+        ยืนยันเรียกไรเดอร์มารับของ
+      </button>
     </form>
   </div>`;
 }
 
-/* ---------- ปุ่ม/การทำงานของหน้าจอ ---------- */
-function dvSetTab(t){
-  if(t === dlvTab) return;
-  dvSaveDraft();
-  dlvTab = t;
+function setLocMode(mode){
+  selectedLocMode = mode;
   render();
 }
-function dvPickChip(c){
-  const inp = document.querySelector('.dv-sheet [name="itemDesc"]');
-  if(inp) inp.value = c;
-  dlvDraft.itemDesc = c;
-  document.querySelectorAll('.dv-chip').forEach(b => b.classList.toggle('on', b.textContent === c));
-}
-function dvPax(n){
-  const inp = document.querySelector('.dv-sheet [name="pax"]');
-  const out = document.getElementById('dvPaxOut');
-  if(!inp) return;
-  const v = Math.min(4, Math.max(1, (Number(inp.value) || 1) + n));
-  inp.value = v; dlvDraft.pax = v;
-  if(out) out.textContent = v;
-}
-function setLocMode(mode){            /* คงชื่อเดิมไว้เผื่อมีส่วนอื่นเรียกใช้ */
-  selectedLocMode = mode;
-  if(mode === 'current') dvLocateMe();
-}
+
 function toggleSubmitButton(){
   const checkbox = document.getElementById('policyConsent');
   const btn = document.getElementById('submitDeliveryBtn');
   if(checkbox && btn){
     btn.disabled = !checkbox.checked;
-    dlvDraft.consent = checkbox.checked;
   }
-}
-
-function dvSetTarget(t){
-  dlvTarget = t;
-  const rp = document.getElementById('dvRowPickup'), rd = document.getElementById('dvRowDrop');
-  if(rp) rp.classList.toggle('active', t === 'pickup');
-  if(rd) rd.classList.toggle('active', t === 'drop');
-  const pin = document.getElementById('dvCenterPin');
-  if(pin) pin.classList.toggle('drop', t === 'drop');
-  document.querySelectorAll('.dv-seg button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
-  const hint = document.getElementById('dvHint');
-  const btn = document.getElementById('dvConfirmBtn');
-  const isRide = dlvTab === 'ride';
-  const name = t === 'pickup' ? (isRide ? 'จุดรับ' : 'จุดรับของ') : (isRide ? 'จุดส่ง' : 'จุดส่งของ');
-  if(hint) hint.textContent = 'เลื่อนแผนที่ให้หมุดอยู่ตรง' + name + ' แล้วกดยืนยัน';
-  if(btn){ btn.textContent = 'ยืนยัน' + name + 'ตรงนี้'; btn.classList.toggle('drop', t === 'drop'); }
-  if(dlvMap && dlvPins[t]) dlvMap.setView([dlvPins[t].lat, dlvPins[t].lng], dlvMap.getZoom());
-}
-
-function dvSetPin(which, pt){
-  dlvPins[which] = pt;
-  const inp = document.querySelector('.dv-sheet [name="' + (which === 'pickup' ? 'pickupLoc' : 'dropLoc') + '"]');
-  if(inp && (!inp.value.trim() || inp.dataset.auto === '1')){
-    inp.value = 'หมุดบนแผนที่ (' + pt.lat.toFixed(4) + ', ' + pt.lng.toFixed(4) + ')';
-    inp.dataset.auto = '1';
-  }
-  dvDrawMarkers();
-  dvUpdateRows();
-  if(which === 'pickup' && !dlvPins.drop) dvSetTarget('drop');
-}
-function dvConfirmPin(){
-  if(!dlvMap) return;
-  const c = dlvMap.getCenter();
-  dvSetPin(dlvTarget, { lat: +c.lat.toFixed(6), lng: +c.lng.toFixed(6) });
-}
-function dvLocateMe(){
-  const done = pt => {
-    dvSetPin(dlvTarget, pt);
-    if(dlvMap) dlvMap.setView([pt.lat, pt.lng], 17);
-  };
-  if(!('geolocation' in navigator)){ alert('เครื่องนี้ไม่รองรับการหาตำแหน่ง ลองเลื่อนแผนที่เพื่อปักหมุดแทนได้ครับ'); return; }
-  navigator.geolocation.getCurrentPosition(
-    p => done({ lat: +p.coords.latitude.toFixed(6), lng: +p.coords.longitude.toFixed(6) }),
-    () => alert('ยังหาตำแหน่งไม่ได้ กรุณาเปิดการเข้าถึงตำแหน่ง หรือเลื่อนแผนที่เพื่อปักหมุดแทน'),
-    { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
-  );
-}
-function dvUpdateRows(){
-  const rp = document.getElementById('dvRowPickup'), rd = document.getElementById('dvRowDrop');
-  if(rp) rp.classList.toggle('has-pin', !!dlvPins.pickup);
-  if(rd) rd.classList.toggle('has-pin', !!dlvPins.drop);
-  const el = document.getElementById('dvDist');
-  if(el){
-    el.textContent = '';
-    if(dlvPins.pickup && dlvPins.drop){
-      try { el.textContent = 'ระยะทางโดยประมาณ ' + KranuanPricing.haversine(dlvPins.pickup, dlvPins.drop).toFixed(1) + ' กม.'; } catch(e) {}
-    }
-  }
-}
-
-/* ---------- แผนที่ (Leaflet + OpenStreetMap) ---------- */
-function dvLoadLeaflet(cb){
-  if(window.L){ cb(true); return; }
-  if(dlvLeafletFailed){ cb(false); return; }
-  if(!document.getElementById('leafletCss')){
-    const l = document.createElement('link');
-    l.id = 'leafletCss'; l.rel = 'stylesheet';
-    l.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
-    document.head.appendChild(l);
-  }
-  let s = document.getElementById('leafletJs');
-  if(!s){
-    s = document.createElement('script');
-    s.id = 'leafletJs';
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
-    s.addEventListener('error', () => { dlvLeafletFailed = true; });
-    document.head.appendChild(s);
-  }
-  s.addEventListener('load', () => cb(true));
-  s.addEventListener('error', () => cb(false));
-}
-function dvDrawMarkers(){
-  if(!dlvMap || !window.L) return;
-  ['pickup','drop'].forEach(k => {
-    if(dlvMarkers[k]){ dlvMap.removeLayer(dlvMarkers[k]); dlvMarkers[k] = null; }
-    const p = dlvPins[k];
-    if(p){
-      dlvMarkers[k] = L.marker([p.lat, p.lng], {
-        interactive: false,
-        icon: L.divIcon({ className: '', html: '<div class="dv-pinmark ' + k + '"></div>', iconSize: [20, 20], iconAnchor: [10, 10] })
-      }).addTo(dlvMap);
-    }
-  });
-}
-function dvInitMap(){
-  if(dlvMap){ try { dlvMap.remove(); } catch(e) {} dlvMap = null; dlvMarkers = {}; }
-  if(!document.getElementById('dvMap')) return;
-  dvLoadLeaflet(ok => {
-    const el = document.getElementById('dvMap');
-    if(!el || view !== 'ส่งของ' || dlvMap) return;
-    if(!ok){
-      el.innerHTML = '<div class="dv-maperr">โหลดแผนที่ไม่สำเร็จ<br>พิมพ์ที่อยู่ในช่องด้านล่างแทนได้เลยครับ</div>';
-      const pin = document.getElementById('dvCenterPin'), c = document.getElementById('dvConfirmBtn'), g = document.querySelector('.dv-gps');
-      [pin, c, g].forEach(x => { if(x) x.style.display = 'none'; });
-      return;
-    }
-    try {
-      const c = dlvPins[dlvTarget] || dlvPins.pickup || dlvPins.drop || userLiveLocation;
-      dlvMap = L.map(el, { zoomControl: false, attributionControl: true }).setView([c.lat, c.lng], 16);
-      const tl = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap', referrerPolicy: 'origin' });
-      if(tl.on) tl.on('tileloadstart', ev => { try { ev.tile.referrerPolicy = 'origin'; } catch(e) {} });
-      tl.addTo(dlvMap);
-      dvDrawMarkers();
-      setTimeout(() => { if(dlvMap) dlvMap.invalidateSize(); }, 60);
-    } catch(e) { dlvMap = null; }
-  });
-}
-function dvAfterRender(){
-  /* คืนค่ารูปตัวอย่างหลังสลับแท็บ */
-  if(insideBoxImageBase64){
-    const p = document.getElementById('insideBoxPreview'), t = document.getElementById('insideBoxText');
-    if(p){ p.src = insideBoxImageBase64; p.style.display = 'block'; }
-    if(t) t.textContent = 'ถ่ายรูปของแล้ว ✓';
-  }
-  if(houseImageBase64){
-    const p = document.getElementById('housePreview'), t = document.getElementById('uploadHouseText');
-    if(p){ p.src = houseImageBase64; p.style.display = 'block'; }
-    if(t) t.textContent = 'รูปหน้าบ้านแล้ว ✓';
-  }
-  dvSetTarget(dlvTarget);
-  dvUpdateRows();
-  dvInitMap();
 }
 
 function previewInsideBox(event){
@@ -866,36 +479,25 @@ function previewHouseImage(event){
   }
 }
 
-/* ส่งงานให้ไรเดอร์: โครงข้อมูลเหมือนเดิมทุกฟิลด์ (id, areaId, status, type, item, note, image, insideImage, deliveryFee, coordinates) */
 function submitRealDelivery(e){
   e.preventDefault();
   const data = new FormData(e.target);
-  const isRide = dlvTab === 'ride';
-  const pickupPt = dlvPins.pickup || { lat: 16.706, lng: 103.078 };
-  const dropPt = dlvPins.drop || userLiveLocation;
   state.orders.push({
     id: Date.now().toString(36),
     areaId,
     status: 'ready',
     type: 'market',
-    item: isRide
-      ? 'ส่งคน: ผู้โดยสาร ' + (data.get('pax') || 1) + ' คน (รับ: ' + data.get('pickupLoc') + ')'
-      : 'ส่งของ: ' + data.get('itemDesc') + ' (รับ: ' + data.get('pickupLoc') + ')',
+    item: 'ส่งของ: ' + data.get('itemDesc') + ' (รับ: ' + data.get('pickupLoc') + ')',
     note: data.get('itemNote') || '',
-    image: isRide ? '' : houseImageBase64,
-    insideImage: isRide ? '' : insideBoxImageBase64,
+    image: houseImageBase64,
+    insideImage: insideBoxImageBase64,
     deliveryFee: 25,
-    coordinates: { pickup: pickupPt, drop: dropPt, isSample: false }
+    coordinates: { pickup: { lat: 16.706, lng: 103.078 }, drop: userLiveLocation, isSample: false }
   });
   insideBoxImageBase64 = '';
   houseImageBase64 = '';
-  dlvDraft = { pickupLoc: '', dropLoc: '', itemDesc: '', itemNote: '', pax: 1, consent: false };
-  dlvPins = { pickup: null, drop: null };
-  dlvTarget = 'pickup';
   view='ออเดอร์ของฉัน'; save();
-  document.getElementById('notice').textContent = isRide
-    ? 'สร้างงานส่งคนเรียบร้อย! ไรเดอร์กำลังเตรียมมารับ'
-    : 'สร้างงานส่งของเรียบร้อย! ไรเดอร์กำลังเตรียมมารับสิ่งของ';
+  document.getElementById('notice').textContent='สร้างงานส่งของเรียบร้อย! ไรเดอร์กำลังเตรียมมารับสิ่งของ';
 }
 
 /* 2. แก้ไขเฉพาะฟอร์มลงประกาศหน้าตลาดตามสั่ง */
@@ -1106,7 +708,7 @@ function openCommunityPoster(n){
 function communityHome(){
  const welcome=category==='ทั้งหมด';
  const title=welcome?'ร้านน่าแวะใกล้คุณ':category==='อาหาร'?'เลือกร้านอาหาร':category==='เครื่องดื่ม'?'เลือกเครื่องดื่มแก้วโปรด':'เลือกบริการใกล้บ้าน';
- return (welcome?communityEvents():'')+
+ return (welcome?'<div class="welcome-intro"><h2>สวัสดี คนกระนวน </h2><p>มื้อนี้อยากกิน อยากซื้อ หรือให้เราช่วยหยัง?</p></div>'+communityEvents():'')+
  '<div class="sectionhead shop-selection"><div><h2>'+title+'</h2><small>'+(welcome?'เลือกร้านและบริการจากคนในชุมชน':'ค้นหาและเลือก'+category+'ที่ต้องการได้เลย')+'</small></div><button class="textbtn" onclick="category=\'ทั้งหมด\';query=\'\';render()">'+(welcome?'ดูทั้งหมด':'กลับหน้าแรก')+'</button></div><div id="results" class="shopgrid"></div>'+
  (welcome?'<div class="home-hint"><strong>ใกล้กัน ช่วยกันอุดหนุน </strong><br>เลือกร้านจากหมวดด้านบน แล้วพบของดีใกล้บ้าน</div>':'');
 }
@@ -1141,7 +743,6 @@ function render(){
   topNav();
   if(view==='ร้านค้า')results();
   if(view==='ตลาด')marketResults();
-  if(view==='ส่งของ')dvAfterRender();
 }
 
 function categoryBar(){
@@ -1190,94 +791,5 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 <script src="/api.js"></script><script src="/customer.js"></script>
-<script src="/commerce-media.js?v=20261027"></script><script src="/commerce-customer.js?v=20261027"></script><script src="/market.js?v=20261027-market"></script>
-<script src="/courier-grab-ui.js?v=20261027-grab5"></script><style id="ux-fixes">
-/* 4) หน้าบริการ: ไอคอน SVG แยกหมวด */
-.svc-wrap{margin:14px 0 6px}
-.svc-wrap h2{font-size:17px;margin:0 0 2px}
-.svc-wrap small{display:block;font-size:11px;color:#8a7b6b;margin-bottom:12px}
-.svc-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 8px}
-.svc-tile{border:0;background:none;padding:0;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;font-weight:700;line-height:1.3;color:#5b4b3c;text-align:center}
-.svc-ico{width:100%;max-width:62px;aspect-ratio:1;border-radius:20px;display:grid;place-items:center;background:var(--bg);color:var(--fg);border:2px solid transparent;transition:transform .15s,box-shadow .15s}
-.svc-ico svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.svc-tile.on{color:#2b221b}
-.svc-tile.on .svc-ico{border-color:var(--fg);box-shadow:0 0 0 4px color-mix(in srgb,var(--fg) 18%,transparent);transform:translateY(-1px)}
-</style>
-<script id="ux-fixes-js">
-(function(){
-var I={
-all:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
-repair:'<path d="M14 6a5 5 0 0 0-7 6L3 17a3 3 0 0 0 4 4l6-6a5 5 0 0 0 6-7l-4 4-3-3 4-4"/>',
-garden:'<path d="M12 21v-9"/><path d="M12 12c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 15c0-3-2.5-5-6-5 0 3 2.5 5 6 5z"/><path d="M8 21h8"/>',
-beauty:'<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.5 7.5 20 18M8.5 16.5 20 6"/>',
-doc:'<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
-elder:'<circle cx="9" cy="4.5" r="2.2"/><path d="M9 8v6.5M9 14.5 6.5 21M9 14.5l2.5 6.5M5.5 11 9 8l3.5 3"/><path d="M16 21V11.5a2.2 2.2 0 0 1 4.4 0"/>',
-clean:'<path d="M16 3l-4 9.5"/><path d="M7.5 12.5h9l2 8.5h-13z"/><path d="M10.5 16v5M13.5 16v5"/>',
-car:'<path d="M4 17v-5l2-4.5A2 2 0 0 1 7.8 6h8.4a2 2 0 0 1 1.8 1.5L20 12v5z"/><path d="M4 12h16"/><circle cx="8" cy="17.5" r="1.8"/><circle cx="16" cy="17.5" r="1.8"/>',
-it:'<rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18.5h2"/>',
-pet:'<circle cx="6" cy="10" r="1.8"/><circle cx="10" cy="5.8" r="1.8"/><circle cx="14" cy="5.8" r="1.8"/><circle cx="18" cy="10" r="1.8"/><path d="M12 11c-3 0-5.5 3-5.5 5.5 0 2 1.7 2.5 3.2 2 .9-.3 1.5-.5 2.3-.5s1.4.2 2.3.5c1.5.5 3.2 0 3.2-2C17.5 14 15 11 12 11z"/>',
-learn:'<path d="M12 6c-2-1.5-5-2-8-2v14c3 0 6 .5 8 2 2-1.5 5-2 8-2V4c-3 0-6 .5-8 2z"/><path d="M12 6v14"/>',
-other:'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>'
-};
-/* [id, ชื่อ, สีพื้น, สีไอคอน, คำค้นที่ใช้จับคู่กับชื่อ/คำอธิบายร้าน] */
-var SVC=[
-['all','ทั้งหมด','#fff1ca','#cf6840',[]],
-['repair','งานช่าง','#e3efff','#2f6fd0',['ช่าง','ซ่อม','ไฟฟ้า','ประปา','แอร์','ก่อสร้าง','ต่อเติม']],
-['garden','งานสวน','#e4f6e5','#2f9a46',['สวน','ตัดหญ้า','ต้นไม้','เกษตร']],
-['beauty','เสริมสวย','#ffe5ef','#d63f7a',['เสริมสวย','ซาลอน','salon','ตัดผม','ทำผม','เล็บ','สปา','spa','นวด']],
-['doc','งานเอกสาร','#fff3d1','#b97a0a',['เอกสาร','พิมพ์','ภาษี','ทะเบียน','บัญชี','copy','print']],
-['elder','ดูแลผู้สูงอายุ','#ffe6e3','#d6453a',['ผู้สูงอายุ','ผู้ป่วย','พยาบาล','ดูแล']],
-['clean','ทำความสะอาด','#dcf5f3','#1a8f88',['ทำความสะอาด','แม่บ้าน','ซักรีด','ซักอบรีด','ซักผ้า']],
-['car','ยานยนต์','#e8ebf0','#4b5a70',['ซ่อมรถ','ล้างรถ','อู่','ยาง','มอเตอร์ไซค์','คาร์แคร์']],
-['it','มือถือ/ไอที','#e6e5ff','#5448d6',['มือถือ','โทรศัพท์','คอม','ไอที','อินเทอร์เน็ต','cctv']],
-['pet','สัตว์เลี้ยง','#efe6ff','#8a45cf',['สัตว์','หมา','แมว','pet']],
-['learn','ติว/สอน','#ffe9d6','#d9702a',['ติว','สอน','กวดวิชา']],
-['other','อื่น ๆ','#eeeae4','#7b6d5d',null]
-];
-var sel='all';
-function isSvc(){return typeof view!=='undefined'&&view==='ร้านค้า'&&typeof category!=='undefined'&&category==='บริการ'}
-function hit(k,txt){
-  if(k==='all')return true;
-  var t=txt.toLowerCase(),d=SVC.filter(function(x){return x[0]===k})[0];
-  function any(x){return x[4]&&x[4].some(function(w){return t.indexOf(w.toLowerCase())>-1})}
-  return d[4]?any(d):!SVC.some(any);
-}
-function apply(){
-  var box=document.getElementById('results');if(!box)return;
-  var n=0,on=isSvc();
-  Array.prototype.forEach.call(box.children,function(c){if(c.classList.contains('c-attribution'))return;var ok=!on||hit(sel,c.textContent);c.style.display=ok?'':'none';if(ok)n++});
-  var em=document.getElementById('svcEmpty');
-  if(on&&sel!=='all'&&!n&&box.children.length){
-    if(!em){em=document.createElement('p');em.id='svcEmpty';em.className='empty';box.parentNode.insertBefore(em,box.nextSibling)}
-    em.textContent='ยังไม่มีร้านในหมวดนี้ ลองเลือกหมวดอื่นดูนะ';
-  }else if(em)em.remove();
-}
-function injectSvc(){
-  var app=document.getElementById('app');if(!app)return;
-  var has=app.querySelector('.svc-wrap');
-  if(!isSvc()){if(has)has.remove();return}
-  if(has)return;
-  var a=app.querySelector('.shop-selection')||document.getElementById('results');if(!a)return;
-  var w=document.createElement('section');w.className='svc-wrap';
-  w.innerHTML='<h2>เลือกประเภทบริการ</h2><small>แตะไอคอนเพื่อดูเฉพาะงานที่ต้องการ</small><div class="svc-grid">'+
-    SVC.map(function(s){return '<button type="button" class="svc-tile'+(s[0]===sel?' on':'')+'" data-k="'+s[0]+'" style="--bg:'+s[2]+';--fg:'+s[3]+'"><span class="svc-ico"><svg viewBox="0 0 24 24" aria-hidden="true">'+I[s[0]]+'</svg></span>'+s[1]+'</button>'}).join('')+'</div>';
-  a.parentNode.insertBefore(w,a);
-}
-var q=0;
-function run(){if(q)return;q=requestAnimationFrame(function(){q=0;injectSvc();apply()})}
-function boot(){
-  var app=document.getElementById('app');if(!app){return}
-  app.addEventListener('click',function(e){
-    var b=e.target.closest&&e.target.closest('.svc-tile');if(!b)return;
-    sel=b.getAttribute('data-k');
-    app.querySelectorAll('.svc-tile').forEach(function(x){x.classList.toggle('on',x===b)});apply();
-  });
-  new MutationObserver(run).observe(app,{childList:true,subtree:true});
-  run();
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
-})();
-</script>
-
-</body>
+<script src="/commerce-media.js?v=20261027"></script><script src="/commerce-customer.js?v=20261027"></script><script src="/market.js?v=20261027-market"></script></body>
 </html>

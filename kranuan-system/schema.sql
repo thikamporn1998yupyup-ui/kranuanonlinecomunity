@@ -17,3 +17,5 @@ CREATE TABLE IF NOT EXISTS market_listings(id TEXT PRIMARY KEY,owner_id TEXT NOT
 CREATE TABLE IF NOT EXISTS market_comments(id TEXT PRIMARY KEY,listing_id TEXT NOT NULL REFERENCES market_listings(id),user_id TEXT NOT NULL REFERENCES users(id),name TEXT NOT NULL,body TEXT NOT NULL,created_at INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS market_reports(id TEXT PRIMARY KEY,listing_id TEXT NOT NULL REFERENCES market_listings(id),user_id TEXT NOT NULL REFERENCES users(id),reason TEXT NOT NULL,created_at INTEGER NOT NULL,UNIQUE(listing_id,user_id));
 CREATE INDEX IF NOT EXISTS market_feed ON market_listings(status,deleted,created_at);
+
+CREATE TABLE IF NOT EXISTS staff_profiles(user_id TEXT PRIMARY KEY REFERENCES users(id),avatar_url TEXT NOT NULL DEFAULT '',pending_avatar TEXT NOT NULL DEFAULT '',photos TEXT NOT NULL DEFAULT '[null,null,null,null]',photo_status TEXT NOT NULL DEFAULT 'none',photo_version INTEGER NOT NULL DEFAULT 0,review_note TEXT NOT NULL DEFAULT '',reviewed_by TEXT,reviewed_at TEXT,verified INTEGER NOT NULL DEFAULT 0,verified_at TEXT,verified_by TEXT,updated_at TEXT);
