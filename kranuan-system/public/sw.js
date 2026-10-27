@@ -1,0 +1,6 @@
+// Service worker แบบง่าย: ดึงข้อมูลสดจากเน็ตเสมอ (ไม่เก็บแคช) เพื่อไม่ให้ติดเวอร์ชันเก่า
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
+self.addEventListener('fetch', (e) => {
+  e.respondWith(fetch(e.request));
+});
