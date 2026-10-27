@@ -5,7 +5,7 @@
 (function () {
   'use strict';
   var HIDE_KEY = 'kranuan_ad_hide_date';
-  var ads = null, loadedAt = 0, loading = null;
+  var ads = null, loadedAt = 0, loading = null, adsOk = false;
 
   function todayTH() { return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' }); }
   function safeUrl(u) { return /^(https?:\/\/|\/)/i.test(u || '') ? u : ''; }
@@ -44,7 +44,7 @@
     if (loading) return loading;
     loading = fetch('/api/ads', { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : { ads: [] }; })
-      .then(function (d) { ads = Array.isArray(d.ads) ? d.ads : []; loadedAt = Date.now(); return ads; })
+      .then(function (d) { ads = Array.isArray(d.ads) ? d.ads : []; adsOk = true; loadedAt = Date.now(); return ads; })
       .catch(function () { return ads || []; })
       .then(function (v) { loading = null; return v; });
     return loading;
@@ -157,7 +157,16 @@
       var r = document.getElementById('posterRail');
       if (!r || r.dataset.live === '1') return;
       var posters = byKind(list, 'poster');
-      if (!posters.length) return; /* ไม่มีป้ายในแอดมิน = คงโปสเตอร์ตัวอย่างเดิมไว้ */
+      if (!posters.length) {
+        /* ไม่มีป้ายในแอดมิน = ซ่อนทั้งแถบ (ถ้าโหลดข้อมูลสำเร็จ) ให้แอดมินคุมได้ทั้งหมด */
+        if (adsOk) {
+          r.dataset.live = '1';
+          r.style.display = 'none';
+          if (r.previousElementSibling) r.previousElementSibling.style.display = 'none';
+          if (r.nextElementSibling) r.nextElementSibling.style.display = 'none';
+        }
+        return;
+      }
       r.dataset.live = '1';
       buildRail(r, posters);
     });

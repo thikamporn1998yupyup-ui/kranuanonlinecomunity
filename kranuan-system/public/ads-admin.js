@@ -46,7 +46,7 @@
   }
   function draw() {
     const app = document.getElementById('staffApp'); if (!app || staffTab !== 'ads') return;
-    const sec = k => { const rows = byKind(k); return '<div class="ads-sec"><h3>' + KIND[k] + ' (' + rows.length + ')</h3><small>' + (k === 'poster' ? 'แสดงต่อจากกันตามลำดับ เลื่อนเองทุก 2 วินาที ใช้ปุ่ม ↑ ↓ เรียงลำดับ' : 'สุ่มแสดง 1 รายการต่อการเข้าใช้หนึ่งครั้ง ผู้ใช้กด "ไม่ต้องแสดงอีกวันนี้" ได้') + '</small></div><div class="ads-grid">' + (rows.map((a, i) => card(a, i, rows.length)).join('') || '<p class="muted">ยังไม่มีรายการ</p>') + '</div>'; };
+    const sec = k => { const rows = byKind(k); return '<div class="ads-sec"><h3>' + KIND[k] + ' (' + rows.length + ')</h3><small>' + (k === 'poster' ? 'แสดงต่อจากกันตามลำดับ เลื่อนเองทุก 2 วินาที ใช้ปุ่ม ↑ ↓ เรียงลำดับ' : 'สุ่มแสดง 1 รายการต่อการเข้าใช้หนึ่งครั้ง ผู้ใช้กด "ไม่ต้องแสดงอีกวันนี้" ได้') + '</small></div><div class="ads-grid">' + (rows.map((a, i) => card(a, i, rows.length)).join('') || (k === 'poster' ? '<div><p class="muted">ยังไม่มีป้าย (หน้าแอพจะซ่อนแถบป้ายนี้ไว้)</p><button class="kbutton primary" onclick="adsImportSamples(this)">นำโปสเตอร์ตัวอย่าง (งิ้ว / สระหนองโก) มาแก้ไขได้</button></div>' : '<p class="muted">ยังไม่มีรายการ</p>')) + '</div>'; };
     app.innerHTML = '<div class="ads-head"><div><h2>จัดการโฆษณา</h2><p class="muted">เปลี่ยนแล้วหน้าเว็บของลูกค้าอัปเดตเอง ไม่ต้องแก้ไฟล์</p></div><button class="kbutton primary" onclick="adsEdit()">+ เพิ่มโฆษณา</button></div>' + sec('popup') + sec('poster');
   }
 
@@ -59,6 +59,28 @@
     try { for (let k = 0; k < g.length; k++) if (g[k].sort_order !== k * 10) await save(payload(g[k], { sort_order: k * 10 })); await refresh(); }
     catch (e) { message(e.message); btn.disabled = false; }
   };
+
+  const SAMPLES = [
+    { key: 'festival', tag: 'สีสันงานท้องถิ่น', title: 'งานงิ้วกระนวน', text: 'เสน่ห์ประเพณี ที่คนบ้านเฮาคิดฮอด' },
+    { key: 'welcome', tag: 'มุมพักใจ ใกล้บ้าน', title: 'มาพักใจริมสระหนองโก', text: 'ชวนกันออกมาเจอเรื่องดี ๆ รอบตัว' }
+  ];
+  window.adsImportSamples = async btn => {
+    btn.disabled = true; btn.textContent = 'กำลังนำเข้า...';
+    try {
+      let html = '';
+      try { html = await (await fetch('/', { cache: 'no-store' })).text(); } catch (e) {}
+      for (let i = 0; i < SAMPLES.length; i++) {
+        const sm = SAMPLES[i]; let image = '';
+        try {
+          const m = html.match(new RegExp('"' + sm.key + '":"(data:image/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+)"'));
+          if (m) { const blob = await (await fetch(m[1])).blob(); image = await resize(new File([blob], sm.key, { type: blob.type })); }
+        } catch (e) { image = ''; }
+        await save({ kind: 'poster', tag: sm.tag, title: sm.title, text: sm.text, image_url: image, link_url: '', link_label: '', start_date: '', end_date: '', sort_order: i * 10, enabled: true });
+      }
+      await refresh(); message('นำเข้าโปสเตอร์ตัวอย่างแล้ว แก้ไขหรือลบได้เลย');
+    } catch (e) { message(e.message); btn.disabled = false; btn.textContent = 'ลองอีกครั้ง'; }
+  };
+
   async function refresh() { adsRows = await K.request('/admin/ads'); draw(); }
 
   function resize(file) {
