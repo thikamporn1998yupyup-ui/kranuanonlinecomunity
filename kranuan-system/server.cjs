@@ -6,7 +6,7 @@ const publicDir=path.join(__dirname,'public');
 const db=new DatabaseSync(':memory:');db.exec(fs.readFileSync(path.join(__dirname,'schema.sql'),'utf8'));db.exec('PRAGMA busy_timeout=5000');
 const now=()=>new Date().toISOString(),id=()=>crypto.randomUUID(),hash=s=>crypto.createHash('sha256').update(s).digest('hex');
 const get=(sql,...v)=>db.prepare(sql).get(...v),all=(sql,...v)=>db.prepare(sql).all(...v),run=(sql,...v)=>db.prepare(sql).run(...v);
-const FIREBASE_TABLES=['users','shops','menus','sessions','orders','order_events','reports','audit','market_listings','market_comments','market_reports','staff_profiles'];
+const FIREBASE_TABLES=['users','shops','menus','sessions','orders','order_events','reports','audit','market_listings','market_comments','market_reports','staff_profiles','shop_reviews'];
 let firebaseRef=null,saveQueue=Promise.resolve(),firebaseBaseline='';
 function serializeState(){const tables={};for(const table of FIREBASE_TABLES){const rows=all('SELECT * FROM '+table);tables[table]=Object.fromEntries(rows.map((r,i)=>[String(r.id??i),r]))}return JSON.stringify({version:1,tables})}
 async function persistState(){if(!firebaseRef)return;const state=serializeState();if(state===firebaseBaseline)return;await firebaseRef.set(JSON.parse(state));firebaseBaseline=state}
@@ -100,10 +100,15 @@ async function api(req,res,url){
  if(p==='/api/shops'&&method==='GET')return send(res,200,all('SELECT * FROM shops ORDER BY name').map(s=>{const v=shopView(s);delete v.survey_note;delete v.verified_by;return v}));
  if(p==='/api/menus'&&method==='GET'){const shopId=required(url.searchParams.get('shop'),'ร้าน');return send(res,200,all('SELECT id,shop_id,name,price_satang,image_url,available FROM menus WHERE shop_id=? ORDER BY name',shopId).map(m=>({...m,price:m.price_satang/100,available:!!m.available})))}
  if(p==='/api/config'&&method==='GET')return send(res,200,{delivery_fee:Number(process.env.DELIVERY_FEE_THB||25),ride_fee:Number(process.env.RIDE_FEE_THB||process.env.DELIVERY_FEE_THB||25),ride_passenger_limit:1});
+
+ if(p==='/api/catalog'&&method==='GET'){const pictures=all("SELECT shop_id,image_url FROM menus WHERE image_url<>'' ORDER BY available DESC,name");const ratings=all('SELECT shop_id,COUNT(*) AS review_count,ROUND(AVG(rating),1) AS rating FROM shop_reviews GROUP BY shop_id');return send(res,200,all('SELECT id,image_url FROM shops').map(s=>({id:s.id,images:[...new Set([s.image_url,...pictures.filter(m=>m.shop_id===s.id).map(m=>m.image_url)].filter(Boolean))].slice(0,3),rating:ratings.find(r=>r.shop_id===s.id)?.rating??null,review_count:ratings.find(r=>r.shop_id===s.id)?.review_count||0})))}
+ if(p==='/api/shop-reviews'&&method==='GET'){const sid=required(url.searchParams.get('shop'),'ร้าน');return send(res,200,all('SELECT rating,comment,created_at FROM shop_reviews WHERE shop_id=? ORDER BY created_at DESC LIMIT 20',sid))}
  if(p==='/api/health')return send(res,200,{ok:true});
  needUser(u);
  if(!['GET','HEAD'].includes(method)&&req.headers['x-csrf-token']!==u.csrf)fail(403,'เซสชันเปลี่ยน กรุณาโหลดหน้าใหม่');
  const b=['POST','PATCH','PUT'].includes(method)?await body(req):{};
+
+ if(p==='/api/shop-reviews'&&method==='POST'){const order=get("SELECT * FROM orders WHERE id=? AND customer_id=? AND status='done' AND shop_id IS NOT NULL",text(b.order_id),u.id);if(!order)fail(403,'รีวิวร้านได้หลังออเดอร์ของคุณจัดส่งสำเร็จเท่านั้น');const rating=Number(b.rating);if(!Number.isInteger(rating)||rating<1||rating>5)fail(400,'คะแนนต้องเป็น 1–5');run('INSERT INTO shop_reviews(id,shop_id,order_id,user_id,rating,comment,created_at) VALUES(?,?,?,?,?,?,?) ON CONFLICT(order_id) DO UPDATE SET rating=excluded.rating,comment=excluded.comment',id(),order.shop_id,order.id,u.id,rating,text(b.comment,500),now());emit();return send(res,200,{ok:true})}
  if(p.startsWith('/api/staff/')||p==='/api/admin/staff'||p.startsWith('/api/admin/staff/'))return staffApi.route(req,res,url,u,b);
  if(p.startsWith('/api/market/'))return marketApi(req,res,url,u,b);
  if(p==='/api/login'&&method==='POST'){
