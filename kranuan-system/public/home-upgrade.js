@@ -17,6 +17,28 @@
   }
   function openLink(url) { var w = window.open(url, '_blank', 'noopener'); if (w) w.opener = null; }
 
+
+  /* ---------- สไตล์: ภาพเต็ม + เงาดำไล่จากล่างขึ้นบน ---------- */
+  (function () {
+    if (document.getElementById('liveAdCss')) return;
+    var st = document.createElement('style'); st.id = 'liveAdCss';
+    st.textContent =
+      '.local-poster.live-ad{height:auto;aspect-ratio:16/9;padding:0;align-items:flex-end;background:#2b211b}' +
+      '.local-poster.live-ad.noimg{background:linear-gradient(145deg,#c2452b,#8f2a1a)}' +
+      '.local-poster.live-ad:before{background:linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.6) 38%,rgba(0,0,0,.18) 68%,rgba(0,0,0,0) 100%)}' +
+      '.local-poster.live-ad .poster-copy{width:100%;box-sizing:border-box;padding:0 16px 14px}' +
+      '.local-poster.live-ad h3{font-size:20px;line-height:1.3;margin:6px 0 3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-shadow:0 1px 4px #0008}' +
+      '.local-poster.live-ad p{font-size:12px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-shadow:0 1px 3px #0008}' +
+      '.local-poster.live-ad .poster-action{margin-top:8px}' +
+      '.poster-dialog .live-pop-img{position:relative;background:#2b211b}' +
+      '.poster-dialog .live-pop-img img{aspect-ratio:auto;width:100%;height:auto;max-height:68dvh;object-fit:cover;display:block}' +
+      '.live-pop-cap{position:absolute;left:0;right:0;bottom:0;box-sizing:border-box;padding:56px 18px 16px;color:#fff;background:linear-gradient(to top,rgba(0,0,0,.9) 0%,rgba(0,0,0,.65) 50%,rgba(0,0,0,0) 100%)}' +
+      '.live-pop-cap h2{color:#fff5d4;font-size:21px;line-height:1.3;margin:8px 0 4px;text-shadow:0 1px 4px #0008}' +
+      '.live-pop-cap p{color:#ffedda;font-size:13px;line-height:1.5;margin:0;text-shadow:0 1px 3px #0008}' +
+      '.live-pop-cap .badge{background:#fff0ce;color:#7a351d}';
+    document.head.appendChild(st);
+  })();
+
   function loadAds() {
     if (ads && Date.now() - loadedAt < 60000) return Promise.resolve(ads);
     if (loading) return loading;
@@ -45,11 +67,23 @@
     close.onclick = function () { d.close(); };
     d.appendChild(close);
     var img = safeUrl(a.image);
-    if (img) { var im = el('img'); im.src = img; im.alt = a.title || 'โฆษณา'; d.appendChild(im); }
     var body = el('div', 'poster-dialog-body');
-    if (a.tag) body.appendChild(el('span', 'badge', a.tag));
-    if (a.title) body.appendChild(el('h2', '', a.title));
-    if (a.text) body.appendChild(el('p', '', a.text));
+    if (img) {
+      var wrap = el('div', 'live-pop-img');
+      var im = el('img'); im.src = img; im.alt = a.title || 'โฆษณา'; wrap.appendChild(im);
+      if (a.tag || a.title || a.text) {
+        var cap = el('div', 'live-pop-cap');
+        if (a.tag) cap.appendChild(el('span', 'badge', a.tag));
+        if (a.title) cap.appendChild(el('h2', '', a.title));
+        if (a.text) cap.appendChild(el('p', '', a.text));
+        wrap.appendChild(cap);
+      }
+      d.appendChild(wrap);
+    } else {
+      if (a.tag) body.appendChild(el('span', 'badge', a.tag));
+      if (a.title) body.appendChild(el('h2', '', a.title));
+      if (a.text) body.appendChild(el('p', '', a.text));
+    }
     var link = safeUrl(a.link);
     if (link) {
       var go = el('button', 'primary', a.linkLabel || 'ดูรายละเอียด');
@@ -84,8 +118,8 @@
   function buildRail(rail, posters) {
     rail.textContent = '';
     posters.forEach(function (a, i) {
-      var art = el('article', 'local-poster' + (i % 2 ? ' pond' : ''));
       var img = safeUrl(a.image);
+      var art = el('article', 'local-poster live-ad' + (img ? '' : ' noimg'));
       if (img) { var im = el('img'); im.src = img; im.alt = a.title || 'โฆษณา'; im.loading = 'lazy'; art.appendChild(im); }
       var copy = el('div', 'poster-copy');
       if (a.tag) copy.appendChild(el('span', 'poster-tag', a.tag));
