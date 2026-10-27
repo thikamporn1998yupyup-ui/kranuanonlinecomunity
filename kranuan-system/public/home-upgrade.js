@@ -365,3 +365,165 @@ dialog.eat-pop[open]{animation:eatIn .55s cubic-bezier(.2,1.5,.4,1)}
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startFab); else startFab();
 })();
+
+
+/* เพิ่มปุ่มค้นหาร้านหลังสุ่มอาหาร */
+(function () {
+  'use strict';
+
+  const style = document.createElement('style');
+  style.textContent = `
+    #eatFab {
+      bottom: calc(240px + env(safe-area-inset-bottom)) !important;
+      z-index: 120 !important;
+    }
+
+    dialog.eat-pop {
+      max-height: calc(100dvh - 24px);
+      overflow-y: auto;
+    }
+
+    .eat-menu-links {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .eat-menu-links[hidden] {
+      display: none !important;
+    }
+
+    .eat-menu-links button {
+      width: 100%;
+      padding: 12px;
+      border: 0;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .eat-menu-search {
+      background: #2f7d4f;
+      color: white;
+    }
+
+    .eat-menu-all {
+      background: #f2e7d5;
+      color: #653b28;
+    }
+  `;
+  document.head.appendChild(style);
+
+  function goToFood(term) {
+    const dialog = document.querySelector('dialog.eat-pop');
+
+    if (dialog && dialog.open) dialog.close();
+
+    if (typeof setCategory === 'function') {
+      setCategory('อาหาร');
+
+      const search = document.getElementById('search');
+
+      if (search) {
+        search.value = term;
+        search.dispatchEvent(
+          new Event('input', { bubbles: true })
+        );
+      }
+
+      const section =
+        document.querySelector('.shop-selection') ||
+        document.getElementById('results');
+
+      if (section) {
+        section.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }
+    } else {
+      window.location.href = '/';
+    }
+  }
+
+  function addButtons(dialog) {
+    if (dialog.dataset.eatLinksAdded) return;
+
+    const spin = dialog.querySelector('#eatSpin');
+    const body = dialog.querySelector('.eat-body');
+
+    if (!spin || !body) return;
+
+    dialog.dataset.eatLinksAdded = '1';
+
+    const links = document.createElement('div');
+    links.className = 'eat-menu-links';
+    links.hidden = true;
+
+    const find = document.createElement('button');
+    find.type = 'button';
+    find.className = 'eat-menu-search';
+
+    const all = document.createElement('button');
+    all.type = 'button';
+    all.className = 'eat-menu-all';
+    all.textContent = 'ดูร้านอาหารทั้งหมด';
+
+    links.append(find, all);
+    body.appendChild(links);
+
+    let menuName = '';
+
+    function finished() {
+      if (
+        spin.disabled ||
+        spin.textContent.trim() !== 'สุ่มใหม่'
+      ) return;
+
+      const name = dialog.querySelector('#eatName');
+      if (!name) return;
+
+      menuName = name.textContent.trim();
+
+      find.textContent =
+        'ค้นหาร้านที่มีเมนู ' + menuName;
+
+      links.hidden = false;
+    }
+
+    new MutationObserver(finished).observe(spin, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+
+    spin.addEventListener('click', () => {
+      links.hidden = true;
+    });
+
+    find.addEventListener('click', () => {
+      goToFood(menuName.split(' + ')[0].trim());
+    });
+
+    all.addEventListener('click', () => {
+      goToFood('');
+    });
+
+    finished();
+  }
+
+  function findDialog() {
+    const dialog = document.querySelector('dialog.eat-pop');
+    if (dialog) addButtons(dialog);
+  }
+
+  findDialog();
+
+  new MutationObserver(findDialog).observe(
+    document.body,
+    { childList: true, subtree: true }
+  );
+})();
+
