@@ -1,0 +1,62 @@
+/* home-upgrade.css — โหลดหลังไฟล์ CSS อื่นทั้งหมด (ต้องทับ compact-activity.css / mobile-catalog.css) */
+
+/* 1) ไอคอนหมวดแถวบน: ใหญ่ขึ้น ช่องไฟพอดี ไม่ห่างไม่ชิด */
+.phone main .c-category-nav{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;width:min(100%,340px)!important;margin:0 auto 8px!important;padding:4px 0 6px!important;gap:10px 0!important;justify-items:center}
+.phone main .c-category-nav .c-category{width:100%;gap:5px!important}
+.phone main .c-category-nav .c-category>span{width:clamp(54px,16vw,62px)!important;height:clamp(54px,16vw,62px)!important;border-radius:19px!important;transition:transform .2s}
+.phone main .c-category-nav .c-category svg{width:30px!important;height:30px!important}
+.phone main .c-category-nav .c-category b{font-size:10.5px!important;line-height:1.25}
+.phone main .c-category-nav .c-category:active>span{transform:scale(.93)}
+@media(min-width:520px){.phone main .c-category-nav{grid-template-columns:repeat(7,minmax(0,1fr))!important;width:100%!important;gap:0!important}}
+
+/* 2) ฟองเลือกเมนูแถบล่างเลื่อนสมูท */
+.phone #nav .nav-bubble{position:absolute;top:6px;left:6px;height:50px;width:calc((100% - 12px) / var(--n,4));border-radius:16px;background:linear-gradient(160deg,rgba(255,255,255,.36),rgba(255,255,255,.18));box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 3px 10px rgba(120,50,15,.18);transform:translateX(calc(var(--i,0) * 100%));transition:transform .5s cubic-bezier(.34,1.32,.5,1),opacity .25s;pointer-events:none;z-index:0}
+.phone #nav>button{position:relative;z-index:1}
+.phone #nav>button.active{background:transparent!important;box-shadow:none!important}
+.phone #nav>button svg{transition:transform .35s cubic-bezier(.34,1.5,.5,1)}
+.phone #nav>button.active svg{transform:translateY(-1px) scale(1.1)}
+
+/* 3) ป๊อบอัพโฆษณา */
+.ad-popup{border:0;padding:0;border-radius:26px;width:min(340px,calc(100% - 40px));max-height:88dvh;overflow:auto;background:#fffdf8;color:#3f352b;box-shadow:0 20px 60px #0005;animation:adIn .38s cubic-bezier(.34,1.4,.5,1)}
+.ad-popup::backdrop{background:rgba(30,20,12,.55);backdrop-filter:blur(3px)}
+@keyframes adIn{from{transform:translateY(24px) scale(.92);opacity:0}to{transform:none;opacity:1}}
+.ad-media{position:relative;aspect-ratio:4/3;background:linear-gradient(145deg,#ffd873,#f07b46);display:grid;place-items:center;overflow:hidden}
+.ad-media img{width:100%;height:100%;object-fit:cover}
+.ad-art{font-size:64px}
+.ad-x{position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:50%;border:0;background:#0007;color:#fff;font-size:22px;line-height:1;cursor:pointer;z-index:2}
+.ad-body{padding:14px 16px 16px}
+.ad-tag{display:inline-block;font-size:9px;padding:3px 8px;border-radius:20px;background:#fff0ce;color:#a8661f;margin-bottom:6px}
+.ad-body h3{margin:0 0 4px;font-size:18px;line-height:1.35}
+.ad-body p{margin:0 0 12px;font-size:12px;line-height:1.6;color:#6d5f50}
+.ad-cta{display:block;text-align:center;text-decoration:none;min-height:46px;line-height:46px;border-radius:15px;background:linear-gradient(120deg,#f07b46,#e65b2b);color:#fff;font-weight:700;font-size:13px;margin-bottom:8px}
+.ad-row{display:flex;gap:8px}
+.ad-row button{flex:1;min-height:42px;border-radius:13px;border:1px solid #eadfce;background:#fff;font:inherit;font-size:12px;color:#7a6957;cursor:pointer}
+.ad-row .ad-hide{color:#c4501f;border-color:#f0c9a6}
+
+/* 4) วันนี้กินอะไรดี */
+.fr-card{margin:4px 0 12px;padding:14px;border-radius:22px;background:linear-gradient(145deg,#fff3d6,#ffe1c7);border:1px solid #f1d3ad;box-shadow:0 6px 18px #c9702a1f;color:#4a3524}
+.fr-head small{font-size:9px;letter-spacing:1.4px;color:#b26a2e}
+.fr-head h3{margin:2px 0;font-size:19px}
+.fr-head p{margin:0 0 10px;font-size:11px;color:#8b6a4e}
+.fr-window{display:flex;align-items:center;gap:12px;background:#fff;border-radius:18px;padding:12px 14px;min-height:78px;overflow:hidden;box-shadow:inset 0 2px 6px #c9702a14}
+.fr-emoji{font-size:40px;line-height:1;flex:none}
+.fr-name{font-size:22px;font-weight:700;line-height:1.25;min-width:0;overflow-wrap:anywhere}
+.is-spinning .fr-emoji,.is-spinning .fr-name{animation:frSlide .12s linear infinite;filter:blur(.6px)}
+@keyframes frSlide{0%{transform:translateY(-14px);opacity:.3}100%{transform:none;opacity:1}}
+.fr-land .fr-window{animation:frPop .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes frPop{0%{transform:scale(.88)}60%{transform:scale(1.05)}100%{transform:scale(1)}}
+.fr-quote{margin-top:10px;display:grid;gap:7px}
+.fr-quote[hidden]{display:none}
+.fr-quote p{margin:0;padding:9px 11px;border-radius:14px;font-size:12px;line-height:1.55}
+.fr-quote b{display:block;font-size:10px;margin-bottom:2px}
+.fr-tease{background:#fff7e6;border:1px dashed #efb86a}
+.fr-flip{background:#eaf7ee;border:1px dashed #86c99b}
+.fr-actions{display:flex;gap:8px;margin-top:12px}
+.fr-actions button{flex:1;min-height:46px;border:0;border-radius:15px;font:inherit;font-weight:700;font-size:13px;cursor:pointer}
+.fr-actions button[hidden]{display:none}
+.fr-spin{background:linear-gradient(120deg,#f07b46,#e65b2b);color:#fff;box-shadow:0 5px 12px #e65b2b40}
+.fr-spin:disabled{opacity:.6;cursor:wait}
+.fr-actions .fr-go{background:#fff;color:#c4501f;border:1px solid #f0c9a6}
+.fr-note{margin:8px 2px 0;font-size:9px;color:#a58a72}
+
+@media(prefers-reduced-motion:reduce){.phone #nav .nav-bubble,.phone #nav>button svg,.ad-popup,.is-spinning .fr-emoji,.is-spinning .fr-name,.fr-land .fr-window{transition:none!important;animation:none!important}}
