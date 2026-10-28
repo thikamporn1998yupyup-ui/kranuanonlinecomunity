@@ -206,7 +206,7 @@
 })();
 
 
-/* ===== ปุ่มสุ่มกินไรดี ห้อยอยู่หน้า "อาหาร" กดแล้วเด้งป๊อบอัพ ===== */
+/* ===== แถบสุ่มกินไรดี เหนือส่วนเลือกร้านอาหาร ===== */
 (function () {
   'use strict';
   var MENUS=[
@@ -245,15 +245,19 @@
   if (!document.getElementById('eatPopCss')) {
     var st = document.createElement('style'); st.id = 'eatPopCss';
     st.textContent = `
-#eatFab{position:fixed;right:12px;bottom:calc(240px + env(safe-area-inset-bottom));z-index:100;width:76px;height:112px;border:0;background:none;padding:0;cursor:pointer;transform-origin:50% 0;translate:0 0;rotate:0deg;animation:eatDrop .8s cubic-bezier(.3,1.5,.5,1) both,eatSwing 3.4s ease-in-out .8s infinite;-webkit-tap-highlight-color:transparent}
-#eatFab .hook{position:absolute;left:50%;top:0;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:#2b1d14}
-#eatFab .cord{position:absolute;left:50%;top:5px;width:2.5px;height:30px;margin-left:-1.25px;background:#2b1d14}
-#eatFab .badge{position:absolute;left:50%;top:32px;width:62px;height:62px;margin-left:-31px;border-radius:50%;background:#f9d35b;border:3px solid #2b1d14;box-shadow:0 5px 0 #2b1d1433;display:grid;place-items:center;padding:7px}
-#eatFab .tag{position:absolute;left:50%;bottom:0;translate:-50% 0;white-space:nowrap;background:#e95e30;color:#fff;font:700 12px/1 "Sarabun","Noto Sans Thai",Tahoma,sans-serif;padding:5px 9px;border-radius:12px;border:2px solid #2b1d14}
-#eatFab:active .badge{scale:.92}
-#eatFab:focus-visible{outline:3px solid #1a73e8;outline-offset:3px;border-radius:20px}
-@keyframes eatDrop{from{translate:0 -140px}to{translate:0 0}}
-@keyframes eatSwing{0%,100%{rotate:6deg}50%{rotate:-6deg}}
+#eatFab{position:relative;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;margin:18px 0 20px;padding:20px;border:1px solid #f2cd91;border-radius:24px;background:linear-gradient(130deg,#fff2c7,#ffe0aa 65%,#ffd1ae);color:#432719;box-shadow:0 7px 20px #a95b1712;overflow:hidden;isolation:isolate}
+#eatFab:before{content:'';position:absolute;right:-30px;top:-50px;width:170px;height:170px;border-radius:50%;background:#ffffff55;z-index:-1}
+#eatFab .eat-banner-copy{min-width:0}
+#eatFab .eat-banner-eyebrow{font-size:11px;font-weight:700;letter-spacing:.5px;color:#9d4a20}
+#eatFab h2{font-family:inherit;font-weight:800;margin:5px 0 7px;font-size:28px;line-height:1.25;color:#432719}
+#eatFab p{margin:0;font-size:12px;line-height:1.65;color:#80583a}
+#eatFab .eat-banner-art{width:82px;height:82px;rotate:-8deg;filter:drop-shadow(0 5px 0 #8f481422);animation:eatFloat 3s ease-in-out infinite}
+#eatFab .eat-banner-actions{grid-column:1/-1;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#eatFab .eat-launch{flex:1;min-width:150px;min-height:48px;border:0;border-radius:15px;background:#e95e30;color:#fff;padding:12px 16px;font-family:inherit;font-weight:700;font-size:15px;line-height:1.4;cursor:pointer;box-shadow:0 4px 0 #b73f1c;transition:transform .2s}
+#eatFab .eat-launch:active{transform:translateY(3px);box-shadow:0 1px 0 #b73f1c}
+#eatFab .eat-launch:focus-visible{outline:3px solid #1a73e8;outline-offset:3px}
+@keyframes eatFloat{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-6px) rotate(5deg)}}
+@media(max-width:350px){#eatFab{padding:16px;gap:10px}#eatFab .eat-banner-art{width:64px;height:64px}#eatFab h2{font-size:25px}}
 dialog.eat-pop{border:0;padding:0;border-radius:30px;width:min(calc(100% - 28px),380px);max-height:92dvh;overflow:visible;background:#fffaf0;color:#332e29;font:16px/1.6 "Sarabun","Noto Sans Thai",Tahoma,sans-serif;box-shadow:0 24px 70px #0006}
 dialog.eat-pop::backdrop{background:#241c17b3;backdrop-filter:blur(3px)}
 dialog.eat-pop[open]{animation:eatIn .55s cubic-bezier(.2,1.5,.4,1)}
@@ -285,14 +289,35 @@ dialog.eat-pop[open]{animation:eatIn .55s cubic-bezier(.2,1.5,.4,1)}
 .eat-spin:disabled{opacity:.75;cursor:wait}
 .eat-x:focus-visible,.eat-spin:focus-visible,.eat-chips button:focus-visible{outline:3px solid #1a73e8;outline-offset:2px}
 @media (prefers-color-scheme:dark){dialog.eat-pop{background:#241d17;color:#f3ebe0}.eat-chips button{border-color:#f3ebe0}.eat-chips button[aria-pressed=true]{background:#f9d35b;color:#2b1d14}.eat-tip{background:#243a2c;color:#e6f4ea}.eat-tip b{color:#8fd3a8}.eat-tip svg{stroke:#8fd3a8}}
-@media (prefers-reduced-motion:reduce){#eatFab,dialog.eat-pop[open],.eat-art.rolling,.eat-art.pop,.eat-spark,.eat-burst{animation:none!important}}
+@media (prefers-reduced-motion:reduce){#eatFab .eat-banner-art,dialog.eat-pop[open],.eat-art.rolling,.eat-art.pop,.eat-spark,.eat-burst{animation:none!important}}
 `;
     document.head.appendChild(st);
   }
 
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var type = 'ทั้งหมด', last = null, timer = null, dlg = null;
-
+  var audio = null, voices = [], spinning = false;
+  var ROLL_WORDS = ['กำลังเปิดครัวแห่งความอร่อย…','ข้าวหรือเส้นดีนะ? ให้ดวงเลือกเลย!','หมุนอีกนิด ความอร่อยใกล้มาแล้ว','พักคำว่าอะไรก็ได้ แล้วให้ใจเลือกมื้อนี้','เมนูลับของคนหิว กำลังมา!','เตรียมช้อนให้พร้อม มื้อนี้มีคำตอบ'];
+  function stopSound() { voices.forEach(function (v) { try { v.stop(); } catch (e) {} }); voices = []; }
+  function tone(freq, delay, duration) {
+    if (!audio || audio.state !== 'running') return;
+    try {
+      var o = audio.createOscillator(), g = audio.createGain(), at = audio.currentTime + delay;
+      o.type = 'sine'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(.07, at + .008); g.gain.exponentialRampToValueAtTime(.001, at + duration);
+      o.connect(g); g.connect(audio.destination); voices.push(o);
+      o.onended = function () { o.disconnect(); g.disconnect(); voices = voices.filter(function (v) { return v !== o; }); };
+      o.start(at); o.stop(at + duration + .02);
+    } catch (e) {}
+  }
+  function startSound() {
+    try {
+      var Audio = window.AudioContext || window.webkitAudioContext;
+      if (!Audio) return;
+      if (!audio) audio = new Audio();
+      audio.resume().then(function () { if (spinning) tone(520, 0, .08); }).catch(function () {});
+    } catch (e) {}
+  }
   function pool() { return MENUS.filter(function (m) { return type === 'ทั้งหมด' || m.c === type; }); }
   function pick() { var p = pool(), m; do { m = p[Math.floor(Math.random() * p.length)]; } while (m === last && p.length > 1); return m; }
   function $(id) { return document.getElementById(id); }
@@ -319,7 +344,7 @@ dialog.eat-pop[open]{animation:eatIn .55s cubic-bezier(.2,1.5,.4,1)}
     });
     dlg.querySelector('.eat-x').onclick = function () { dlg.close(); };
     dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });
-    dlg.addEventListener('close', function () { clearInterval(timer); var s = $('eatSpin'); if (s) { s.disabled = false; } $('eatArt').classList.remove('rolling'); });
+    dlg.addEventListener('close', function () { clearInterval(timer); spinning = false; stopSound(); var s = $('eatSpin'); if (s) { s.disabled = false; } $('eatArt').classList.remove('rolling'); });
     $('eatSpin').onclick = spin;
   }
 
@@ -334,6 +359,7 @@ dialog.eat-pop[open]{animation:eatIn .55s cubic-bezier(.2,1.5,.4,1)}
     }
   }
   function settle(m) {
+    spinning = false; stopSound(); tone(660, 0, .13); tone(830, .12, .13); tone(990, .24, .22);
     last = m; var artEl = $('eatArt');
     artEl.innerHTML = art(m.i); $('eatName').textContent = m.n; $('eatJoke').textContent = m.j;
     var tt = $('eatTipText'); tt.textContent = ''; var b = document.createElement('b'); b.textContent = 'เพื่อสุขภาพ: '; tt.appendChild(b); tt.appendChild(document.createTextNode(m.t));
@@ -343,14 +369,17 @@ dialog.eat-pop[open]{animation:eatIn .55s cubic-bezier(.2,1.5,.4,1)}
     var s = $('eatSpin'); s.disabled = false; s.textContent = 'สุ่มใหม่';
   }
   function spin() {
+    if (spinning) return;
+    spinning = true; startSound();
     var target = pick(), s = $('eatSpin'), artEl = $('eatArt');
     if (reduce) { settle(target); return; }
-    s.disabled = true; $('eatTip').hidden = true; $('eatJoke').textContent = '...';
+    s.disabled = true; s.textContent = 'กำลังสุ่มความอร่อย…'; $('eatTip').hidden = true; $('eatJoke').textContent = ROLL_WORDS[Math.floor(Math.random() * ROLL_WORDS.length)];
     artEl.classList.remove('pop'); artEl.classList.add('rolling');
     var p = pool(), n = 0; clearInterval(timer);
     timer = setInterval(function () {
-      n++;
-      if (n >= 12) { clearInterval(timer); settle(target); return; }
+      n++; tone(420 + n * 35, 0, .055);
+      if (n % 4 === 0) $('eatJoke').textContent = ROLL_WORDS[Math.floor(Math.random() * ROLL_WORDS.length)];
+      if (n >= 18) { clearInterval(timer); settle(target); return; }
       var r = p[Math.floor(Math.random() * p.length)]; artEl.innerHTML = art(r.i); $('eatName').textContent = r.n;
     }, 85);
   }
@@ -358,16 +387,18 @@ dialog.eat-pop[open]{animation:eatIn .55s cubic-bezier(.2,1.5,.4,1)}
 
   function wantFab() { try { return view === 'ร้านค้า' && category === 'อาหาร'; } catch (e) { return false; } }
   function syncFab() {
-    var f = $('eatFab'), want = wantFab();
+    var f = $('eatFab'), section = document.querySelector('#app .shop-selection'), want = wantFab() && section;
     if (want && !f) {
-      f = document.createElement('button'); f.id = 'eatFab'; f.type = 'button'; f.setAttribute('aria-label', 'สุ่มเมนูอาหาร กินไรดีวันนี้');
-      f.innerHTML = '<span class="hook"></span><span class="cord"></span><span class="badge">' + art('noodle') + '</span><span class="tag">กินไรดี?</span>';
-      f.onclick = openPop; document.body.appendChild(f);
+      f = document.createElement('section'); f.id = 'eatFab'; f.setAttribute('aria-labelledby', 'eatBannerTitle');
+      f.innerHTML = '<div class="eat-banner-copy"><span class="eat-banner-eyebrow">ตัวช่วยของคนเลือกไม่ถูก</span><h2 id="eatBannerTitle">จั๊ก! สิกินหยัง?</h2><p>คิดไม่ออก ให้บ้านเฮาเลือกให้<br>สุ่มเมนูถูกใจ แล้วค่อยหาร้านอร่อยใกล้บ้าน</p></div><div class="eat-banner-art" aria-hidden="true">' + art('noodle') + '</div><div class="eat-banner-actions"><button type="button" class="eat-launch">สุ่มเมนู ให้เราช่วยเลือก</button></div>';
+      f.querySelector('.eat-launch').onclick = function () { openPop(); spin(); };
+      section.before(f);
     } else if (!want && f) { f.remove(); }
+    else if (want && f && section.previousElementSibling !== f) { section.before(f); }
   }
   function startFab() {
     var app = document.getElementById('app');
-    if (app) new MutationObserver(syncFab).observe(app, { childList: true });
+    if (app) new MutationObserver(syncFab).observe(app, { childList: true, subtree: true });
     syncFab();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startFab); else startFab();
@@ -380,10 +411,6 @@ dialog.eat-pop[open]{animation:eatIn .55s cubic-bezier(.2,1.5,.4,1)}
 
   const style = document.createElement('style');
   style.textContent = `
-    #eatFab {
-      bottom: calc(240px + env(safe-area-inset-bottom)) !important;
-      z-index: 120 !important;
-    }
 
     dialog.eat-pop {
       max-height: calc(100dvh - 24px);
