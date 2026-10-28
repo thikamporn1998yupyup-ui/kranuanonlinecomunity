@@ -30,10 +30,10 @@
       '.local-poster.live-ad h3{font-size:20px;line-height:1.3;margin:6px 0 3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-shadow:0 1px 4px #0008}' +
       '.local-poster.live-ad p{font-size:12px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-shadow:0 1px 3px #0008}' +
       '.local-poster.live-ad .poster-action{margin-top:8px}' +
-      '#liveAdDialog.has-image{display:grid;background:#171717;color:#fff}' +
-      '#liveAdDialog.has-image .live-pop-img{grid-area:1/1;min-width:0;min-height:280px}' +
-      '#liveAdDialog.has-image .live-pop-img img{min-height:100%}' +
-      '#liveAdDialog.has-image .poster-dialog-body{grid-area:1/1;align-self:end;position:relative;min-width:0;padding:56px 18px 16px;background:linear-gradient(to top,rgba(0,0,0,.94) 0%,rgba(0,0,0,.72) 65%,rgba(0,0,0,0) 100%)}' +
+      '#liveAdDialog.has-image{background:#171717;color:#fff}' +
+      '#liveAdDialog.has-image .live-pop-img{min-width:0}' +
+      '#liveAdDialog.has-image .live-pop-img img{height:auto;max-height:none;object-fit:contain}' +
+      '#liveAdDialog.has-image .poster-dialog-body{position:relative;min-width:0;padding:18px 18px 16px;background:linear-gradient(to bottom,#242424,#080808)}' +
       '#liveAdDialog.has-image .live-pop-cap{position:static;padding:0;margin-bottom:12px;background:none;overflow-wrap:anywhere}' +
       '#liveAdDialog.has-image .poster-close{z-index:2}' +
       '.poster-dialog .live-pop-img{position:relative;background:#2b211b}' +
