@@ -30,6 +30,12 @@
       '.local-poster.live-ad h3{font-size:20px;line-height:1.3;margin:6px 0 3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-shadow:0 1px 4px #0008}' +
       '.local-poster.live-ad p{font-size:12px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-shadow:0 1px 3px #0008}' +
       '.local-poster.live-ad .poster-action{margin-top:8px}' +
+      '#liveAdDialog.has-image{display:grid;background:#171717;color:#fff}' +
+      '#liveAdDialog.has-image .live-pop-img{grid-area:1/1;min-width:0;min-height:280px}' +
+      '#liveAdDialog.has-image .live-pop-img img{min-height:100%}' +
+      '#liveAdDialog.has-image .poster-dialog-body{grid-area:1/1;align-self:end;position:relative;min-width:0;padding:56px 18px 16px;background:linear-gradient(to top,rgba(0,0,0,.94) 0%,rgba(0,0,0,.72) 65%,rgba(0,0,0,0) 100%)}' +
+      '#liveAdDialog.has-image .live-pop-cap{position:static;padding:0;margin-bottom:12px;background:none;overflow-wrap:anywhere}' +
+      '#liveAdDialog.has-image .poster-close{z-index:2}' +
       '.poster-dialog .live-pop-img{position:relative;background:#2b211b}' +
       '.poster-dialog .live-pop-img img{aspect-ratio:auto;width:100%;height:auto;max-height:68dvh;object-fit:cover;display:block}' +
       '.live-pop-cap{position:absolute;left:0;right:0;bottom:0;box-sizing:border-box;padding:56px 18px 16px;color:#fff;background:linear-gradient(to top,rgba(0,0,0,.9) 0%,rgba(0,0,0,.65) 50%,rgba(0,0,0,0) 100%)}' +
@@ -69,6 +75,7 @@
     var img = safeUrl(a.image);
     var body = el('div', 'poster-dialog-body');
     if (img) {
+      d.classList.add('has-image');
       var wrap = el('div', 'live-pop-img');
       var im = el('img'); im.src = img; im.alt = a.title || 'โฆษณา'; wrap.appendChild(im);
       if (a.tag || a.title || a.text) {
@@ -76,7 +83,7 @@
         if (a.tag) cap.appendChild(el('span', 'badge', a.tag));
         if (a.title) cap.appendChild(el('h2', '', a.title));
         if (a.text) cap.appendChild(el('p', '', a.text));
-        wrap.appendChild(cap);
+        body.appendChild(cap);
       }
       d.appendChild(wrap);
     } else {
@@ -91,7 +98,7 @@
       body.appendChild(go);
     }
     var hide = el('button', '', 'ไม่ต้องแสดงอีกวันนี้');
-    hide.style.cssText = 'width:100%;margin-top:8px;padding:10px;border:0;background:transparent;color:#85735f;font-size:12px;cursor:pointer';
+    hide.style.cssText = 'width:100%;margin-top:8px;padding:10px;border:0;background:transparent;color:' + (img ? '#fff' : '#85735f') + ';font-size:12px;cursor:pointer';
     hide.onclick = function () { try { localStorage.setItem(HIDE_KEY, todayTH()); } catch (e) {} d.close(); };
     body.appendChild(hide);
     d.appendChild(body);
