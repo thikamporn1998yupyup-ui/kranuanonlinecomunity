@@ -751,6 +751,12 @@ body.rmc-map-screen.rc-home .content .switch{margin:0 0 10px}
 .hub-home{margin-top:0!important;padding:0!important}
 /* ตอนมีงานที่รับอยู่ เหลือแค่บรรทัดระยะทาง/เวลา เพื่อไม่ให้ทับการ์ดงาน */
 body.hasbar .hub-home .sectiontitle,body.hasbar .hub-home .dash-stats{display:none!important}
+/* ตอนมีงานที่รับอยู่: การ์ดงานปักไว้ล่างจอเหนือแถบเมนู ไม่ให้ลอยไปทับหัวจอ
+   ส่วนบรรทัดระยะทาง/เวลาย้ายไปไว้ใต้ชิป "กระนวน · ขอนแก่น" ด้านบน */
+body.hasbar #jobbar:not(:empty){position:fixed!important;left:50%!important;right:auto!important;top:auto!important;bottom:calc(74px + env(safe-area-inset-bottom,0px))!important;transform:translateX(-50%)!important;width:min(calc(100% - 24px),460px)!important;margin:0!important;max-height:56vh;overflow-y:auto;z-index:1500!important}
+body.hasbar #jobbar .barcard{margin:0!important;width:100%}
+body.hasbar.rmc-map-screen.rc-home .content{top:196px!important;bottom:auto!important;max-height:none!important;padding:0 16px!important;background:none!important}
+body.hasbar #hubRoadStatus{text-align:center}
 .hub-home .sectiontitle{margin:0 0 4px!important}
 .hub-home .sectiontitle h1{color:#fff!important;text-shadow:var(--rc-sh)}
 .hub-home .pill{background:transparent!important;border:0!important;padding:0!important;color:#ffb987!important;font-size:12px!important;text-shadow:var(--rc-sh)}
