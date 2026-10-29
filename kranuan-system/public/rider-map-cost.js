@@ -67,7 +67,6 @@
     }
     var gps=current();
     if(typeof pin!=='undefined'&&pin){if(gps){if(!map.hasLayer(pin))pin.addTo(map);pin.setLatLng(gps);pin.bindTooltip('ไรเดอร์ · ตำแหน่งล่าสุด');}else if(map.hasLayer(pin))map.removeLayer(pin);}
-    if(window.RiderHubRoads){if(mapLayer){map.removeLayer(mapLayer);mapLayer=null;}return;}
     var points=gps?[gps]:[],route=[gps,j&&j.status!=='picked'?s.pickup:null,s.drop].filter(Boolean);
     var signature=JSON.stringify([j&&j.id,j&&j.status,gps,s.pickup,s.drop]);
     if(lastRoute!==signature){
@@ -83,7 +82,7 @@
     }
   }
   function update(){
-    mount();loadSettings();var visible=tab==='home'||(tab==='jobs'&&!window.RiderHubRoads);document.body.classList.toggle('rmc-map-screen',visible);panel.hidden=!visible;if(!visible)return;var bar=document.getElementById('jobbar');if(bar&&panel.nextElementSibling!==bar)panel.after(bar);
+    mount();loadSettings();var visible=tab==='home'||tab==='jobs';document.body.classList.toggle('rmc-map-screen',visible);panel.hidden=!visible;if(!visible)return;var bar=document.getElementById('jobbar');if(bar&&panel.nextElementSibling!==bar)panel.after(bar);
     var j=job(),a=active(),rows=list(),select=panel.querySelector('select'),old=select.value;
     var html=rows.length?'<option value="">เลือกงานเพื่อประเมิน</option>'+rows.map(function(x){return '<option value="'+esc(x.id)+'">'+esc(x.shop||'งาน')+(x===a?' · งานที่รับอยู่':' · ประเมินก่อนรับ')+'</option>';}).join(''):'<option value="">ยังไม่มีงาน</option>';
     if(select.innerHTML!==html)select.innerHTML=html;select.value=j?j.id:'';select.disabled=!!a||!rows.length;
@@ -95,7 +94,6 @@
     var nav=panel.querySelector('#rmcNavigate'),target=j&&(j.status==='picked'?s.drop:s.pickup);nav.hidden=!target;nav.href=target?'https://www.google.com/maps/dir/?api=1&destination='+target.join(',')+'&travelmode=driving':'#';
     mapUpdate(j,s);
   }
-  window.RiderTripUI={settings:function(){loadSettings();return Object.assign({},settings);},openSettings:openSettings};
   var previous=render;render=function(){previous();update();};render();
   var interval=setInterval(update,2000);addEventListener('pagehide',function(){clearInterval(interval);});
 })();
