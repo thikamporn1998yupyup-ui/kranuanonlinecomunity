@@ -1459,5 +1459,135 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
 </script>
+  <!-- ========================================== -->
+<!-- 🌟 ส่วนที่ 1: หน้าตาป๊อปอัป KYC -->
+<!-- ========================================== -->
+<style>
+  .kyc-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6); z-index: 99999;
+    display: none; justify-content: center; align-items: flex-end;
+    backdrop-filter: blur(3px);
+  }
+  .kyc-box {
+    background: #fff; width: 100%; max-width: 400px;
+    border-radius: 24px 24px 0 0; padding: 24px;
+    max-height: 90vh; overflow-y: auto;
+    animation: kycSlideUp 0.3s ease-out;
+  }
+  @keyframes kycSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  
+  .kyc-header { text-align: center; margin-bottom: 20px; }
+  .kyc-header h2 { font-size: 20px; color: #333; margin-bottom: 5px; font-weight: 600; }
+  .kyc-header p { font-size: 13px; color: #888; }
+  
+  .kyc-form-group { margin-bottom: 15px; }
+  .kyc-form-group label { display: block; font-size: 14px; font-weight: 500; color: #333; margin-bottom: 6px; }
+  .kyc-input {
+    width: 100%; padding: 12px 15px; border: 1px solid #ddd;
+    border-radius: 12px; font-size: 15px; outline: none; transition: border 0.2s;
+    font-family: inherit;
+  }
+  .kyc-input:focus { border-color: #D46231; background: #fffaf5; }
+  
+  .kyc-upload {
+    border: 2px dashed #ddd; border-radius: 12px; padding: 20px;
+    text-align: center; cursor: pointer; color: #888; font-size: 13px;
+  }
+  
+  .kyc-pdpa {
+    display: flex; gap: 10px; align-items: flex-start;
+    font-size: 12px; color: #888; margin-top: 20px; margin-bottom: 20px;
+  }
+  .kyc-pdpa input { margin-top: 3px; }
+  
+  .kyc-btn-submit {
+    width: 100%; padding: 16px; background: #D46231; color: #fff;
+    border: none; border-radius: 12px; font-size: 16px; font-weight: 600;
+    cursor: pointer; box-shadow: 0 4px 12px rgba(212, 98, 49, 0.3);
+  }
+  .kyc-btn-submit:active { transform: scale(0.98); }
+</style>
+
+<div class="kyc-overlay" id="kycOverlay">
+  <div class="kyc-box">
+    <div class="kyc-header">
+      <div style="font-size: 40px; margin-bottom: 10px;">🪪</div>
+      <h2>ยืนยันตัวตน</h2>
+      <p>เพื่อความปลอดภัยตามกฎหมาย PDPA <br>กรุณากรอกข้อมูลให้ครบถ้วน</p>
+    </div>
+
+    <form id="kycForm">
+      <div class="kyc-form-group">
+        <label>ชื่อ - นามสกุลจริง</label>
+        <input type="text" id="kycName" class="kyc-input" placeholder="เช่น สมชาย ใจดี" required>
+      </div>
+
+      <div class="kyc-form-group">
+        <label>เลขประจำตัวประชาชน (13 หลัก)</label>
+        <input type="text" id="kycIdCard" class="kyc-input" placeholder="x-xxxx-xxxxx-xx-x" maxlength="13" required>
+      </div>
+
+      <div class="kyc-form-group">
+        <label>เบอร์โทรศัพท์ติดต่อ</label>
+        <input type="tel" id="kycPhone" class="kyc-input" placeholder="08x-xxx-xxxx" maxlength="10" required>
+      </div>
+
+      <div class="kyc-form-group">
+        <label>รูปถ่ายบัตรประชาชน</label>
+        <div class="kyc-upload" onclick="alert('ในระบบจริงจะเปิดกล้องหรือเลือกไฟล์รูปภาพครับ')">
+          📷 คลิกเพื่อถ่ายรูป หรืออัปโหลดบัตรประชาชน
+        </div>
+      </div>
+
+      <label class="kyc-pdpa">
+        <input type="checkbox" required>
+        <span>ข้าพเจ้ายินยอมให้ระบบจัดเก็บและใช้ข้อมูลส่วนบุคคล ตามนโยบายความเป็นส่วนตัว</span>
+      </label>
+
+      <button type="submit" class="kyc-btn-submit">ยืนยันข้อมูล</button>
+    </form>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- 🌟 ส่วนที่ 2: ระบบส่งข้อมูล KYC ไปหลังบ้าน -->
+<!-- ========================================== -->
+<script>
+  function showKycModal() {
+    document.getElementById('kycOverlay').style.display = 'flex';
+  }
+
+  document.getElementById('kycForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const data = {
+      full_name: document.getElementById('kycName').value.trim(),
+      id_card: document.getElementById('kycIdCard').value.trim(),
+      phone: document.getElementById('kycPhone').value.trim()
+    };
+
+    try {
+      const response = await fetch('/api/auth/kyc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        alert('✅ ' + result.message);
+        document.getElementById('kycOverlay').style.display = 'none'; 
+        window.location.reload(); 
+      } else {
+        alert('❌ เกิดข้อผิดพลาด: ' + result.error);
+      }
+    } catch (error) {
+      alert('❌ ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+    }
+  });
+</script>
+
 </body>
 </html>
