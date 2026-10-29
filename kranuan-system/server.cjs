@@ -130,16 +130,24 @@ async function api(req,res,url){
    return send(res,200,newSession(res,user.id));
  }
 
- // 🌟 API สำหรับรับข้อมูล KYC
  if(p==='/api/auth/kyc'&&method==='POST'){
-   needUser(u);
-   const fullName = required(b.full_name,'ชื่อ-นามสกุล',100);
-   const idCard = required(b.id_card,'เลขบัตรประชาชน',13);
-   const phone = required(b.phone,'เบอร์โทรศัพท์',10);
-   // (ในระบบจริงควร Validate เลขบัตร 13 หลักด้วย)
-   
-   run('UPDATE users SET name=?, id_card=?, phone_number=?, kyc_status=? WHERE id=?', fullName, idCard, phone, 'pending_review', u.id);
-   return send(res,200,{ok:true, message:'ส่งข้อมูลยืนยันตัวตนสำเร็จ รอเจ้าหน้าที่ตรวจสอบ'});
+   try {
+     needUser(u);
+     const fullName = required(b.full_name,'ชื่อ-นามสกุล',100);
+     const idCard = required(b.id_card,'เลขบัตรประชาชน',13);
+     const phone = required(b.phone,'เบอร์โทรศัพท์',10);
+     
+     // 🌟 สร้างคอลัมน์อัตโนมัติ (ถ้ายังไม่มีใน Database)
+     try { db.exec("ALTER TABLE users ADD COLUMN id_card TEXT"); } catch(e) {}
+     try { db.exec("ALTER TABLE users ADD COLUMN phone_number TEXT"); } catch(e) {}
+     try { db.exec("ALTER TABLE users ADD COLUMN kyc_status TEXT DEFAULT 'unverified'"); } catch(e) {}
+
+     run('UPDATE users SET name=?, id_card=?, phone_number=?, kyc_status=? WHERE id=?', fullName, idCard, phone, 'pending_review', u.id);
+     return send(res,200,{ok:true, message:'ส่งข้อมูลยืนยันตัวตนสำเร็จ รอเจ้าหน้าที่ตรวจสอบ'});
+   } catch (err) {
+     console.error("KYC Error:", err.message);
+     return send(res, 500, { error: err.message }); // โชว์ Error ที่แท้จริงให้หน้าบ้านเห็น
+   }
  }
 
  if(p==='/api/shops'&&method==='GET')return send(res,200,all('SELECT * FROM shops ORDER BY accepting DESC, name ASC').map(s=>{const v=shopView(s);delete v.survey_note;delete v.verified_by;return v}));
