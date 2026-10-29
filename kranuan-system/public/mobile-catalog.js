@@ -35,14 +35,15 @@ function serviceDirectoryRows(type,term){
  const q=(term||'').trim().toLocaleLowerCase('th');
  return liveShops.filter(s=>s.category==='บริการ'&&(type==='all'||inferService(s)===type)&&((s.name||'')+' '+(s.address||'')+' '+(s.phone||'')+' '+serviceTypes.find(t=>t[0]===inferService(s))[1]).toLocaleLowerCase('th').includes(q));
 }
+function serviceDirectoryEscape(value){return String(value==null?'':value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function drawServiceDirectory(){
  const d=document.getElementById('serviceDirectoryDialog');if(!d||!d.open)return;
  const rows=serviceDirectoryRows(serviceDialogType,serviceDialogSearch),grid=d.querySelector('.service-provider-grid');
  d.querySelector('[data-service-count]').textContent=rows.length+' ราย';
  grid.innerHTML=rows.map(s=>{
-  const name=C.esc(s.name||'ผู้ให้บริการ'),label=serviceTypes.find(t=>t[0]===inferService(s))[1];
+  const name=serviceDirectoryEscape(s.name||'ผู้ให้บริการ'),label=serviceTypes.find(t=>t[0]===inferService(s))[1];
   const cover=s.image_url||(mobileCatalog.get(s.id)?.images||[])[0]||'';
-  return '<article class="service-provider"><div class="service-provider-photo">'+(cover?'<img src="'+C.esc(cover)+'" alt="'+name+'" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false">':'')+'<span class="service-provider-placeholder" '+(cover?'hidden':'')+'>'+serviceIcon(inferService(s))+'</span></div>'+(s.verification==='verified'?'<span class="service-provider-verified" title="ตรวจสอบข้อมูลแล้ว" aria-label="ตรวจสอบข้อมูลแล้ว">✓</span>':'')+'<div class="service-provider-copy"><h3>'+name+'</h3><span class="service-provider-more">ดูข้อมูล ↗</span></div><button type="button" class="service-provider-open" data-service-detail="'+C.esc(s.id)+'" aria-label="ดูรายละเอียด '+name+'"></button></article>';
+  return '<article class="service-provider"><div class="service-provider-photo">'+(cover?'<img src="'+serviceDirectoryEscape(cover)+'" alt="'+name+'" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false">':'')+'<span class="service-provider-placeholder" '+(cover?'hidden':'')+'>'+serviceIcon(inferService(s))+'</span></div>'+(s.verification==='verified'?'<span class="service-provider-verified" title="ตรวจสอบข้อมูลแล้ว" aria-label="ตรวจสอบข้อมูลแล้ว">✓</span>':'')+'<div class="service-provider-copy"><h3>'+name+'</h3><span class="service-provider-more">ดูข้อมูล ↗</span></div><button type="button" class="service-provider-open" data-service-detail="'+serviceDirectoryEscape(s.id)+'" aria-label="ดูรายละเอียด '+name+'"></button></article>';
 
  }).join('')||'<div class="service-directory-empty"><b>'+(centralReady?'ยังไม่พบผู้ให้บริการ':'กำลังโหลดข้อมูล')+'</b><p>'+(serviceDialogSearch?'ลองเปลี่ยนคำค้น หรือค้นหาด้วยชื่อและเบอร์โทร':'หมวดนี้ยังไม่มีข้อมูลผู้ให้บริการ ลองเลือกหมวดอื่นได้ค่ะ')+'</p></div>';
  grid.querySelectorAll('[data-service-detail]').forEach(b=>b.onclick=()=>openCentralShop(b.dataset.serviceDetail));

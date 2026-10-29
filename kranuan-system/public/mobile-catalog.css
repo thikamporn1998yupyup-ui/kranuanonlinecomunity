@@ -57,3 +57,8 @@ dialog.service-directory::backdrop{background:#211a14a8;backdrop-filter:blur(4px
 .service-provider-verified{position:absolute;top:7px;right:7px;z-index:2;display:grid;place-items:center;width:19px;height:19px;border-radius:50%;background:#e2f4d8;color:#267145;font-size:12px;font-weight:700;pointer-events:none}
 @media(max-width:350px){.service-provider-grid{gap:7px;padding-inline:9px}.service-provider-copy{padding:8px 6px}.service-provider h3{font-size:11px}.service-provider-more{font-size:9px}}
 @media(min-width:600px){.service-provider-copy{padding:16px;gap:8px}.service-provider h3{font-size:18px}.service-provider-more{font-size:12px}.service-provider-verified{top:12px;right:12px;width:25px;height:25px;font-size:15px}}
+
+/* Card ratio fallback: absolute children must not collapse on older mobile WebViews. */
+dialog.service-directory{width:calc(100% - 16px);width:min(960px,calc(100% - 16px));max-height:90vh;max-height:90dvh}
+.service-provider{aspect-ratio:auto}
+.service-provider::before{content:"";display:block;padding-top:133.333333%}
