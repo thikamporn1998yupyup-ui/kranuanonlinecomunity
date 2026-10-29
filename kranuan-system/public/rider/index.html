@@ -747,6 +747,10 @@ body.rmc-map-screen.rc-home .content #screen:empty{display:none}
 body.rmc-map-screen.rc-home .content .switch{margin:0 0 10px}
 /* หน้าหลัก "วันนี้ของคุณ": ไม่มีกรอบ ใช้ตัวหนังสือขาวมีเงาดำ บนพื้นไล่เฉดดำ */
 .hub-home,#hubRoadStatus{background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important}
+/* rider-hub.css ดัน .hub-home ลงไปเท่าความสูงแผนที่ (margin-top) และใส่พื้นทึบ — นี่คือสาเหตุของ "สี่เหลี่ยมบังแผนที่" */
+.hub-home{margin-top:0!important;padding:0!important}
+/* ตอนมีงานที่รับอยู่ เหลือแค่บรรทัดระยะทาง/เวลา เพื่อไม่ให้ทับการ์ดงาน */
+body.hasbar .hub-home .sectiontitle,body.hasbar .hub-home .dash-stats{display:none!important}
 .hub-home .sectiontitle{margin:0 0 4px!important}
 .hub-home .sectiontitle h1{color:#fff!important;text-shadow:var(--rc-sh)}
 .hub-home .pill{background:transparent!important;border:0!important;padding:0!important;color:#ffb987!important;font-size:12px!important;text-shadow:var(--rc-sh)}
