@@ -795,70 +795,66 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
 <!-- ========================================== -->
-<!-- 🌟 สคริปต์คุมระบบ LINE และ KYC (ตัวจริง) 🌟 -->
+<!-- 🌟 สคริปต์ทำลายลูป LINE (ขั้นเด็ดขาด) 🌟 -->
 <!-- ========================================== -->
 <script>
   (function() {
     const isManualLogout = localStorage.getItem('kranuan_manual_logout') === 'true';
 
-    // ----------------------------------------------------
-    // ภารกิจที่ 1: จัดการเรื่องการกดออกจากระบบ (Logout Loop)
-    // ----------------------------------------------------
+    // 1. ถ้าผู้ใช้กดออกจากระบบไปแล้ว
     if (isManualLogout) {
-      // 1.1 ถ้าเพิ่งกดออกจากระบบ ให้บังคับ LIFF ออกจากระบบด้วย (สำคัญมาก!)
-      if (window.liff && liff.isLoggedIn()) {
-        liff.logout();
-      }
+      console.log("🚫 สถานะ: ออกจากระบบแล้ว (บล็อก LINE)");
       
-      // 1.2 ล้าง Cookie ฝั่งเซิร์ฟเวอร์อีกครั้งเพื่อความชัวร์
-      fetch('/api/logout', { method: 'POST' });
+      // 1.1 ทำลาย Object LINE LIFF ทิ้งซะ เพื่อไม่ให้มันดึงข้อมูลอัตโนมัติ
+      window.liff = null; 
+      window.liffInit = null;
 
-      // 1.3 ดักจับปุ่ม Login: ถ้าผู้ใช้กดปุ่ม Login เอง ให้ล้างค่าออกแล้วให้ล็อกอิน
+      // 1.2 ดักไม่ให้ยิง API ขอล็อกอินซ้ำ
+      const originalFetch = window.fetch;
+      window.fetch = async function(...args) {
+        const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
+        if (url.includes('/api/auth/line')) {
+           return new Response(JSON.stringify({ error: 'manual_logout' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+        }
+        return originalFetch.apply(this, args);
+      };
+
+      // 1.3 ถ้าผู้ใช้กดปุ่ม Login เอง ให้ล้างค่าอนุญาตให้เข้าใหม่
       document.addEventListener('click', function(e) {
-        const btnText = e.target.innerText || '';
-        if (btnText.includes('เข้าสู่ระบบ') || btnText.includes('Login') || btnText.includes('LINE')) {
+        const text = e.target.innerText || '';
+        if (text.includes('เข้าสู่ระบบ') || text.includes('Login') || text.includes('LINE')) {
           localStorage.removeItem('kranuan_manual_logout');
+          window.location.reload();
         }
       }, true);
       
-      // ถ้าออกจากระบบแล้ว ก็ไม่ต้องไปเช็ค KYC ต่อ
-      return; 
+      return; // จบการทำงาน ไม่ต้องเช็ค KYC ต่อ
     }
 
-    // ----------------------------------------------------
-    // ภารกิจที่ 2: เช็คสถานะ KYC ว่าต้องเด้งป๊อปอัปไหม
-    // ----------------------------------------------------
+    // 2. ถ้าล็อกอินปกติ ให้เช็ค KYC
     setTimeout(async () => {
       try {
         const res = await fetch('/api/session');
         const data = await res.json();
         
-        // ถ้ามี User ล็อกอินอยู่ และยังไม่ได้ยืนยันตัวตน (unverified)
         if (data.user && data.user.kyc_status === 'unverified') {
-          if (typeof showKycModal === 'function') {
-            showKycModal(); // เด้งป๊อปอัป KYC
-          }
+          // 🌟 เปลี่ยนจากป๊อปอัป เป็นการเด้งไปหน้าลงทะเบียน (register.html) เลย
+          window.location.href = '/register.html'; 
         }
-      } catch (err) {
-        console.log("ยังไม่ได้ล็อกอิน");
-      }
+      } catch (err) {}
     }, 1000); 
 
-    // ----------------------------------------------------
-    // ภารกิจเสริม: ดักจับตอนกด Logout ให้จำค่าทันที
-    // ----------------------------------------------------
+    // 3. ดักจับตอนกด Logout
     const originalFetch = window.fetch;
     window.fetch = async function(...args) {
       const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
       if (url.includes('/api/logout')) {
         localStorage.setItem('kranuan_manual_logout', 'true');
+        if (window.liff) { try { liff.logout(); } catch(e) {} }
       }
       return originalFetch.apply(this, args);
     };
-
   })();
 </script>
-<!-- ========================================== -->
-
 </body>
 </html>
