@@ -39,7 +39,12 @@ function audit(u,action,target){run('INSERT INTO audit(actor_id,action,target,cr
 function adsToday(){return new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Bangkok'})}
 function adView(a,admin){const img=a.image_url.startsWith('data:')?'/api/ads/'+a.id+'/image?v='+encodeURIComponent(a.updated_at):a.image_url;const v={id:a.id,kind:a.kind,title:a.title,text:a.text,tag:a.tag,image:img,link:a.link_url,linkLabel:a.link_label};if(admin)Object.assign(v,{enabled:!!a.enabled,start_date:a.start_date,end_date:a.end_date,sort_order:a.sort_order});return v}
 function adsPublic(){const t=adsToday();return all('SELECT * FROM ads WHERE enabled=1 ORDER BY sort_order,created_at').filter(a=>(!a.start_date||t>=a.start_date)&&(!a.end_date||t<=a.end_date)).map(a=>adView(a))}
-function shopView(s){return {...s,image_url:(s.image_url||'').startsWith('data:')?'':s.image_url,opt_in:!!s.opt_in,accepting:!!s.accepting}}
+
+// 🌟 [แก้ไขจุดที่ 1] คืนชีพให้รูปร้านค้า โดยส่งเป็นลิงก์ API แทน Base64
+function shopView(s){
+    const img = s.image_url ? (s.image_url.startsWith('data:') ? '/api/shops/'+s.id+'/image' : s.image_url) : '';
+    return {...s, image_url: img, opt_in:!!s.opt_in, accepting:!!s.accepting}
+}
 function orderView(o,u){const snap=JSON.parse(o.snapshot);return {rider:staffApi.publicInfo(o.rider_id),id:o.id,shop_id:o.shop_id,rider_id:o.rider_id,status:o.status,customer_id:o.customer_id,seller_id:snap.seller_id||null,listingId:snap.listing_id||null,paymentMethod:snap.payment_method||null,type:o.kind,passenger_count:snap.passenger_count||null,service_label:o.kind==='ride'?'รับ–ส่งผู้โดยสาร':o.kind==='parcel'?'รับ–ส่งของ':'อาหารจากร้าน',shop:snap.shop,shop_image_url:(snap.shop_image_url||'').startsWith('data:')?'':snap.shop_image_url,product_image_url:(snap.items?.[0]?.image_url||'').startsWith('data:')?'':snap.items?.[0]?.image_url,items:(snap.items||[]).map(i=>({...i,image_url:(i.image_url||'').startsWith('data:')?'':i.image_url})),item:snap.items?.map(i=>i.name+' × '+i.quantity).join(', ')||snap.description,pickup:o.pickup,pickup_phone:snap.seller_phone||snap.shop_phone||'',pickup_lat:snap.pickup_lat??null,pickup_lng:snap.pickup_lng??null,dropoff:o.dropoff,customer_name:o.customer_name,phone:u.role==='rider'&&o.rider_id!==u.id?'':o.phone,dropoff_lat:o.lat,dropoff_lng:o.lng,note:o.note,image:o.image,insideImage:o.inside_image,goods_total:o.goods_satang/100,fee:o.fee_satang/100,deliveryFee:o.fee_satang/100,total:(o.goods_satang+o.fee_satang)/100,created_at:o.created_at,updated_at:o.updated_at,order_mode:snap.order_mode}}
 function visibleOrders(u){if(u.role==='admin')return all('SELECT * FROM orders ORDER BY created_at DESC LIMIT 300');if(u.role==='merchant')return all("SELECT * FROM orders WHERE shop_id=? OR (kind='market' AND json_extract(snapshot,'$.seller_id')=?) ORDER BY created_at DESC LIMIT 100",u.shop_id,u.id);if(u.role==='rider')return all("SELECT * FROM orders WHERE rider_id=? OR (status='ready' AND rider_id IS NULL AND (kind<>'ride' OR ?=1)) ORDER BY created_at DESC LIMIT 20",u.id,u.accepts_rides?1:0);return all("SELECT * FROM orders WHERE customer_id=? OR (kind='market' AND json_extract(snapshot,'$.seller_id')=?) ORDER BY created_at DESC LIMIT 100",u.id,u.id)}
 function canReadOrder(u,o){return u.role==='admin'||o.customer_id===u.id||o.rider_id===u.id||(u.role==='merchant'&&o.shop_id===u.shop_id)||(o.kind==='market'&&JSON.parse(o.snapshot).seller_id===u.id)}
@@ -116,15 +121,43 @@ async function api(req,res,url){
  checkOrigin(req);let u=session(req);const method=req.method,p=url.pathname;limit(req,p==='/api/login'?'login':'api:'+(u?.id||'public'),p==='/api/login'?10:240);
  if(p==='/api/session'&&method==='POST'){if(u)return send(res,200,{user:publicUser(u),csrf:u.csrf});const uid=id();run('INSERT INTO users(id,role,name,created_at) VALUES(?,?,?,?)',uid,'customer','ลูกค้ากระนวน',now());return send(res,201,newSession(res,uid))}
  if(p==='/api/shops'&&method==='GET')return send(res,200,all('SELECT * FROM shops ORDER BY accepting DESC, name ASC').map(s=>{const v=shopView(s);delete v.survey_note;delete v.verified_by;return v}));
- if(p==='/api/menus'&&method==='GET'){const shopId=required(url.searchParams.get('shop'),'ร้าน');return send(res,200,all('SELECT id,shop_id,name,price_satang,image_url,available FROM menus WHERE shop_id=? ORDER BY name',shopId).map(m=>({...m,image_url:(m.image_url||'').startsWith('data:')?'':m.image_url,price:m.price_satang/100,available:!!m.available})))}
+ 
+ // 🌟 [แก้ไขจุดที่ 2] คืนชีพให้รูปเมนูอาหาร
+ if(p==='/api/menus'&&method==='GET'){const shopId=required(url.searchParams.get('shop'),'ร้าน');return send(res,200,all('SELECT id,shop_id,name,price_satang,image_url,available FROM menus WHERE shop_id=? ORDER BY name',shopId).map(m=>{const img = m.image_url ? (m.image_url.startsWith('data:') ? '/api/menus/'+m.id+'/image' : m.image_url) : '';return {...m,image_url:img,price:m.price_satang/100,available:!!m.available}}))}
+ 
  if(p==='/api/config'&&method==='GET')return send(res,200,{delivery_fee:Number(process.env.DELIVERY_FEE_THB||25),ride_fee:Number(process.env.RIDE_FEE_THB||process.env.DELIVERY_FEE_THB||25),ride_passenger_limit:1});
 
- if(p==='/api/catalog'&&method==='GET'){const pictures=all("SELECT shop_id,name,image_url FROM menus ORDER BY available DESC,name");const ratings=all('SELECT shop_id,COUNT(*) AS review_count,ROUND(AVG(rating),1) AS rating FROM shop_reviews GROUP BY shop_id');return send(res,200,all('SELECT id,image_url FROM shops').map(s=>({id:s.id,menu_names:pictures.filter(m=>m.shop_id===s.id).map(m=>m.name).slice(0,100),images:[...new Set([(s.image_url||'').startsWith('data:')?'':s.image_url,...pictures.filter(m=>m.shop_id===s.id).map(m=>(m.image_url||'').startsWith('data:')?'':m.image_url)].filter(Boolean))].slice(0,3),rating:ratings.find(r=>r.shop_id===s.id)?.rating??null,review_count:ratings.find(r=>r.shop_id===s.id)?.review_count||0})))}
+ // 🌟 [แก้ไขจุดที่ 3] คืนชีพให้รูปในหน้าแคตตาล็อกหลัก
+ if(p==='/api/catalog'&&method==='GET'){
+     const pictures=all("SELECT id,shop_id,name,image_url FROM menus ORDER BY available DESC,name");
+     const ratings=all('SELECT shop_id,COUNT(*) AS review_count,ROUND(AVG(rating),1) AS rating FROM shop_reviews GROUP BY shop_id');
+     return send(res,200,all('SELECT id,image_url FROM shops').map(s=>{
+         const sImg = s.image_url ? (s.image_url.startsWith('data:') ? '/api/shops/'+s.id+'/image' : s.image_url) : '';
+         const mImgs = pictures.filter(m=>m.shop_id===s.id).map(m => m.image_url ? (m.image_url.startsWith('data:') ? '/api/menus/'+m.id+'/image' : m.image_url) : '').filter(Boolean);
+         return {
+             id:s.id,
+             menu_names:pictures.filter(m=>m.shop_id===s.id).map(m=>m.name).slice(0,100),
+             images:[...new Set([sImg, ...mImgs])].slice(0,3),
+             rating:ratings.find(r=>r.shop_id===s.id)?.rating??null,
+             review_count:ratings.find(r=>r.shop_id===s.id)?.review_count||0
+         }
+     }))
+ }
+ 
  if(p==='/api/shop-reviews'&&method==='GET'){const sid=required(url.searchParams.get('shop'),'ร้าน');return send(res,200,all('SELECT rating,comment,created_at FROM shop_reviews WHERE shop_id=? ORDER BY created_at DESC LIMIT 20',sid))}
  const publicRiderPhoto=p.match(/^\/api\/riders\/([^/]+)\/photo\/(avatar|p[0-3])$/);if(publicRiderPhoto&&method==='GET'){const image=staffApi.publicPhoto(publicRiderPhoto[1],publicRiderPhoto[2]);if(!image)fail(404,'ยังไม่เผยแพร่รูปนี้');const match=image.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);if(!match)fail(404,'รูปไม่พร้อมใช้งาน');res.writeHead(200,{'Content-Type':match[1],'Cache-Control':'private, no-store'});return res.end(Buffer.from(match[2],'base64'))}
  if(p==='/api/riders'&&method==='GET')return send(res,200,{riders:staffApi.publicList(),vip:{available:false,price:299,currency:'THB',billing_period:null}});
  if(p==='/api/ads'&&method==='GET')return send(res,200,{ads:adsPublic()});
  const adImg=p.match(/^\/api\/ads\/([A-Za-z0-9-]+)\/image$/);if(adImg&&method==='GET'){const row=get('SELECT image_url FROM ads WHERE id=?',adImg[1]),m=row&&row.image_url.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);if(!m)fail(404,'ไม่พบรูปโฆษณา');res.writeHead(200,{'Content-Type':m[1],'Cache-Control':'public, max-age=86400'});return res.end(Buffer.from(m[2],'base64'))}
+
+ // 🌟 [เพิ่มจุดที่ 4] สร้าง API สำหรับเสิร์ฟรูปภาพร้านค้าแบบ Base64
+ const shopImg=p.match(/^\/api\/shops\/([^/]+)\/image$/);
+ if(shopImg&&method==='GET'){const row=get('SELECT image_url FROM shops WHERE id=?',shopImg[1]),m=row&&row.image_url.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);if(!m)fail(404,'ไม่พบรูปภาพร้านค้า');res.writeHead(200,{'Content-Type':m[1],'Cache-Control':'public, max-age=86400'});return res.end(Buffer.from(m[2],'base64'))}
+ 
+ // 🌟 [เพิ่มจุดที่ 5] สร้าง API สำหรับเสิร์ฟรูปภาพเมนูแบบ Base64
+ const menuImg=p.match(/^\/api\/menus\/([^/]+)\/image$/);
+ if(menuImg&&method==='GET'){const row=get('SELECT image_url FROM menus WHERE id=?',menuImg[1]),m=row&&row.image_url.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);if(!m)fail(404,'ไม่พบรูปภาพเมนู');res.writeHead(200,{'Content-Type':m[1],'Cache-Control':'public, max-age=86400'});return res.end(Buffer.from(m[2],'base64'))}
+
  if(p==='/api/health')return send(res,200,{ok:true});
  needUser(u);
  if(!['GET','HEAD'].includes(method)&&req.headers['x-csrf-token']!==u.csrf)fail(403,'เซสชันเปลี่ยน กรุณาโหลดหน้าใหม่');
