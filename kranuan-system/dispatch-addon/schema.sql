@@ -7,3 +7,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS dispatch_one_fare ON dispatch_payments(order_i
 CREATE TABLE IF NOT EXISTS dispatch_notices(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,order_id TEXT,kind TEXT NOT NULL,title TEXT NOT NULL,body TEXT NOT NULL,created_at TEXT NOT NULL,read_at TEXT);
 
 CREATE UNIQUE INDEX IF NOT EXISTS dispatch_unique_bank_ref ON dispatch_payments(rider_id,bank_reference) WHERE state='confirmed' AND bank_reference<>'';
+
+CREATE TABLE IF NOT EXISTS dispatch_food_receipts(order_id TEXT PRIMARY KEY,customer_id TEXT NOT NULL,rider_id TEXT NOT NULL,amount_satang INTEGER NOT NULL,state TEXT NOT NULL DEFAULT 'reported',note TEXT NOT NULL DEFAULT '',slip TEXT NOT NULL DEFAULT '',reported_at TEXT NOT NULL,confirmed_at TEXT,confirmed_by TEXT,decision_note TEXT NOT NULL DEFAULT '');
+CREATE UNIQUE INDEX IF NOT EXISTS dispatch_one_collection ON dispatch_payments(order_id) WHERE purpose IN ('collection','collection_cash') AND state<>'void';
+
+CREATE INDEX IF NOT EXISTS dispatch_message_order_time ON dispatch_messages(order_id,created_at);
+CREATE INDEX IF NOT EXISTS dispatch_payment_order_time ON dispatch_payments(order_id,created_at);
+CREATE INDEX IF NOT EXISTS dispatch_notice_user_time ON dispatch_notices(user_id,created_at);
