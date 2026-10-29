@@ -768,5 +768,23 @@ body.rmc-map-screen .topbar small{text-shadow:0 1px 2px rgba(0,0,0,.6)}
   setTimeout(resizeMap,1500);setTimeout(resizeMap,3500);
 })();
 </script>
+<style id="rc-hide-empty-route-css">#hubRoadStatus[data-rc-empty]{display:none!important}</style>
+<script id="rc-hide-empty-route">
+/* ซ่อนกล่อง #hubRoadStatus (สร้างจาก rider-hub.js) ตอนที่ยังไม่มีงาน คือข้อความ "รับงานแล้วจะแสดงเส้นทางถนนบนแผนที่"
+   พอรับงาน ข้อความจะเปลี่ยนเป็นระยะทาง/เวลา กล่องจะกลับมาเอง   ลบทั้งก้อนนี้เพื่อย้อนกลับ */
+(function(){
+  var KEY='รับงานแล้วจะแสดง';
+  function sweep(){
+    var el=document.getElementById('hubRoadStatus');
+    if(!el)return;
+    var empty=(el.textContent||'').indexOf(KEY)>-1;
+    if(empty&&!el.hasAttribute('data-rc-empty'))el.setAttribute('data-rc-empty','');
+    else if(!empty&&el.hasAttribute('data-rc-empty'))el.removeAttribute('data-rc-empty');
+  }
+  /* MutationObserver รันก่อนวาดหน้าจอ จึงไม่เห็นกล่องแวบขึ้นมาตอนหน้า re-render */
+  try{new MutationObserver(sweep).observe(document.body,{childList:true,subtree:true,characterData:true})}catch(e){}
+  setInterval(sweep,500);sweep();
+})();
+</script>
 </body>
 </html>
