@@ -124,17 +124,110 @@
   function schedule() {
     if (queued) return;
     queued = true;
-    requestAnimationFrame(function () { queued = false; mountButton(); syncScene(); });
+    requestAnimationFrame(function () { queued = false; mountButton(); syncScene(); relayout(); });
   }
 
   new MutationObserver(schedule).observe(body, {
-    subtree: true, childList: true, attributes: true, attributeFilter: ['class']
+    subtree: true, childList: true, attributes: true, attributeFilter: ['class'], characterData: true
   });
   document.addEventListener('click', function (e) {
     if (e.target.closest && e.target.closest('.nav')) setTimeout(syncScene, 60);
   });
   mountButton();
   syncScene();
+  relayout();
+
+
+  /* ---------- 6) จัดหน้าใหม่ (อิงโครงสร้างจริงของ rider-map-cost.js) ----------
+     - แถบบน: ปุ่มสลับออนไลน์/ออฟไลน์ + ยอดจากงานสำเร็จวันนี้
+     - ปุ่ม "ตั้งต้นทุน" ซ่อนจากการ์ดวิ่งคุ้มไหม แล้วไปกดได้จากหน้าตั้งค่า */
+  var css = document.createElement('style');
+  css.textContent =
+    'body.isan .topbar{flex-wrap:wrap}' +
+    '.isan-dock{flex:0 0 100%;display:flex;gap:8px;align-items:stretch;padding:8px 0 0}' +
+    '.isan-dock .isan-tg{flex:1;min-height:46px;display:flex;align-items:center;justify-content:center;gap:10px;' +
+    'border-radius:16px;font:600 15px Mitr,Seed,sans-serif;border:1px solid var(--ln2);background:var(--chip);' +
+    'color:var(--tx2);cursor:pointer;padding:0 12px}' +
+    '.isan-tg i{width:10px;height:10px;border-radius:50%;background:var(--tx2);flex:none}' +
+    '.isan-tg.on{background:rgba(var(--okrgb),.16);border-color:rgba(var(--okrgb),.55);color:var(--ok)}' +
+    '.isan-tg.on i{background:var(--ok);box-shadow:0 0 10px var(--ok)}' +
+    '.isan-fare{flex:none;min-width:112px;padding:6px 12px;border-radius:16px;border:1px solid var(--ln2);' +
+    'background:var(--chip);display:flex;flex-direction:column;justify-content:center}' +
+    '.isan-fare[hidden]{display:none}' +
+    '.isan-fare span{font-size:10px;color:var(--tx2);line-height:1.2}' +
+    '.isan-fare b{font:500 17px Mitr,Seed,sans-serif;color:var(--ac2)}' +
+    '.isan-hide{display:none!important}' +
+    'body.isan .switch:has(>button[data-act="toggle"]){display:none}' +
+    /* ให้เข้ากับเลย์เอาต์แผนที่เต็มจอของ rider-map-cost */
+    'body.isan.rmc-map-screen .content{padding-top:0!important}' +
+    'body.isan.rmc-map-screen .maptop{top:136px!important}' +
+    'body.isan.rmc-map-screen .topbar strong{color:var(--tx)}' +
+    'body.isan.rmc-map-screen .topbar small{color:var(--ac2)}' +
+    'body.isan.rmc-map-screen #realMapContainer{opacity:.9!important;visibility:visible!important;pointer-events:auto!important}' +
+    'body.isan.rmc-map-screen #realMapContainer:after{background:linear-gradient(to bottom,rgba(255,243,220,.9),rgba(255,243,220,.1) 28%,transparent 50%,rgba(255,243,220,.55) 82%,transparent)}' +
+    'body.isan.dark.rmc-map-screen #realMapContainer:after{background:linear-gradient(to bottom,rgba(7,12,30,.92),rgba(7,12,30,.1) 28%,transparent 50%,rgba(7,12,30,.55) 82%,transparent)}';
+  document.head.appendChild(css);
+
+  var dock = null, tg = null, fare = null, fareV = null;
+
+  function ensureDock() {
+    var tb = document.querySelector('.topbar');
+    if (!tb) return;
+    if (!dock || !dock.isConnected) {
+      dock = document.createElement('div');
+      dock.className = 'isan-dock';
+      dock.innerHTML =
+        '<button type="button" class="isan-tg" data-act="toggle"><i></i><span></span></button>' +
+        '<div class="isan-fare" hidden><span>ค่ารอบจากงานสำเร็จ · วันนี้</span><b>—</b></div>';
+      tb.appendChild(dock);
+      tg = dock.querySelector('.isan-tg');
+      fare = dock.querySelector('.isan-fare');
+      fareV = fare.querySelector('b');
+    }
+    var on = !!document.querySelector('#topStatus.on');
+    tg.classList.toggle('on', on);
+    var t = on ? 'ออนไลน์ · แตะเพื่อปิด' : 'ออฟไลน์ · แตะเพื่อเปิด';
+    var sp = tg.lastChild;
+    if (sp.textContent !== t) sp.textContent = t;
+  }
+
+  /* ยอดรวมจากงานที่ส่งสำเร็จวันนี้ (ใช้ฟังก์ชันเดิมของแอป ไม่แก้ข้อมูล) */
+  function showEarnings() {
+    if (!dock) return;
+    if (typeof done !== 'function' || typeof isToday !== 'function' || typeof sum !== 'function') return;
+    var d = done().filter(function (j) { return isToday(j.delivered_at); });
+    var v = sum(d);
+    var txt = (typeof baht === 'function') ? baht(v) : Number(v).toLocaleString('th-TH') + ' บาท';
+    if (fareV.textContent !== txt) fareV.textContent = txt;
+    fare.hidden = false;
+  }
+
+  /* ปุ่มตั้งต้นทุนตัวจริง ([data-rmc-settings]) อยู่ในการ์ดวิ่งคุ้มไหม:
+     ซ่อนไว้ แล้วทำปุ่มในหน้าตั้งค่าที่กดส่งต่อให้ตัวจริง */
+  function relayoutCost() {
+    var src = document.querySelector('[data-rmc-settings]');
+    if (!src) return;
+    src.classList.add('isan-hide');
+    if (body.getAttribute('data-scene') !== 'settings') return;
+    var scr = document.querySelector('#screen');
+    if (!scr || scr.querySelector('#isanCostCard')) return;
+    var c = document.createElement('div');
+    c.className = 'card';
+    c.id = 'isanCostCard';
+    c.innerHTML = '<h2>ต้นทุนการวิ่ง</h2>' +
+      '<span class="muted">ตั้งต้นทุนรถ เพื่อให้ระบบประเมินว่างานนี้วิ่งคุ้มไหม</span>' +
+      '<button type="button" class="secondary full" style="margin-top:10px">ตั้งต้นทุน</button>';
+    var after = scr.querySelector('.sectiontitle');
+    scr.insertBefore(c, after ? after.nextSibling : scr.firstChild);
+    c.querySelector('button').addEventListener('click', function () {
+      var s = document.querySelector('[data-rmc-settings]');
+      if (s) s.click();
+    });
+  }
+
+  function relayout() {
+    try { ensureDock(); showEarnings(); relayoutCost(); } catch (e) { /* ไม่ให้ธีมพังเพราะส่วนนี้ */ }
+  }
 
   /* ---------- 5) ฝูงนกบิน ---------- */
   var BIRD =
