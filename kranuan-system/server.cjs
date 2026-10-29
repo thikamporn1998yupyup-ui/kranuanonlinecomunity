@@ -104,6 +104,27 @@ const marketApi=require('./market.cjs')({get,all,run,fail,text,required,coord,im
 async function api(req,res,url){
  checkOrigin(req);let u=session(req);const method=req.method,p=url.pathname;limit(req,p==='/api/login'?'login':'api:'+(u?.id||'public'),p==='/api/login'?10:240);
  if(p==='/api/session'&&method==='POST'){if(u)return send(res,200,{user:publicUser(u),csrf:u.csrf});const uid=id();run('INSERT INTO users(id,role,name,created_at) VALUES(?,?,?,?)',uid,'customer','ลูกค้ากระนวน',now());return send(res,201,newSession(res,uid))}
+ 
+ // 🌟 เพิ่มระบบล็อคอิน LINE ให้บันทึกลงฐานข้อมูลจริง
+ if(p==='/api/auth/line'&&method==='POST'){
+   const lineId=text(b.lineId,100);
+   const displayName=text(b.name,100)||'ผู้ใช้ LINE';
+   if(!lineId)fail(400,'ไม่พบ LINE ID');
+   
+   // ค้นหาผู้ใช้ด้วย LINE ID (ใช้ username เก็บ LINE ID)
+   let user=get('SELECT * FROM users WHERE username=?',lineId);
+   if(!user){
+     const uid=id();
+     run('INSERT INTO users(id,username,role,name,created_at) VALUES(?,?,?,?,?)',uid,lineId,'customer',displayName,now());
+     user=get('SELECT * FROM users WHERE id=?',uid);
+   } else {
+     // อัปเดตชื่อล่าสุดจาก LINE
+     if(displayName!==user.name)run('UPDATE users SET name=? WHERE id=?',displayName,user.id);
+     user.name=displayName;
+   }
+   // สร้าง Session (คุกกี้) ให้ลูกค้า
+   return send(res,200,newSession(res,user.id));
+ }
  if(p==='/api/shops'&&method==='GET')return send(res,200,all('SELECT * FROM shops ORDER BY name').map(s=>{const v=shopView(s);delete v.survey_note;delete v.verified_by;return v}));
  if(p==='/api/menus'&&method==='GET'){const shopId=required(url.searchParams.get('shop'),'ร้าน');return send(res,200,all('SELECT id,shop_id,name,price_satang,image_url,available FROM menus WHERE shop_id=? ORDER BY name',shopId).map(m=>({...m,price:m.price_satang/100,available:!!m.available})))}
  if(p==='/api/config'&&method==='GET')return send(res,200,{delivery_fee:Number(process.env.DELIVERY_FEE_THB||25),ride_fee:Number(process.env.RIDE_FEE_THB||process.env.DELIVERY_FEE_THB||25),ride_passenger_limit:1,transport:transportConfig()});
