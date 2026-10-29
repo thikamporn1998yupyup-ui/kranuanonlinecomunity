@@ -14,7 +14,7 @@
       safari_web_id: "web.onesignal.auto.2c31ff0c-1624-4aec-8f89-a4f0b1da0ea1",
       serviceWorkerPath: "/OneSignalSDKWorker.js",
       serviceWorkerParam: { scope: "/" },
-      notifyButton: { enable: true },
+      notifyButton: { enable: true, size: "small", offset: { bottom: "68px", right: "12px" } },
       promptOptions: {
         slidedown: {
           prompts: [
@@ -728,5 +728,42 @@ window.addEventListener('DOMContentLoaded',async()=>{
   setInterval(refresh,5000);
 });
 </script>
-<script src="/api.js"></script><script src="/rider-bridge.js"></script><script src="/staff-rider.js?v=20261027-gallery"></script><script src="/app-zoom-lock.js?v=20261027-2"></script><script src="/rider-modern.js?v=20261029"></script><script src="/rider-map-cost.js?v=20261029-1"></script></body>
+<script src="/api.js"></script><script src="/rider-bridge.js"></script><script src="/staff-rider.js?v=20261027-gallery"></script><script src="/app-zoom-lock.js?v=20261027-2"></script><script src="/rider-modern.js?v=20261029"></script><script src="/rider-map-cost.js?v=20261029-1"></script>
+<!-- ปรับหน้าตาหน้าไรเดอร์: แถบล่างบาง / แผนที่เต็มพื้นที่ / เงาตัวเลขรายได้ (ลบทั้งก้อนนี้เพื่อย้อนกลับ) -->
+<style id="rc-custom">
+/* ---- แถบเมนูด้านล่าง: บางลง ---- */
+.nav{bottom:max(6px,env(safe-area-inset-bottom))!important;padding:3px 6px!important;border-radius:18px!important;width:min(calc(100% - 24px),440px)!important}
+.nav button{gap:0!important;padding:3px 2px!important;font-size:9px!important;border-radius:14px!important}
+.nav .tile{height:24px!important;width:34px!important;border-radius:10px!important}
+.nav .ic{width:18px!important;height:18px!important}
+
+/* ---- หน้าหลัก: แผนที่เต็มพื้นที่ว่าง ---- */
+body.rmc-map-screen.rc-home #realMapContainer{top:0!important;left:0!important;right:0!important;bottom:auto!important;width:100vw!important;height:100vh!important;height:100dvh!important;z-index:0!important}
+body.rmc-map-screen.rc-home #realMapContainer:after{background:linear-gradient(to bottom,rgba(3,8,14,.82) 0%,rgba(3,8,14,.55) 15%,rgba(3,8,14,.2) 30%,rgba(3,8,14,0) 45%,rgba(3,8,14,0) 72%,rgba(3,8,14,.35) 100%)!important}
+body.rmc-map-screen.rc-home #screen .sectiontitle,
+body.rmc-map-screen.rc-home #screen .dash-stats{display:none!important}
+body.rmc-map-screen.rc-home .content{position:fixed!important;left:50%;bottom:calc(62px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:100%;max-width:480px;max-height:40vh;overflow-y:auto;z-index:900!important;padding:10px 16px 12px!important;background:var(--s0)!important;border-radius:22px 22px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.28)}
+body.rmc-map-screen.rc-home .content .switch{margin:0 0 10px}
+
+/* ---- เงาตัวเลขรายได้และข้อความส่วนหัว: อ่านได้ทั้งโหมดมืดและสว่าง ---- */
+body.rmc-map-screen .rm-income{color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.6),0 3px 8px rgba(0,0,0,.5),0 0 22px rgba(0,0,0,.45)}
+body.rmc-map-screen .rm-income-label{color:#fff!important;opacity:.95;text-shadow:0 1px 2px rgba(0,0,0,.6),0 2px 8px rgba(0,0,0,.5)}
+body.rmc-map-screen .topbar strong{text-shadow:0 1px 2px rgba(0,0,0,.6),0 2px 8px rgba(0,0,0,.45)}
+body.rmc-map-screen .topbar small{text-shadow:0 1px 2px rgba(0,0,0,.6)}
+</style>
+<script id="rc-custom-js">
+(function(){
+  var last=null;
+  function resizeMap(){try{window.dispatchEvent(new Event('resize'))}catch(e){}}
+  function sync(){
+    var hero=document.getElementById('riderModernHero');
+    var home=!!hero&&!hero.hidden;
+    document.body.classList.toggle('rc-home',home);
+    if(home!==last){last=home;setTimeout(resizeMap,150);setTimeout(resizeMap,700);}
+  }
+  setInterval(sync,400);sync();
+  setTimeout(resizeMap,1500);setTimeout(resizeMap,3500);
+})();
+</script>
+</body>
 </html>
