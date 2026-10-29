@@ -42,7 +42,7 @@
     if(panel)return;
     panel=document.createElement('section');panel.id='riderTripPanel';panel.className='rmc-panel';
     panel.innerHTML='<div class="rmc-heading"><div><small>TRIP INSIGHT</small><h2>งานนี้ วิ่งคุ้มไหม?</h2></div><button type="button" data-rmc-settings>ตั้งต้นทุน</button></div><label for="rmcJob">งานที่แสดงบนแผนที่</label><select id="rmcJob"></select><p id="rmcRouteNote" class="rmc-note" role="status"></p><div class="rmc-distances"><div><small>ไปรับ · เส้นตรง</small><b id="rmcApproach">—</b></div><div><small>รับ → ส่ง · เส้นตรง</small><b id="rmcDelivery">—</b></div></div><div class="rmc-estimate"><div><small>ค่ารอบไรเดอร์</small><b id="rmcFee">—</b></div><div><small>ต้นทุนประมาณ</small><b id="rmcCost">—</b></div><div><small>เหลือสุทธิประมาณ</small><b id="rmcNet">—</b></div></div><p id="rmcVerdict" class="rmc-verdict" role="status"></p><p id="rmcBreakdown" class="rmc-note"></p><div class="rmc-tools"><button type="button" data-rmc-gps>ตำแหน่งฉัน</button><button type="button" data-rmc-fit>ดูสองจุด</button><a id="rmcNavigate" target="_blank" rel="noopener">เปิดนำทาง</a></div><p class="rmc-note">เส้นบนแผนที่เป็นเส้นตรง ไม่ใช่เส้นทางถนน • จุดลูกค้าคือพิกัดปลายทางที่แนบในงาน ไม่ใช่ GPS สดของลูกค้า</p>';
-    var hero=document.getElementById('riderModernHero');if(hero)hero.before(panel);else document.querySelector('.content').before(panel);
+    var mc=document.getElementById('realMapContainer');if(mc)mc.after(panel);else document.querySelector('.content').before(panel);
     panel.querySelector('select').onchange=function(e){selected=e.target.value;fitKey='';lastRoute='';update();};
     panel.querySelector('[data-rmc-settings]').onclick=openSettings;
     panel.querySelector('[data-rmc-fit]').onclick=function(){fitKey='';lastRoute='';update();};
@@ -62,7 +62,7 @@
   function mapUpdate(j,s){
     if(typeof map==='undefined'||!map||!window.L)return;
     if(tileMap!==map){
-      tileMap=map;map.dragging.enable();
+      tileMap=map;map.dragging.enable();setTimeout(function(){map.invalidateSize()},300);setTimeout(function(){map.invalidateSize()},1500);
       map.eachLayer(function(layer){if(layer instanceof L.TileLayer){layer.options.referrerPolicy='origin';layer.on('tileerror',function(){put('rmcRouteNote','โหลดแผนที่ไม่สำเร็จ ระยะและต้นทุนยังดูได้ กรุณาลองใหม่ภายหลัง');});layer.redraw();}});
     }
     var gps=current();
@@ -83,7 +83,7 @@
     }
   }
   function update(){
-    mount();loadSettings();var visible=tab==='home'||(tab==='jobs'&&!window.RiderHubRoads);document.body.classList.toggle('rmc-map-screen',visible);panel.hidden=!visible;if(!visible)return;var bar=document.getElementById('jobbar');if(bar&&panel.nextElementSibling!==bar)panel.after(bar);
+    mount();loadSettings();var visible=tab==='home'||(tab==='jobs'&&!window.RiderHubRoads);document.body.classList.remove('rmc-map-screen');panel.hidden=!visible;if(!visible)return;
     var j=job(),a=active(),rows=list(),select=panel.querySelector('select'),old=select.value;
     var html=rows.length?'<option value="">เลือกงานเพื่อประเมิน</option>'+rows.map(function(x){return '<option value="'+esc(x.id)+'">'+esc(x.shop||'งาน')+(x===a?' · งานที่รับอยู่':' · ประเมินก่อนรับ')+'</option>';}).join(''):'<option value="">ยังไม่มีงาน</option>';
     if(select.innerHTML!==html)select.innerHTML=html;select.value=j?j.id:'';select.disabled=!!a||!rows.length;
