@@ -142,32 +142,49 @@
      - ปุ่ม "ตั้งต้นทุน" ซ่อนจากการ์ดวิ่งคุ้มไหม แล้วไปกดได้จากหน้าตั้งค่า */
   var css = document.createElement('style');
   css.textContent =
-    'body.isan .topbar{flex-wrap:wrap}' +
-    '.isan-dock{flex:0 0 100%;display:flex;gap:8px;align-items:stretch;padding:8px 0 0}' +
-    '.isan-dock .isan-tg{flex:1;min-height:46px;display:flex;align-items:center;justify-content:center;gap:10px;' +
-    'border-radius:16px;font:600 15px Mitr,Seed,sans-serif;border:1px solid var(--ln2);background:var(--chip);' +
-    'color:var(--tx2);cursor:pointer;padding:0 12px}' +
-    '.isan-tg i{width:10px;height:10px;border-radius:50%;background:var(--tx2);flex:none}' +
+    /* แถบบน: กะทัดรัด */
+    'body.isan .topbar{flex-wrap:wrap;padding-bottom:6px!important}' +
+    'body.isan .topbar strong{font-size:17px!important;line-height:1.15}' +
+    'body.isan .topbar small{font-size:10px!important}' +
+    'body.isan .modebtn{width:36px!important;height:36px!important;min-width:0!important;border-radius:12px!important;padding:0!important}' +
+    'body.isan .modebtn svg{width:18px!important;height:18px!important}' +
+    'body.isan .sosbtn{height:36px!important;min-height:0!important;min-width:0!important;padding:0 12px!important;font-size:12px!important;border-radius:12px!important}' +
+    'body.isan .sosbtn svg{width:15px!important;height:15px!important}' +
+    /* แถวสถานะ: ปุ่มออนไลน์ + สรุปรายได้ */
+    '.isan-dock{flex:0 0 100%;display:flex;gap:8px;align-items:stretch;padding:6px 0 0}' +
+    '.isan-dock .isan-tg{flex:1;min-height:40px;display:flex;align-items:center;justify-content:center;gap:8px;' +
+    'border-radius:14px;font:600 13px Mitr,Seed,sans-serif;border:1px solid var(--ln2);background:var(--chip);' +
+    'color:var(--tx2);cursor:pointer;padding:0 10px}' +
+    '.isan-tg i{width:9px;height:9px;border-radius:50%;background:var(--tx2);flex:none}' +
     '.isan-tg.on{background:rgba(var(--okrgb),.16);border-color:rgba(var(--okrgb),.55);color:var(--ok)}' +
-    '.isan-tg.on i{background:var(--ok);box-shadow:0 0 10px var(--ok)}' +
-    '.isan-fare{flex:none;min-width:112px;padding:6px 12px;border-radius:16px;border:1px solid var(--ln2);' +
+    '.isan-tg.on i{background:var(--ok);box-shadow:0 0 8px var(--ok)}' +
+    '.isan-fare{flex:none;min-width:104px;padding:4px 12px;border-radius:14px;border:1px solid var(--ln2);' +
     'background:var(--chip);display:flex;flex-direction:column;justify-content:center}' +
     '.isan-fare[hidden]{display:none}' +
-    '.isan-fare span{font-size:10px;color:var(--tx2);line-height:1.2}' +
-    '.isan-fare b{font:500 17px Mitr,Seed,sans-serif;color:var(--ac2)}' +
+    '.isan-fare span{font-size:9.5px;color:var(--tx2);line-height:1.2}' +
+    '.isan-fare b{font:500 16px/1.2 Mitr,Seed,sans-serif;color:var(--ac2)}' +
+    '.isan-fare em{font:400 10px Mitr,Seed,sans-serif;color:var(--tx2);font-style:normal;margin-left:6px}' +
     '.isan-hide{display:none!important}' +
     'body.isan .switch:has(>button[data-act="toggle"]){display:none}' +
-    /* ให้เข้ากับเลย์เอาต์แผนที่เต็มจอของ rider-map-cost */
+    /* การ์ดให้เล็กลง อ่านง่าย */
+    'body.isan #screen .card{padding:14px!important;border-radius:20px!important}' +
+    'body.isan #screen .card h2{font-size:19px!important;margin:2px 0 8px!important}' +
+    'body.isan #screen button.full,body.isan #screen button.primary,body.isan #screen button.secondary{min-height:44px!important;font-size:14px!important;border-radius:14px!important}' +
+    /* เมนูล่าง: เล็กลง ไม่บังแผนที่ */
+    'body.isan .nav{padding:5px 8px!important;border-radius:22px!important}' +
+    'body.isan .nav button{padding:6px 4px!important;min-height:0!important;font-size:10.5px!important;border-radius:16px!important;gap:2px!important}' +
+    'body.isan .nav button svg{width:21px!important;height:21px!important}' +
+    /* หน้าแผนที่: แผนที่ชัด เต็มกว้าง */
     'body.isan.rmc-map-screen .content{padding-top:0!important}' +
-    'body.isan.rmc-map-screen .maptop{top:136px!important}' +
+    'body.isan.rmc-map-screen .maptop{top:calc(var(--isan-top,96px) + 8px)!important}' +
     'body.isan.rmc-map-screen .topbar strong{color:var(--tx)}' +
     'body.isan.rmc-map-screen .topbar small{color:var(--ac2)}' +
-    'body.isan.rmc-map-screen #realMapContainer{opacity:.35!important;visibility:visible!important;pointer-events:auto!important}' +
-    'body.isan.rmc-map-screen #realMapContainer:after{background:linear-gradient(to bottom,rgba(255,243,220,.9),rgba(255,243,220,.1) 28%,transparent 50%,rgba(255,243,220,.55) 82%,transparent)}' +
-    'body.isan.dark.rmc-map-screen #realMapContainer:after{background:linear-gradient(to bottom,rgba(7,12,30,.92),rgba(7,12,30,.1) 28%,transparent 50%,rgba(7,12,30,.55) 82%,transparent)}';
+    'body.isan.rmc-map-screen #realMapContainer{opacity:1!important;visibility:visible!important;pointer-events:auto!important;left:0!important;right:0!important;width:100%!important}' +
+    'body.isan.rmc-map-screen #realMapContainer:after{background:linear-gradient(to bottom,rgba(255,243,220,.92),rgba(255,243,220,.35) 14%,transparent 28%,transparent 70%,rgba(255,243,220,.5) 100%)}' +
+    'body.isan.dark.rmc-map-screen #realMapContainer:after{background:linear-gradient(to bottom,rgba(7,12,30,.92),rgba(7,12,30,.35) 14%,transparent 28%,transparent 70%,rgba(7,12,30,.55) 100%)}';
   document.head.appendChild(css);
 
-  var dock = null, tg = null, fare = null, fareV = null;
+  var dock = null, tg = null, fare = null, fareV = null, fareN = null, lastW = 0;
 
   function ensureDock() {
     var tb = document.querySelector('.topbar');
@@ -187,11 +204,11 @@
       dock.className = 'isan-dock';
       dock.innerHTML =
         '<button type="button" class="isan-tg" data-act="toggle"><i></i><span></span></button>' +
-        '<div class="isan-fare" hidden><span>ค่ารอบจากงานสำเร็จ · วันนี้</span><b>—</b></div>';
+        '<div class="isan-fare" hidden><span>รายได้วันนี้</span><div><b>—</b><em></em></div></div>';
       tb.appendChild(dock);
       tg = dock.querySelector('.isan-tg');
       fare = dock.querySelector('.isan-fare');
-      fareV = fare.querySelector('b');
+      fareV = fare.querySelector('b'); fareN = fare.querySelector('em');
     }
 
     var on = !!document.querySelector('#topStatus.on');
@@ -209,6 +226,8 @@
     var v = sum(d);
     var txt = (typeof baht === 'function') ? baht(v) : Number(v).toLocaleString('th-TH') + ' บาท';
     if (fareV.textContent !== txt) fareV.textContent = txt;
+    var nt = d.length + ' งาน';
+    if (fareN.textContent !== nt) fareN.textContent = nt;
     fare.hidden = false;
   }
 
@@ -235,8 +254,25 @@
     });
   }
 
+
+  /* วัดความสูงแถบบน เพื่อวางชิปบนแผนที่ให้พอดี + สั่งให้แผนที่คำนวณขนาดใหม่
+     (ต้นเหตุที่แผนที่โผล่แค่ครึ่งเดียว คือ Leaflet คำนวณขนาดตอนกล่องยังเล็ก) */
+  function fixMap() {
+    var tb = document.querySelector('.topbar');
+    if (tb) body.style.setProperty('--isan-top', tb.offsetHeight + 'px');
+    var m = document.querySelector('#realMapContainer');
+    if (!m) return;
+    var w = m.offsetWidth + 'x' + m.offsetHeight;
+    if (w !== lastW) {
+      lastW = w;
+      setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 120);
+      setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 700);
+    }
+  }
+  window.addEventListener('load', function () { setTimeout(function () { lastW = 0; relayout(); }, 400); });
+
   function relayout() {
-    try { ensureDock(); showEarnings(); relayoutCost(); } catch (e) { /* ไม่ให้ธีมพังเพราะส่วนนี้ */ }
+    try { ensureDock(); showEarnings(); relayoutCost(); fixMap(); } catch (e) { /* ไม่ให้ธีมพังเพราะส่วนนี้ */ }
   }
 
   /* ---------- 5) ฝูงนกบิน ---------- */
