@@ -1,6 +1,75 @@
 <!doctype html>
 <html lang="th">
-<head>
+<head><!-- ========================================== -->
+<!-- 🌟 สคริปต์คุมระบบ LINE และ KYC (เวอร์ชันแก้บั๊ก) 🌟 -->
+<!-- ========================================== -->
+<script>
+  (function() {
+    const isManualLogout = localStorage.getItem('kranuan_manual_logout') === 'true';
+
+    // ----------------------------------------------------
+    // 1. ถ้าผู้ใช้เพิ่งกด "ออกจากระบบ" ไป
+    // ----------------------------------------------------
+    if (isManualLogout) {
+      console.log("🚫 ตรวจพบการกดออกจากระบบ บังคับปิดการทำงานของ LINE");
+      
+      // 🌟 ทำลาย Object ของ LINE ทิ้งซะเลย เพื่อไม่ให้มันดึงข้อมูลอัตโนมัติ
+      window.liff = undefined; 
+      window.liffInit = undefined;
+    }
+
+    // ----------------------------------------------------
+    // 2. ดักจับทุกการเชื่อมต่อ (Fetch) ของหน้าเว็บ
+    // ----------------------------------------------------
+    const originalFetch = window.fetch;
+    window.fetch = async function(...args) {
+      const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
+
+      // 2.1 ถ้าออกจากระบบไปแล้ว ห้ามยิง API ขอล็อกอิน LINE เด็ดขาด!
+      if (isManualLogout && url.includes('/api/auth/line')) {
+        console.log("🚫 บล็อกการยิง API ล็อกอินอัตโนมัติ!");
+        return new Response(JSON.stringify({ error: 'manual_logout' }), { status: 401 });
+      }
+
+      // 2.2 ถ้าผู้ใช้กดปุ่ม "ออกจากระบบ" ให้จำค่าไว้ทันที
+      if (url.includes('/api/logout')) {
+        localStorage.setItem('kranuan_manual_logout', 'true');
+        if (window.liff) { try { window.liff.logout(); } catch(e) {} }
+      }
+
+      // 2.3 ส่งข้อมูลต่อให้ระบบปกติ
+      const response = await originalFetch.apply(this, args);
+
+      // 🌟 2.4 ดักฟังคำตอบ: ถ้าล็อกอินแล้วแต่ยังไม่ทำ KYC ให้เตะไปหน้าลงทะเบียน
+      if (url.includes('/api/session') || url.includes('/api/auth/line')) {
+        const clone = response.clone();
+        clone.json().then(data => {
+          if (data.user && data.user.kyc_status === 'unverified') {
+            // ถ้ายังไม่ได้อยู่หน้า register.html ให้เปลี่ยนหน้าไปเลย
+            if (!window.location.pathname.includes('register')) {
+              console.log("🔀 พบว่ายังไม่ทำ KYC กำลังพาไปหน้าลงทะเบียน...");
+              window.location.href = '/register.html';
+            }
+          }
+        }).catch(e => {});
+      }
+
+      return response;
+    };
+
+    // ----------------------------------------------------
+    // 3. ถ้าผู้ใช้กดปุ่ม "เข้าสู่ระบบ" ด้วยตัวเอง ให้ล้างค่าอนุญาตให้เข้าใหม่
+    // ----------------------------------------------------
+    document.addEventListener('click', function(e) {
+      const text = e.target.innerText || '';
+      if (text.includes('เข้าสู่ระบบ') || text.includes('Login') || text.includes('LINE')) {
+        console.log("🔄 ผู้ใช้กดล็อกอินเอง อนุญาตให้ทำงานปกติ");
+        localStorage.removeItem('kranuan_manual_logout');
+      }
+    }, true);
+  })();
+</script>
+<!-- ========================================== -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>กระนวนใกล้บ้าน</title>
@@ -794,67 +863,6 @@ window.addEventListener('DOMContentLoaded', () => {
 <script src="/commerce-media.js?v=20261027"></script><script src="/commerce-customer.js?v=20261027"></script><script src="/market.js?v=20261027-market"></script><script src="/app-zoom-lock.js?v=20261027-2"></script><script src="/courier-grab-ui.js?v=20261027-2"></script><script src="/ride-mode-ui.js?v=20261030"></script><script src="/mobile-catalog.js?v=20261027-3"></script><script src="/rider-profiles.js?v=20261027"></script><script src="/compact-activity.js?v=20261027"></script><script src="/rider-team-board.js?v=20261027"></script><script src="/ads-config.js?v=20261028"></script><script src="/home-upgrade.js?v=20261028"></script>
 
 
-<!-- ========================================== -->
-<!-- 🌟 สคริปต์ทำลายลูป LINE (ขั้นเด็ดขาด) 🌟 -->
-<!-- ========================================== -->
-<script>
-  (function() {
-    const isManualLogout = localStorage.getItem('kranuan_manual_logout') === 'true';
 
-    // 1. ถ้าผู้ใช้กดออกจากระบบไปแล้ว
-    if (isManualLogout) {
-      console.log("🚫 สถานะ: ออกจากระบบแล้ว (บล็อก LINE)");
-      
-      // 1.1 ทำลาย Object LINE LIFF ทิ้งซะ เพื่อไม่ให้มันดึงข้อมูลอัตโนมัติ
-      window.liff = null; 
-      window.liffInit = null;
-
-      // 1.2 ดักไม่ให้ยิง API ขอล็อกอินซ้ำ
-      const originalFetch = window.fetch;
-      window.fetch = async function(...args) {
-        const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
-        if (url.includes('/api/auth/line')) {
-           return new Response(JSON.stringify({ error: 'manual_logout' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
-        }
-        return originalFetch.apply(this, args);
-      };
-
-      // 1.3 ถ้าผู้ใช้กดปุ่ม Login เอง ให้ล้างค่าอนุญาตให้เข้าใหม่
-      document.addEventListener('click', function(e) {
-        const text = e.target.innerText || '';
-        if (text.includes('เข้าสู่ระบบ') || text.includes('Login') || text.includes('LINE')) {
-          localStorage.removeItem('kranuan_manual_logout');
-          window.location.reload();
-        }
-      }, true);
-      
-      return; // จบการทำงาน ไม่ต้องเช็ค KYC ต่อ
-    }
-
-    // 2. ถ้าล็อกอินปกติ ให้เช็ค KYC
-    setTimeout(async () => {
-      try {
-        const res = await fetch('/api/session');
-        const data = await res.json();
-        
-        if (data.user && data.user.kyc_status === 'unverified') {
-          // 🌟 เปลี่ยนจากป๊อปอัป เป็นการเด้งไปหน้าลงทะเบียน (register.html) เลย
-          window.location.href = '/register.html'; 
-        }
-      } catch (err) {}
-    }, 1000); 
-
-    // 3. ดักจับตอนกด Logout
-    const originalFetch = window.fetch;
-    window.fetch = async function(...args) {
-      const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
-      if (url.includes('/api/logout')) {
-        localStorage.setItem('kranuan_manual_logout', 'true');
-        if (window.liff) { try { liff.logout(); } catch(e) {} }
-      }
-      return originalFetch.apply(this, args);
-    };
-  })();
-</script>
 </body>
 </html>
