@@ -1,0 +1,27 @@
+/* screen-lock.css — ล็อกสัดส่วนหน้าจอ 450px (ใช้กับหน้าไรเดอร์/หน้าอื่นที่ไม่ใช่ index.html)
+   วิธีใช้: ใส่ท้าย <head> ของหน้านั้น (หลัง CSS เดิมทั้งหมด)
+     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+     <link rel="stylesheet" href="/screen-lock.css">
+   แก้เฉพาะหน้าตา ไม่แตะสคริปต์/ข้อมูล */
+:root{--app-w:450px}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;background:#f6eee6}
+body{touch-action:manipulation}
+/* 1) กรอบแอปกว้างสูงสุด 450px อยู่กึ่งกลาง + กันเมนูล่างบังเนื้อหา */
+.phone{width:100%;max-width:var(--app-w)!important;margin:0 auto!important;min-height:100vh;min-height:100dvh;padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))!important}
+/* 2) ดันหัวแอปเต็มจอ เว้นแถบด้านบน (notch / status bar) */
+body .phone .top{padding-top:calc(20px + env(safe-area-inset-top,0px))!important}
+/* 3) แบนเนอร์ / รูป ล็อกสัดส่วน ไม่ให้เบี้ยว */
+.poster-rail{align-items:flex-start}
+.local-poster{height:auto!important;aspect-ratio:16/9}
+.phone img{max-width:100%}
+.phone :is(.cover,.media,.thumb,.photo,.menu-img,.market-cover,.shop,.menu-card,.product-card,.food-card,.market-card) img,.local-poster>img{object-fit:cover}
+.poster-dialog img{aspect-ratio:3/2;object-fit:cover}
+/* 4) เมนูล่างล็อกขอบล่าง ลอยบนสุด และไม่กว้างเกินกรอบ */
+.bottomnav{position:fixed!important;bottom:0!important;left:50%!important;right:auto!important;transform:translateX(-50%)!important;width:100%!important;max-width:var(--app-w)!important;z-index:1000!important;padding-bottom:max(16px,env(safe-area-inset-bottom,0px))!important}
+/* 5) กัน iOS ซูมเองตอนแตะช่องกรอก (ข้อความ < 16px) */
+@supports(-webkit-touch-callout:none){input,select,textarea{font-size:16px!important}}
+
+/* ถ้าหน้านั้นไม่มีกล่อง .phone ให้ใช้ body เป็นกรอบแทน */
+body:not(:has(.phone)){max-width:var(--app-w);margin:0 auto;min-height:100vh;min-height:100dvh;box-sizing:border-box;overflow-x:hidden;padding-top:env(safe-area-inset-top,0px);padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))}
+/* ชื่อเมนูล่างอื่นๆ ที่อาจใช้ในหน้าไรเดอร์ */
+.bottom-nav,.bottom-bar,.tabbar,.tab-bar,.courier-nav,.rider-nav,#bottomNav,#bottom-nav{position:fixed!important;bottom:0!important;left:50%!important;right:auto!important;transform:translateX(-50%)!important;width:100%!important;max-width:var(--app-w)!important;z-index:1000!important;box-sizing:border-box;padding-bottom:max(12px,env(safe-area-inset-bottom,0px))}
