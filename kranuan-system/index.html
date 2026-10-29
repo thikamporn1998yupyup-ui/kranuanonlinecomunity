@@ -1384,42 +1384,74 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </script>
 
 
-<!-- ซ่อนลิงก์ท้ายหน้า: ผู้ดูแล/ร้านรับงาน, หน้าไรเดอร์, สถานะฐานข้อมูล, ออกจากบัญชีทีมงาน -->
+<!-- ซ่อนลิงก์ท้ายหน้า v2: ผู้ดูแล/ร้านรับงาน, หน้าไรเดอร์, สถานะฐานข้อมูล, ออกจากบัญชีทีมงาน -->
 <script>
 (function(){
   var TEXTS=['ผู้ดูแล / ร้านรับงาน','ผู้ดูแล/ร้านรับงาน','หน้าไรเดอร์','เชื่อมฐานข้อมูลกลางแล้ว','ออกจากบัญชีทีมงาน'];
-  var busy=false;
+  var SKIP={SCRIPT:1,STYLE:1,OPTION:1,TEXTAREA:1,NOSCRIPT:1,TITLE:1};
+  var timer=null;
   function norm(t){return (t||'').replace(/\s+/g,' ').trim()}
+  function isHidden(el){return el.getAttribute&&el.getAttribute('data-hidden-footer')==='1'}
+  function hasVisibleText(p){
+    for(var n=p.firstChild;n;n=n.nextSibling){
+      if(n.nodeType===3&&norm(n.nodeValue))return true;
+    }
+    return false;
+  }
   function hide(el){
     el.style.setProperty('display','none','important');
     el.setAttribute('data-hidden-footer','1');
     var p=el.parentElement;
-    while(p&&p!==document.body&&p.id!=='app'){
-      var kids=[].slice.call(p.children);
-      var allHidden=kids.length>0&&kids.every(function(k){return k.getAttribute('data-hidden-footer')==='1'||k.tagName==='SCRIPT'||k.tagName==='STYLE'});
-      if(!allHidden)break;
+    while(p&&p!==document.body&&p.id!=='app'&&p!==document.documentElement){
+      var kids=p.children,all=true;
+      for(var i=0;i<kids.length;i++){
+        var k=kids[i];
+        if(!isHidden(k)&&!SKIP[k.tagName]){all=false;break}
+      }
+      if(!all||hasVisibleText(p))break;
       p.style.setProperty('display','none','important');
       p.setAttribute('data-hidden-footer','1');
       p=p.parentElement;
     }
   }
+  function matches(t){
+    if(t.length>40)return false;
+    for(var i=0;i<TEXTS.length;i++){if(t.indexOf(TEXTS[i])>-1)return true}
+    return false;
+  }
   function run(){
-    busy=false;
-    var list=document.querySelectorAll('a,button,span,small,p,div,li');
-    for(var i=0;i<list.length;i++){
-      var el=list[i];
-      if(el.getAttribute('data-hidden-footer'))continue;
-      if(el.tagName==='A'){
-        var h=el.getAttribute('href')||'';
-        if(/admin\.html(\?|#|$)/.test(h)||/\/rider\/?(\?|#|$)/.test(h)){hide(el);continue}
+    timer=null;
+    // 1) ลิงก์ที่ชี้ไปหน้าผู้ดูแล / หน้าไรเดอร์
+    var links=document.querySelectorAll('a[href]');
+    for(var i=0;i<links.length;i++){
+      var a=links[i];
+      if(isHidden(a))continue;
+      var h=a.getAttribute('href')||'';
+      if(/admin\.html(\?|#|$)/.test(h)||/\/rider\/?(\?|#|$)/.test(h))hide(a);
+    }
+    // 2) ข้อความตามชื่อ (รวมกรณีเป็นข้อความเปล่าๆ ปนกับลิงก์)
+    var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null,false);
+    var hits=[],n;
+    while((n=w.nextNode())){
+      var par=n.parentElement;
+      if(!par||SKIP[par.tagName]||isHidden(par))continue;
+      var t=norm(n.nodeValue);
+      if(t&&matches(t))hits.push(n);
+    }
+    for(var j=0;j<hits.length;j++){
+      var node=hits[j],pe=node.parentElement;
+      if(!pe)continue;
+      var only=norm(pe.textContent);
+      if(pe.children.length===0&&only.length<=40&&pe.id!=='app'){hide(pe)}
+      else{
+        var sp=document.createElement('span');
+        node.parentNode.insertBefore(sp,node);
+        sp.appendChild(node);
+        hide(sp);
       }
-      if(el.children.length>3)continue;
-      var t=norm(el.textContent);
-      if(t.length>40)continue;
-      if(TEXTS.indexOf(t)>-1)hide(el);
     }
   }
-  function schedule(){if(!busy){busy=true;setTimeout(run,150)}}
+  function schedule(){if(!timer)timer=setTimeout(run,150)}
   function boot(){
     run();
     new MutationObserver(schedule).observe(document.body,{childList:true,subtree:true});
