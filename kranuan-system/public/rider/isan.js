@@ -135,7 +135,6 @@
   });
   mountButton();
   syncScene();
-  relayout();
 
 
   /* ---------- 6) จัดหน้าใหม่ (อิงโครงสร้างจริงของ rider-map-cost.js) ----------
@@ -163,7 +162,7 @@
     'body.isan.rmc-map-screen .maptop{top:136px!important}' +
     'body.isan.rmc-map-screen .topbar strong{color:var(--tx)}' +
     'body.isan.rmc-map-screen .topbar small{color:var(--ac2)}' +
-    'body.isan.rmc-map-screen #realMapContainer{opacity:.9!important;visibility:visible!important;pointer-events:auto!important}' +
+    'body.isan.rmc-map-screen #realMapContainer{opacity:.35!important;visibility:visible!important;pointer-events:auto!important}' +
     'body.isan.rmc-map-screen #realMapContainer:after{background:linear-gradient(to bottom,rgba(255,243,220,.9),rgba(255,243,220,.1) 28%,transparent 50%,rgba(255,243,220,.55) 82%,transparent)}' +
     'body.isan.dark.rmc-map-screen #realMapContainer:after{background:linear-gradient(to bottom,rgba(7,12,30,.92),rgba(7,12,30,.1) 28%,transparent 50%,rgba(7,12,30,.55) 82%,transparent)}';
   document.head.appendChild(css);
@@ -173,7 +172,17 @@
   function ensureDock() {
     var tb = document.querySelector('.topbar');
     if (!tb) return;
-    if (!dock || !dock.isConnected) {
+
+    /* ลบกล่องซ้ำทั้งหมดที่ไม่ใช่ตัวที่เราถืออยู่ */
+    var all = document.querySelectorAll('.isan-dock');
+    for (var i = 0; i < all.length; i++) {
+      if (all[i] !== dock) all[i].remove();
+    }
+
+    /* ถ้ากล่องของเราอยู่ผิดที่ ให้ย้ายเข้า topbar ปัจจุบัน (ไม่สร้างใหม่) */
+    if (dock && dock.parentNode !== tb) tb.appendChild(dock);
+
+    if (!dock) {
       dock = document.createElement('div');
       dock.className = 'isan-dock';
       dock.innerHTML =
@@ -184,6 +193,7 @@
       fare = dock.querySelector('.isan-fare');
       fareV = fare.querySelector('b');
     }
+
     var on = !!document.querySelector('#topStatus.on');
     tg.classList.toggle('on', on);
     var t = on ? 'ออนไลน์ · แตะเพื่อปิด' : 'ออฟไลน์ · แตะเพื่อเปิด';
@@ -257,6 +267,8 @@
     f.addEventListener('animationend', function () { f.remove(); });
     body.appendChild(f);
   }
+
+  relayout();
 
   setTimeout(launchFlock, 2500);
   setInterval(launchFlock, 24000);
