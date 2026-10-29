@@ -12,11 +12,25 @@
     await OneSignal.init({
       appId: "8841f5f9-0ead-4d63-89d0-68d656f180f5",
       safari_web_id: "web.onesignal.auto.2c31ff0c-1624-4aec-8f89-a4f0b1da0ea1",
-      notifyButton: {
-        enable: true,
-      },
       serviceWorkerPath: "/OneSignalSDKWorker.js",
       serviceWorkerParam: { scope: "/" },
+      notifyButton: { enable: true },
+      promptOptions: {
+        slidedown: {
+          prompts: [
+            {
+              type: "push",
+              autoPrompt: true,
+              text: {
+                actionMessage: "เปิดการแจ้งเตือนเพื่อรับงานใหม่ทันที",
+                acceptButton: "อนุญาต",
+                cancelButton: "ไว้ทีหลัง"
+              },
+              delay: { pageViews: 1, timeDelay: 3 }
+            }
+          ]
+        }
+      }
     });
     OneSignal.User.addTag("role", "rider");
   });
