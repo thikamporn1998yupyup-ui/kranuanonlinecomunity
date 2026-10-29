@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ยืนยันตัวตน (KYC)</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Kanit', sans-serif; }
+    body { background: #f4f6f8; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+    
+    .kyc-card { background: #fff; width: 100%; max-width: 400px; border-radius: 24px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+    .kyc-header { text-align: center; margin-bottom: 25px; }
+    .kyc-header h2 { font-size: 22px; color: #333; margin-bottom: 5px; }
+    .kyc-header p { font-size: 14px; color: #888; }
+    
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; font-size: 14px; font-weight: 500; color: #333; margin-bottom: 8px; }
+    .input-control { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 12px; font-size: 15px; outline: none; }
+    .input-control:focus { border-color: #D46231; }
+    
+    .upload-box { border: 2px dashed #ddd; border-radius: 12px; padding: 25px; text-align: center; cursor: pointer; color: #888; font-size: 14px; }
+    
+    .btn-submit { width: 100%; padding: 16px; background: #D46231; color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 20px; }
+  </style>
+</head>
+<body>
+
+  <div class="kyc-card">
+    <div class="kyc-header">
+      <div style="font-size: 50px; margin-bottom: 10px;">🪪</div>
+      <h2>ยืนยันตัวตน</h2>
+      <p>กรุณากรอกข้อมูลให้ครบถ้วนเพื่อใช้งาน</p>
+    </div>
+
+    <form id="kycForm">
+      <div class="form-group">
+        <label>ชื่อ - นามสกุลจริง</label>
+        <input type="text" id="kycName" class="input-control" placeholder="เช่น สมชาย ใจดี" required>
+      </div>
+
+      <div class="form-group">
+        <label>เลขประจำตัวประชาชน (13 หลัก)</label>
+        <input type="text" id="kycIdCard" class="input-control" placeholder="x-xxxx-xxxxx-xx-x" maxlength="13" required>
+      </div>
+
+      <div class="form-group">
+        <label>เบอร์โทรศัพท์ติดต่อ</label>
+        <input type="tel" id="kycPhone" class="input-control" placeholder="08x-xxx-xxxx" maxlength="10" required>
+      </div>
+
+      <div class="form-group">
+        <label>รูปถ่ายบัตรประชาชน</label>
+        <div class="upload-box" onclick="alert('ในระบบจริงจะเปิดกล้องหรือเลือกไฟล์รูปภาพครับ')">
+          📷 คลิกเพื่ออัปโหลดบัตรประชาชน
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit">ยืนยันข้อมูล</button>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('kycForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const data = {
+        full_name: document.getElementById('kycName').value.trim(),
+        id_card: document.getElementById('kycIdCard').value.trim(),
+        phone: document.getElementById('kycPhone').value.trim()
+      };
+
+      try {
+        const response = await fetch('/api/auth/kyc', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert('✅ ' + result.message);
+          window.location.href = '/'; // กลับไปหน้าแรก
+        } else {
+          alert('❌ เกิดข้อผิดพลาด: ' + result.error);
+        }
+      } catch (error) {
+        alert('❌ ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+      }
+    });
+  </script>
+</body>
+</html>
