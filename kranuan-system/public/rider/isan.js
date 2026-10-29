@@ -1,7 +1,5 @@
 /* isan.js — ธีมอีสาน กระนวนไรเดอร์
-   ทำหน้าที่: ใส่คลาส isan, สร้างฉากสระหนองโก, ปุ่มสลับโหมดมืด/สว่าง,
-   สลับฉากตามแท็บ (home/jobs/history/settings) และปล่อยฝูงนกบิน
-   วางไว้โฟลเดอร์เดียวกับ isan.html และ isan.css */
+   อัปเดต: แก้แผนที่ชิดขอบ, ปรับ Modal งานใหม่ให้กระชับเห็นข้อมูลครบ */
 (function () {
   'use strict';
   var body = document.body;
@@ -24,19 +22,14 @@
     '<defs><linearGradient id="lk" x1="0" y1="0" x2="0" y2="1">' +
     '<stop offset="0" stop-color="var(--lake1)"/><stop offset="1" stop-color="var(--lake2)"/>' +
     '</linearGradient></defs>' +
-    /* เขาไกล */
     '<path class="far" d="M0 250 Q80 205 170 240 T340 232 T510 238 T640 220 V300 H0Z"/>' +
-    /* แนวต้นไม้กลาง */
     '<path class="mid" d="M0 268 Q60 238 120 262 T250 258 T380 264 T520 256 T640 262 V310 H0Z"/>' +
-    /* สระน้ำ */
     '<rect class="lake" x="0" y="290" width="640" height="230"/>' +
-    /* ริ้วน้ำ */
     '<path class="rip" d="M60 360 q20 -6 40 0 t40 0"/>' +
     '<path class="rip" d="M300 400 q25 -7 50 0 t50 0"/>' +
     '<path class="rip" d="M120 440 q25 -7 50 0 t50 0"/>' +
     '<path class="rip" d="M430 470 q25 -7 50 0 t50 0"/>' +
     '<path class="rip" d="M200 332 q18 -5 36 0 t36 0"/>' +
-    /* สะพานแดง */
     '<g class="hang">' +
     '<path class="cab" d="M70 300 Q320 190 570 300"/>' +
     '<path class="cab2" d="M70 312 Q320 205 570 312"/>' +
@@ -53,18 +46,15 @@
     '<rect class="brd" x="500" y="315" width="7" height="34"/>' +
     '<g class="stepT"><rect x="48" y="294" width="18" height="6"/><rect x="574" y="294" width="18" height="6"/></g>' +
     '<g class="stepF"><rect x="48" y="300" width="18" height="4"/><rect x="574" y="300" width="18" height="4"/></g>' +
-    /* โคมไฟ */
     '<circle class="lamp" cx="66" cy="258" r="6"/><circle class="lamp" cx="574" cy="258" r="6"/>' +
     '<circle class="lamp" cx="320" cy="212" r="5"/><circle class="lamp" cx="190" cy="231" r="4"/>' +
     '<circle class="lamp" cx="450" cy="231" r="4"/>' +
-    /* ต้นไม้หน้าซ้าย */
     '<g class="canopy">' +
     '<rect class="leaf2" x="38" y="340" width="10" height="180"/>' +
     '<ellipse class="leaf2" cx="44" cy="330" rx="72" ry="48"/>' +
     '<ellipse class="leaf1" cx="34" cy="318" rx="56" ry="36"/>' +
     '<ellipse class="leafhi" cx="22" cy="308" rx="34" ry="20"/>' +
     '</g>' +
-    /* ต้นไม้หน้าขวา */
     '<g class="canopy r">' +
     '<rect class="leaf2" x="592" y="360" width="10" height="160"/>' +
     '<ellipse class="leaf2" cx="598" cy="350" rx="68" ry="44"/>' +
@@ -137,9 +127,7 @@
   syncScene();
 
 
-  /* ---------- 6) จัดหน้าใหม่ (อิงโครงสร้างจริงของ rider-map-cost.js) ----------
-     - แถบบน: ปุ่มสลับออนไลน์/ออฟไลน์ + ยอดจากงานสำเร็จวันนี้
-     - ปุ่ม "ตั้งต้นทุน" ซ่อนจากการ์ดวิ่งคุ้มไหม แล้วไปกดได้จากหน้าตั้งค่า */
+  /* ---------- 6) จัดหน้าใหม่ (CSS Overrides) ---------- */
   var css = document.createElement('style');
   css.textContent =
     /* แถบบน: กะทัดรัด */
@@ -174,14 +162,37 @@
     'body.isan .nav{padding:5px 8px!important;border-radius:22px!important}' +
     'body.isan .nav button{padding:6px 4px!important;min-height:0!important;font-size:10.5px!important;border-radius:16px!important;gap:2px!important}' +
     'body.isan .nav button svg{width:21px!important;height:21px!important}' +
-    /* หน้าแผนที่: แผนที่ชัด เต็มกว้าง */
-    'body.isan.rmc-map-screen .content{padding-top:0!important}' +
-    'body.isan.rmc-map-screen .maptop{top:calc(var(--isan-top,96px) + 8px)!important}' +
+    
+    /* ========================================================
+       🔥 แก้ไขแผนที่ชิดขอบ (Map Fix)
+       ======================================================== */
+    'body.isan.rmc-map-screen #realMapContainer{position:absolute!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important;z-index:0!important}' +
+    'body.isan.rmc-map-screen .content{position:relative!important;z-index:10!important;background:transparent!important;padding-top:0!important}' +
+    'body.isan.rmc-map-screen .maptop{top:calc(var(--isan-top, 100px) + 10px)!important;z-index:20!important}' +
     'body.isan.rmc-map-screen .topbar strong{color:var(--tx)}' +
     'body.isan.rmc-map-screen .topbar small{color:var(--ac2)}' +
-    'body.isan.rmc-map-screen #realMapContainer{opacity:1!important;visibility:visible!important;pointer-events:auto!important;left:0!important;right:0!important;width:100%!important}' +
     'body.isan.rmc-map-screen #realMapContainer:after{background:linear-gradient(to bottom,rgba(255,243,220,.92),rgba(255,243,220,.35) 14%,transparent 28%,transparent 70%,rgba(255,243,220,.5) 100%)}' +
-    'body.isan.dark.rmc-map-screen #realMapContainer:after{background:linear-gradient(to bottom,rgba(7,12,30,.92),rgba(7,12,30,.35) 14%,transparent 28%,transparent 70%,rgba(7,12,30,.55) 100%)}';
+    'body.isan.dark.rmc-map-screen #realMapContainer:after{background:linear-gradient(to bottom,rgba(7,12,30,.92),rgba(7,12,30,.35) 14%,transparent 28%,transparent 70%,rgba(7,12,30,.55) 100%)}' +
+    
+    /* การ์ด Trip Insight ให้เว้นระยะจากด้านบน ไม่ทับ Topbar */
+    'body.isan.rmc-map-screen #screen .card{margin-top:calc(var(--isan-top, 100px) + 10px)!important}' +
+
+    /* ========================================================
+       🔥 แก้ไขหน้างานเด้ง Modal แน่นเกิน (Popup Fix)
+       ======================================================== */
+    /* ลด Padding ของ Modal */
+    'body.isan .modal, body.isan .bottom-sheet, body.isan .sheet, body.isan #jobModal {padding: 12px !important;}' +
+    /* ลดขนาดตัวอักษรหัวข้อ */
+    'body.isan .modal h1, body.isan .modal h2, body.isan .modal h3, body.isan .bottom-sheet h1, body.isan .bottom-sheet h2, body.isan .bottom-sheet h3 {font-size: 16px !important; margin: 4px 0 !important; line-height: 1.2 !important;}' +
+    /* ลด Line-height และ Margin ของข้อมูล */
+    'body.isan .modal p, body.isan .modal span, body.isan .modal div, body.isan .bottom-sheet p, body.isan .bottom-sheet span, body.isan .bottom-sheet div {line-height: 1.3 !important; margin-bottom: 2px !important;}' +
+    /* บีบระยะห่างของ Timeline จุดรับ-ส่ง */
+    'body.isan .modal .route, body.isan .bottom-sheet .route, body.isan .modal .timeline, body.isan .bottom-sheet .timeline {gap: 4px !important; margin: 6px 0 !important;}' +
+    /* ลดขนาดปุ่มใน Modal ให้ไม่ดันขอบ */
+    'body.isan .modal button, body.isan .bottom-sheet button {min-height: 38px !important; font-size: 14px !important; padding: 6px 10px !important;}' +
+    /* ลดระยะเวลานับถอยหลัง (20 วินาที) */
+    'body.isan .modal .timer, body.isan .bottom-sheet .timer {margin-bottom: 4px !important;}';
+
   document.head.appendChild(css);
 
   var dock = null, tg = null, fare = null, fareV = null, fareN = null, lastW = 0;
@@ -190,13 +201,11 @@
     var tb = document.querySelector('.topbar');
     if (!tb) return;
 
-    /* ลบกล่องซ้ำทั้งหมดที่ไม่ใช่ตัวที่เราถืออยู่ */
     var all = document.querySelectorAll('.isan-dock');
     for (var i = 0; i < all.length; i++) {
       if (all[i] !== dock) all[i].remove();
     }
 
-    /* ถ้ากล่องของเราอยู่ผิดที่ ให้ย้ายเข้า topbar ปัจจุบัน (ไม่สร้างใหม่) */
     if (dock && dock.parentNode !== tb) tb.appendChild(dock);
 
     if (!dock) {
@@ -218,7 +227,6 @@
     if (sp.textContent !== t) sp.textContent = t;
   }
 
-  /* ยอดรวมจากงานที่ส่งสำเร็จวันนี้ (ใช้ฟังก์ชันเดิมของแอป ไม่แก้ข้อมูล) */
   function showEarnings() {
     if (!dock) return;
     if (typeof done !== 'function' || typeof isToday !== 'function' || typeof sum !== 'function') return;
@@ -231,8 +239,6 @@
     fare.hidden = false;
   }
 
-  /* ปุ่มตั้งต้นทุนตัวจริง ([data-rmc-settings]) อยู่ในการ์ดวิ่งคุ้มไหม:
-     ซ่อนไว้ แล้วทำปุ่มในหน้าตั้งค่าที่กดส่งต่อให้ตัวจริง */
   function relayoutCost() {
     var src = document.querySelector('[data-rmc-settings]');
     if (!src) return;
@@ -254,25 +260,32 @@
     });
   }
 
-
-  /* วัดความสูงแถบบน เพื่อวางชิปบนแผนที่ให้พอดี + สั่งให้แผนที่คำนวณขนาดใหม่
-     (ต้นเหตุที่แผนที่โผล่แค่ครึ่งเดียว คือ Leaflet คำนวณขนาดตอนกล่องยังเล็ก) */
+  /* 🔥 อัปเกรด fixMap ให้บังคับขนาดกระตุ้น Leaflet */
   function fixMap() {
     var tb = document.querySelector('.topbar');
     if (tb) body.style.setProperty('--isan-top', tb.offsetHeight + 'px');
+    
     var m = document.querySelector('#realMapContainer');
     if (!m) return;
+
+    // บังคับขนาดความสูงตรงๆ ให้ Leaflet รับรู้
+    m.style.height = '100vh';
+    m.style.width = '100vw';
+
     var w = m.offsetWidth + 'x' + m.offsetHeight;
     if (w !== lastW) {
       lastW = w;
-      setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 120);
-      setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 700);
+      // ยิง resize 3 จังหวะ เพื่อให้ Leaflet คำนวณขนาดใหม่แน่ๆ
+      setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 100);
+      setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 500);
+      setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 1000);
     }
   }
+
   window.addEventListener('load', function () { setTimeout(function () { lastW = 0; relayout(); }, 400); });
 
   function relayout() {
-    try { ensureDock(); showEarnings(); relayoutCost(); fixMap(); } catch (e) { /* ไม่ให้ธีมพังเพราะส่วนนี้ */ }
+    try { ensureDock(); showEarnings(); relayoutCost(); fixMap(); } catch (e) { /* ไม่ให้ธีมพัง */ }
   }
 
   /* ---------- 5) ฝูงนกบิน ---------- */
