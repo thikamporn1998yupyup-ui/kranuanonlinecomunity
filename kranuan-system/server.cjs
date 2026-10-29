@@ -41,13 +41,28 @@ function adView(a,admin){const img=a.image_url.startsWith('data:')?'/api/ads/'+a
 function adsPublic(){const t=adsToday();return all('SELECT * FROM ads WHERE enabled=1 ORDER BY sort_order,created_at').filter(a=>(!a.start_date||t>=a.start_date)&&(!a.end_date||t<=a.end_date)).map(a=>adView(a))}
 function shopView(s){return {...s,opt_in:!!s.opt_in,accepting:!!s.accepting}}
 function orderView(o,u){const snap=JSON.parse(o.snapshot);return {rider:staffApi.publicInfo(o.rider_id),id:o.id,shop_id:o.shop_id,rider_id:o.rider_id,status:o.status,customer_id:o.customer_id,seller_id:snap.seller_id||null,listingId:snap.listing_id||null,paymentMethod:snap.payment_method||null,type:o.kind,passenger_count:snap.passenger_count||null,service_label:o.kind==='ride'?'รับ–ส่งผู้โดยสาร':o.kind==='parcel'?'รับ–ส่งของ':'อาหารจากร้าน',shop:snap.shop,shop_image_url:snap.shop_image_url||'',product_image_url:snap.items?.[0]?.image_url||'',items:snap.items||[],item:snap.items?.map(i=>i.name+' × '+i.quantity).join(', ')||snap.description,pickup:o.pickup,pickup_phone:snap.seller_phone||snap.shop_phone||'',pickup_lat:snap.pickup_lat??null,pickup_lng:snap.pickup_lng??null,dropoff:o.dropoff,customer_name:o.customer_name,phone:u.role==='rider'&&o.rider_id!==u.id?'':o.phone,dropoff_lat:o.lat,dropoff_lng:o.lng,note:o.note,image:o.image,insideImage:o.inside_image,goods_total:o.goods_satang/100,fee:o.fee_satang/100,deliveryFee:o.fee_satang/100,total:(o.goods_satang+o.fee_satang)/100,created_at:o.created_at,updated_at:o.updated_at,order_mode:snap.order_mode}}
-function visibleOrders(u){if(u.role==='admin')return all('SELECT * FROM orders ORDER BY created_at DESC LIMIT 300');if(u.role==='merchant')return all("SELECT * FROM orders WHERE shop_id=? OR (kind='market' AND json_extract(snapshot,'$.seller_id')=?) ORDER BY created_at DESC LIMIT 100",u.shop_id,u.id);if(u.role==='rider')return all("SELECT * FROM orders WHERE rider_id=? OR (status='ready' AND rider_id IS NULL AND (kind<>'ride' OR ?=1)) ORDER BY created_at DESC LIMIT 100",u.id,u.accepts_rides?1:0);return all("SELECT * FROM orders WHERE customer_id=? OR (kind='market' AND json_extract(snapshot,'$.seller_id')=?) ORDER BY created_at DESC LIMIT 100",u.id,u.id)}
+function visibleOrders(u){if(u.role==='admin')return all('SELECT * FROM orders ORDER BY created_at DESC LIMIT 300');if(u.role==='merchant')return all("SELECT * FROM orders WHERE shop_id=? OR (kind='market' AND json_extract(snapshot,'$.seller_id')=?) ORDER BY created_at DESC LIMIT 100",u.shop_id,u.id);if(u.role==='rider')return all("SELECT * FROM orders WHERE rider_id=? OR (status='ready' AND rider_id IS NULL AND (kind<>'ride' OR ?=1)) ORDER BY created_at DESC LIMIT 20",u.id,u.accepts_rides?1:0);return all("SELECT * FROM orders WHERE customer_id=? OR (kind='market' AND json_extract(snapshot,'$.seller_id')=?) ORDER BY created_at DESC LIMIT 100",u.id,u.id)}
 function canReadOrder(u,o){return u.role==='admin'||o.customer_id===u.id||o.rider_id===u.id||(u.role==='merchant'&&o.shop_id===u.shop_id)||(o.kind==='market'&&JSON.parse(o.snapshot).seller_id===u.id)}
 const clients=new Map();function emit(){for(const [res] of clients){try{res.write('event: refresh\ndata: {}\n\n')}catch{clients.delete(res)}}}
 function transaction(fn){db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result}catch(e){db.exec('ROLLBACK');throw e}}
 function addEvent(orderId,u,status,note=''){run('INSERT INTO order_events(order_id,actor_id,status,note,created_at) VALUES(?,?,?,?,?)',orderId,u.id,status,note,now())}
 const buckets=new Map();function limit(req,key,max=200){const ip=req.socket.remoteAddress;const k=ip+':'+key;let b=buckets.get(k);if(!b||b.until<Date.now()){b={n:0,until:Date.now()+60000};buckets.set(k,b)}if(++b.n>max)fail(429,'ทำรายการบ่อยเกินไป กรุณารอสักครู่')}
-function send(res,status,value){const task=saveQueue.then(async()=>{await persistState();if(!res.destroyed){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(value))}});saveQueue=task.catch(()=>{});return task}
+let syncTimeout = null;
+function triggerBackgroundSync() {
+  if (syncTimeout) clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(async () => {
+    try { await persistState(); } catch (e) { console.error("Firebase sync error:", e); }
+  }, 1500); 
+}
+
+function send(res, status, value) {
+  if (!res.destroyed) {
+    res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify(value));
+  }
+  triggerBackgroundSync();
+  return Promise.resolve();
+}
 async function body(req){let size=0,chunks=[];for await(const chunk of req){size+=chunk.length;if(size>3500000)fail(413,'รูปหรือข้อมูลใหญ่เกินไป');chunks.push(chunk)}try{return JSON.parse(Buffer.concat(chunks).toString()||'{}')}catch{fail(400,'JSON ไม่ถูกต้อง')}}
 function checkOrigin(req){const allowed=process.env.APP_ORIGIN||'http://'+req.headers.host;const origin=req.headers.origin;if(origin&&origin!==allowed)fail(403,'Origin ไม่ถูกต้อง');if(req.headers['sec-fetch-site']==='cross-site')fail(403,'ไม่รับคำขอข้ามเว็บไซต์')}
 let importBusy=false;
