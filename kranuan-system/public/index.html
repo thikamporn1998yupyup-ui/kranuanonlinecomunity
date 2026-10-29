@@ -791,5 +791,46 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 <script src="/api.js"></script><script src="/customer.js"></script>
-<script src="/commerce-media.js?v=20261027"></script><script src="/commerce-customer.js?v=20261027"></script><script src="/market.js?v=20261027-market"></script><script src="/app-zoom-lock.js?v=20261027-2"></script><script src="/courier-grab-ui.js?v=20261027-2"></script><script src="/ride-mode-ui.js?v=20261030"></script><script src="/mobile-catalog.js?v=20261027-3"></script><script src="/rider-profiles.js?v=20261027"></script><script src="/compact-activity.js?v=20261027"></script><script src="/rider-team-board.js?v=20261027"></script><script src="/ads-config.js?v=20261028"></script><script src="/home-upgrade.js?v=20261028"></script></body>
+<script src="/commerce-media.js?v=20261027"></script><script src="/commerce-customer.js?v=20261027"></script><script src="/market.js?v=20261027-market"></script><script src="/app-zoom-lock.js?v=20261027-2"></script><script src="/courier-grab-ui.js?v=20261027-2"></script><script src="/ride-mode-ui.js?v=20261030"></script><script src="/mobile-catalog.js?v=20261027-3"></script><script src="/rider-profiles.js?v=20261027"></script><script src="/compact-activity.js?v=20261027"></script><script src="/rider-team-board.js?v=20261027"></script><script src="/ads-config.js?v=20261028"></script><script src="/home-upgrade.js?v=20261028"></script>
+<!-- ========================================== -->
+<!-- 🌟 สคริปต์แก้ปัญหาลูป LINE (ห้ามลบ) 🌟 -->
+<!-- ========================================== -->
+<script>
+  // 1. ดักจับการกดปุ่มออกจากระบบ
+  const originalFetch = window.fetch;
+  window.fetch = async function(...args) {
+    const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
+    // ถ้าระบบมีการเรียกใช้ API logout ให้จำไว้ว่า "ผู้ใช้ตั้งใจจะออก"
+    if (url.includes('/api/logout')) {
+      localStorage.setItem('kranuan_manual_logout', 'true');
+    }
+    return originalFetch.apply(this, args);
+  };
+
+  // 2. ดักจับตอนโหลดหน้าเว็บ
+  document.addEventListener('DOMContentLoaded', () => {
+    const isManualLogout = localStorage.getItem('kranuan_manual_logout') === 'true';
+    
+    // ถ้ามีระบบ LINE LIFF อยู่ในหน้าเว็บ
+    if (window.liff) {
+      // 2.1 ถ้าผู้ใช้กดปุ่ม Login เอง ให้ล้างค่าออก เพื่อให้ล็อกอินได้
+      const originalLogin = liff.login;
+      liff.login = function(...args) {
+        localStorage.removeItem('kranuan_manual_logout');
+        return originalLogin.apply(this, args);
+      };
+
+      // 2.2 ถ้าผู้ใช้เพิ่งกดออกจากระบบ ให้ "แกล้งทำเป็นว่ายังไม่ล็อกอิน"
+      if (isManualLogout) {
+        liff.isLoggedIn = function() { return false; }; 
+        liff.getProfile = function() { return Promise.reject(new Error("Manual Logout")); };
+      }
+    }
+  });
+</script>
+<!-- ========================================== -->
+
+</body>
+</html>
+</body>
 </html>
