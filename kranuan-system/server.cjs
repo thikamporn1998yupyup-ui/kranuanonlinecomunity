@@ -130,25 +130,6 @@ async function api(req,res,url){
    return send(res,200,newSession(res,user.id));
  }
 
- if(p==='/api/auth/kyc'&&method==='POST'){
-   try {
-     needUser(u);
-     const fullName = required(b.full_name,'ชื่อ-นามสกุล',100);
-     const idCard = required(b.id_card,'เลขบัตรประชาชน',13);
-     const phone = required(b.phone,'เบอร์โทรศัพท์',10);
-     
-     // 🌟 สร้างคอลัมน์อัตโนมัติ (ถ้ายังไม่มีใน Database)
-     try { db.exec("ALTER TABLE users ADD COLUMN id_card TEXT"); } catch(e) {}
-     try { db.exec("ALTER TABLE users ADD COLUMN phone_number TEXT"); } catch(e) {}
-     try { db.exec("ALTER TABLE users ADD COLUMN kyc_status TEXT DEFAULT 'unverified'"); } catch(e) {}
-
-     run('UPDATE users SET name=?, id_card=?, phone_number=?, kyc_status=? WHERE id=?', fullName, idCard, phone, 'pending_review', u.id);
-     return send(res,200,{ok:true, message:'ส่งข้อมูลยืนยันตัวตนสำเร็จ รอเจ้าหน้าที่ตรวจสอบ'});
-   } catch (err) {
-     console.error("KYC Error:", err.message);
-     return send(res, 500, { error: err.message }); // โชว์ Error ที่แท้จริงให้หน้าบ้านเห็น
-   }
- }
 
  if(p==='/api/shops'&&method==='GET')return send(res,200,all('SELECT * FROM shops ORDER BY accepting DESC, name ASC').map(s=>{const v=shopView(s);delete v.survey_note;delete v.verified_by;return v}));
  if(p==='/api/menus'&&method==='GET'){const shopId=required(url.searchParams.get('shop'),'ร้าน');return send(res,200,all('SELECT id,shop_id,name,price_satang,image_url,available FROM menus WHERE shop_id=? ORDER BY name',shopId).map(m=>{const img = m.image_url ? (m.image_url.startsWith('data:') ? '/api/menus/'+m.id+'/image' : m.image_url) : '';return {...m,image_url:img,price:m.price_satang/100,available:!!m.available}}))}
@@ -165,6 +146,23 @@ async function api(req,res,url){
  needUser(u);
  if(!['GET','HEAD'].includes(method)&&req.headers['x-csrf-token']!==u.csrf)fail(403,'เซสชันเปลี่ยน กรุณาโหลดหน้าใหม่');
  const b=['POST','PATCH','PUT'].includes(method)?await body(req):{};
+  if(p==='/api/auth/kyc'&&method==='POST'){
+   try {
+     const fullName = required(b.full_name,'ชื่อ-นามสกุล',100);
+     const idCard = required(b.id_card,'เลขบัตรประชาชน',13);
+     const phone = required(b.phone,'เบอร์โทรศัพท์',10);
+     
+     try { db.exec("ALTER TABLE users ADD COLUMN id_card TEXT"); } catch(e) {}
+     try { db.exec("ALTER TABLE users ADD COLUMN phone_number TEXT"); } catch(e) {}
+     try { db.exec("ALTER TABLE users ADD COLUMN kyc_status TEXT DEFAULT 'unverified'"); } catch(e) {}
+
+     run('UPDATE users SET name=?, id_card=?, phone_number=?, kyc_status=? WHERE id=?', fullName, idCard, phone, 'pending_review', u.id);
+     return send(res,200,{ok:true, message:'ส่งข้อมูลยืนยันตัวตนสำเร็จ รอเจ้าหน้าที่ตรวจสอบ'});
+   } catch (err) {
+     console.error("KYC Error:", err.message);
+     return send(res, 500, { error: err.message });
+   }
+ }
  if(p==='/api/my-activity'&&method==='GET')return send(res,200,myActivity(u.id));
  if(p==='/api/orders'&&method==='POST'&&(b.preferred_rider_id||b.selected_rider_id))fail(409,'ระบบเลือกไรเดอร์สำหรับ VIP ยังไม่เปิดใช้งาน');
 
