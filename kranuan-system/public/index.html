@@ -793,41 +793,70 @@ window.addEventListener('DOMContentLoaded', () => {
 <script src="/api.js"></script><script src="/customer.js"></script>
 <script src="/commerce-media.js?v=20261027"></script><script src="/commerce-customer.js?v=20261027"></script><script src="/market.js?v=20261027-market"></script><script src="/app-zoom-lock.js?v=20261027-2"></script><script src="/courier-grab-ui.js?v=20261027-2"></script><script src="/ride-mode-ui.js?v=20261030"></script><script src="/mobile-catalog.js?v=20261027-3"></script><script src="/rider-profiles.js?v=20261027"></script><script src="/compact-activity.js?v=20261027"></script><script src="/rider-team-board.js?v=20261027"></script><script src="/ads-config.js?v=20261028"></script><script src="/home-upgrade.js?v=20261028"></script>
 
-  <!-- ========================================== -->
-<!-- 🌟 สคริปต์แก้ปัญหาลูป LINE (ห้ามลบ) 🌟 -->
+
+<!-- ========================================== -->
+<!-- 🌟 สคริปต์คุมระบบ LINE และ KYC (ตัวจริง) 🌟 -->
 <!-- ========================================== -->
 <script>
-  // 1. ดักจับการกดปุ่มออกจากระบบ
-  const originalFetch = window.fetch;
-  window.fetch = async function(...args) {
-    const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
-    // ถ้าระบบมีการเรียกใช้ API logout ให้จำไว้ว่า "ผู้ใช้ตั้งใจจะออก"
-    if (url.includes('/api/logout')) {
-      localStorage.setItem('kranuan_manual_logout', 'true');
-    }
-    return originalFetch.apply(this, args);
-  };
-
-  // 2. ดักจับตอนโหลดหน้าเว็บ
-  document.addEventListener('DOMContentLoaded', () => {
+  (function() {
     const isManualLogout = localStorage.getItem('kranuan_manual_logout') === 'true';
-    
-    // ถ้ามีระบบ LINE LIFF อยู่ในหน้าเว็บ
-    if (window.liff) {
-      // 2.1 ถ้าผู้ใช้กดปุ่ม Login เอง ให้ล้างค่าออก เพื่อให้ล็อกอินได้
-      const originalLogin = liff.login;
-      liff.login = function(...args) {
-        localStorage.removeItem('kranuan_manual_logout');
-        return originalLogin.apply(this, args);
-      };
 
-      // 2.2 ถ้าผู้ใช้เพิ่งกดออกจากระบบ ให้ "แกล้งทำเป็นว่ายังไม่ล็อกอิน"
-      if (isManualLogout) {
-        liff.isLoggedIn = function() { return false; }; 
-        liff.getProfile = function() { return Promise.reject(new Error("Manual Logout")); };
+    // ----------------------------------------------------
+    // ภารกิจที่ 1: จัดการเรื่องการกดออกจากระบบ (Logout Loop)
+    // ----------------------------------------------------
+    if (isManualLogout) {
+      // 1.1 ถ้าเพิ่งกดออกจากระบบ ให้บังคับ LIFF ออกจากระบบด้วย (สำคัญมาก!)
+      if (window.liff && liff.isLoggedIn()) {
+        liff.logout();
       }
+      
+      // 1.2 ล้าง Cookie ฝั่งเซิร์ฟเวอร์อีกครั้งเพื่อความชัวร์
+      fetch('/api/logout', { method: 'POST' });
+
+      // 1.3 ดักจับปุ่ม Login: ถ้าผู้ใช้กดปุ่ม Login เอง ให้ล้างค่าออกแล้วให้ล็อกอิน
+      document.addEventListener('click', function(e) {
+        const btnText = e.target.innerText || '';
+        if (btnText.includes('เข้าสู่ระบบ') || btnText.includes('Login') || btnText.includes('LINE')) {
+          localStorage.removeItem('kranuan_manual_logout');
+        }
+      }, true);
+      
+      // ถ้าออกจากระบบแล้ว ก็ไม่ต้องไปเช็ค KYC ต่อ
+      return; 
     }
-  });
+
+    // ----------------------------------------------------
+    // ภารกิจที่ 2: เช็คสถานะ KYC ว่าต้องเด้งป๊อปอัปไหม
+    // ----------------------------------------------------
+    setTimeout(async () => {
+      try {
+        const res = await fetch('/api/session');
+        const data = await res.json();
+        
+        // ถ้ามี User ล็อกอินอยู่ และยังไม่ได้ยืนยันตัวตน (unverified)
+        if (data.user && data.user.kyc_status === 'unverified') {
+          if (typeof showKycModal === 'function') {
+            showKycModal(); // เด้งป๊อปอัป KYC
+          }
+        }
+      } catch (err) {
+        console.log("ยังไม่ได้ล็อกอิน");
+      }
+    }, 1000); 
+
+    // ----------------------------------------------------
+    // ภารกิจเสริม: ดักจับตอนกด Logout ให้จำค่าทันที
+    // ----------------------------------------------------
+    const originalFetch = window.fetch;
+    window.fetch = async function(...args) {
+      const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
+      if (url.includes('/api/logout')) {
+        localStorage.setItem('kranuan_manual_logout', 'true');
+      }
+      return originalFetch.apply(this, args);
+    };
+
+  })();
 </script>
 <!-- ========================================== -->
 
