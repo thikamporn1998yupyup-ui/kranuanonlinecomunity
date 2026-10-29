@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>กระนวนไรเดอร์ — Sci-Fi Preview</title>
+<style>html,body{margin:0;background:#03050b;color:#19e3ff;font:14px monospace}body{display:grid;place-items:center;min-height:100vh;letter-spacing:.2em}</style>
+</head>
+<body>BOOTING SYSTEM...
+<script>
+fetch('index.html',{cache:'no-store'}).then(function(r){return r.text()}).then(function(h){
+  h=h.replace('</head>','<link rel="stylesheet" href="scifi.css?v=1"></head>').replace('</body>','<script src="scifi.js?v=1"><\/script></body>');
+  document.open();document.write(h);document.close();
+}).catch(function(e){document.body.textContent='LOAD ERROR: '+e.message});
+</script>
+</body>
+</html>

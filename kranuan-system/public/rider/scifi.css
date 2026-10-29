@@ -1,0 +1,187 @@
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Orbitron:wght@500;700;900&display=swap');
+
+body{
+  --s0:transparent;--s1:rgba(8,18,32,.62);--s2:rgba(2,8,18,.72);--bg:#03050b;--top:transparent;
+  --tx:#e6f7ff;--tx2:#86a9bd;--ln:rgba(120,200,255,.16);--ln2:rgba(120,200,255,.28);
+  --chip:rgba(4,12,24,.72);--btn:rgba(10,24,40,.7);--ok:#39ff9c;--okrgb:57,255,156;--warn:#ffc857;
+  --ac:#19e3ff;--ac2:#8ff3ff;--rgb:25,227,255;--neb1:rgba(40,60,170,.30);--neb2:rgba(0,120,170,.25);
+  --navon:var(--ac);--navtx:#7fa4b8;--navtile:rgba(var(--rgb),.16);--tilebg:rgba(var(--rgb),.1);--tileln:rgba(var(--rgb),.3);
+  --cut:14px;
+  background:radial-gradient(900px 520px at 85% -5%,var(--neb1),transparent 60%),radial-gradient(800px 600px at -10% 105%,var(--neb2),transparent 60%),#03050b;
+  background-attachment:fixed;color:var(--tx);
+  font-family:"Chakra Petch",Seed,"Noto Sans Thai",Tahoma,sans-serif;
+}
+body[data-scene=jobs]{--ac:#3dff9a;--ac2:#b4ffd8;--rgb:61,255,154;--neb1:rgba(0,160,90,.28);--neb2:rgba(0,70,110,.28)}
+body[data-scene=history]{--ac:#b57bff;--ac2:#dcc2ff;--rgb:181,123,255;--neb1:rgba(110,40,200,.32);--neb2:rgba(200,40,140,.18)}
+body[data-scene=settings]{--ac:#ffb02e;--ac2:#ffd98a;--rgb:255,176,46;--neb1:rgba(200,110,0,.25);--neb2:rgba(120,40,0,.25)}
+
+.app{background:transparent!important;box-shadow:none!important;overflow:visible!important;border-radius:0!important;margin:0 auto!important}
+
+/* ---------- background fx layers ---------- */
+#fx{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+#fx>*{position:absolute;opacity:0;transition:opacity .7s}
+#fx>.fx-stars{inset:0;opacity:.6;background-image:radial-gradient(1px 1px at 20px 30px,#fff,transparent),radial-gradient(1px 1px at 120px 80px,#9ff,transparent),radial-gradient(1.5px 1.5px at 200px 150px,#fff,transparent),radial-gradient(1px 1px at 60px 190px,#cdf,transparent),radial-gradient(1px 1px at 170px 20px,#fff,transparent);background-size:240px 240px;animation:drift 140s linear infinite}
+@keyframes drift{to{background-position:240px 480px}}
+#fx>.fx-scan{left:0;right:0;top:-140px;height:140px;opacity:1;background:linear-gradient(to bottom,transparent,rgba(var(--rgb),.07),transparent);animation:scan 10s linear infinite}
+@keyframes scan{to{transform:translateY(calc(100vh + 140px))}}
+
+.fx-grid{left:-50%;right:-50%;bottom:0;height:60vh;background-image:linear-gradient(rgba(var(--rgb),.4) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--rgb),.4) 1px,transparent 1px);background-size:48px 48px;transform:perspective(420px) rotateX(62deg);transform-origin:50% 100%;-webkit-mask-image:linear-gradient(to top,#000,transparent 85%);mask-image:linear-gradient(to top,#000,transparent 85%);animation:gridmove 4s linear infinite}
+@keyframes gridmove{to{background-position:0 48px}}
+
+.fx-radar{left:50%;top:19vh;width:min(62vw,300px);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;border:1px solid rgba(var(--rgb),.6);background:repeating-radial-gradient(circle,transparent 0 16%,rgba(var(--rgb),.35) 16.3% 16.9%),radial-gradient(circle,rgba(var(--rgb),.14),transparent 72%);box-shadow:0 0 50px rgba(var(--rgb),.3),inset 0 0 30px rgba(var(--rgb),.25)}
+.fx-radar::before,.fx-radar::after{content:"";position:absolute;background:rgba(var(--rgb),.35)}
+.fx-radar::before{left:50%;top:0;bottom:0;width:1px}
+.fx-radar::after{top:50%;left:0;right:0;height:1px}
+.fx-radar .sweep{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,transparent 0 290deg,rgba(var(--rgb),.6) 360deg);animation:spin 3.4s linear infinite}
+.fx-radar .blips{position:absolute;inset:0}
+.fx-radar .blips i{position:absolute;width:10px;height:10px;margin:-5px;border-radius:50%;background:#fff;box-shadow:0 0 12px var(--ac);animation:ping 2s ease-out infinite}
+.fx-radar .cap{position:absolute;left:50%;bottom:-30px;transform:translateX(-50%);white-space:nowrap;font:700 10px Orbitron,"Chakra Petch",sans-serif;letter-spacing:.2em;color:var(--ac);text-shadow:0 0 10px var(--ac)}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(var(--rgb),.8),0 0 12px var(--ac)}100%{box-shadow:0 0 0 22px rgba(var(--rgb),0),0 0 12px var(--ac)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.fx-rain{left:0;top:0;width:100%;height:100%}
+
+.fx-rings{right:-90px;top:50px;width:300px;height:300px}
+.fx-rings b{position:absolute;inset:0;border-radius:50%;border:2px dashed rgba(var(--rgb),.55);animation:spin 40s linear infinite}
+.fx-rings b:nth-child(2){inset:34px;border:1px solid rgba(var(--rgb),.6);animation-direction:reverse;animation-duration:26s}
+.fx-rings b:nth-child(3){inset:74px;border:6px double rgba(var(--rgb),.45);animation-duration:18s}
+
+body[data-scene=home] #fx>.fx-grid{opacity:.22}
+body[data-scene=settings] #fx>.fx-grid{opacity:.5}
+body[data-scene=settings] #fx>.fx-rings{opacity:.85}
+body[data-scene=jobs] #fx>.fx-radar{opacity:1}
+body[data-scene=jobs] #fx>.fx-grid{opacity:.12}
+body[data-scene=history] #fx>.fx-rain{opacity:.42}
+
+/* ---------- top bar ---------- */
+.topbar{position:relative;z-index:6;background:linear-gradient(to bottom,rgba(3,5,11,.92),rgba(3,5,11,0))!important;border-bottom:0!important}
+.topbar:after{content:"";position:absolute;left:12px;right:12px;bottom:0;height:1px;background:linear-gradient(90deg,transparent,rgba(var(--rgb),.8),transparent)}
+.topbar small{font-family:Orbitron,sans-serif;color:var(--ac);letter-spacing:.3em;text-shadow:0 0 10px rgba(var(--rgb),.8)}
+.topbar strong{text-shadow:0 0 12px rgba(var(--rgb),.6)}
+.rider-mini-avatar{border-radius:30%!important;border:1px solid var(--ac)!important;background:rgba(var(--rgb),.25)!important;box-shadow:0 0 12px rgba(var(--rgb),.6)}
+.mepill,.online-status{border-radius:0!important;background:rgba(4,12,24,.7)!important;border:0!important;box-shadow:inset 0 0 0 1px rgba(var(--rgb),.35)}
+.online-status{box-shadow:none!important}
+.sosbtn{border-radius:0!important;background:linear-gradient(135deg,#ff3b5c,#b3123a)!important;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);box-shadow:none!important;font-family:Orbitron,"Chakra Petch",sans-serif;letter-spacing:.08em}
+
+/* ---------- map: full-bleed, no frame ---------- */
+#realMapContainer{position:fixed!important;top:0;left:50%;transform:translateX(-50%);width:min(100%,600px);height:46vh;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important;z-index:1;overflow:hidden;transition:opacity .6s}
+#realMapContainer::before{content:"";position:absolute;inset:0;z-index:590;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px)}
+#realMapContainer::after{content:"";position:absolute;inset:0;z-index:600;pointer-events:none;background:linear-gradient(to bottom,rgba(3,5,11,.6) 0,rgba(3,5,11,0) 24%,rgba(3,5,11,0) 50%,rgba(3,5,11,.9) 88%,#03050b 100%),radial-gradient(ellipse at 50% 45%,transparent 45%,rgba(3,5,11,.7) 100%)}
+#realMap::before{content:"";position:absolute;inset:0;z-index:450;pointer-events:none;background:rgba(var(--rgb),.16);mix-blend-mode:color}
+body:not([data-scene=home]) #realMapContainer{opacity:0;visibility:hidden;pointer-events:none;transition:opacity .5s,visibility 0s .5s}
+.dark-map-tiles{filter:invert(1) hue-rotate(180deg) brightness(.72) contrast(1.2) saturate(.55)!important}
+#realMap .leaflet-marker-icon>div{background:rgba(var(--rgb),.3)!important;border:2px solid var(--ac)!important;animation:pinPulse 2s ease-out infinite}
+@keyframes pinPulse{0%{box-shadow:0 0 0 0 rgba(var(--rgb),.8),0 0 16px var(--ac)}100%{box-shadow:0 0 0 28px rgba(var(--rgb),0),0 0 16px var(--ac)}}
+.leaflet-control-attribution{background:rgba(3,5,11,.6)!important;color:var(--tx2)!important;font-size:9px!important}
+.leaflet-control-attribution a{color:var(--ac)!important}
+.hud{position:absolute;inset:0;display:grid;place-items:center;z-index:700;pointer-events:none}
+.hud svg{width:min(78vw,320px);overflow:visible}
+.hud circle{fill:none;stroke:rgba(var(--rgb),.55);stroke-width:1}
+.hud .a{stroke-dasharray:3 9;animation:spin 40s linear infinite}
+.hud .b{stroke-dasharray:30 14;stroke-width:2;animation:spin 18s linear infinite reverse}
+.hud .c{stroke:rgba(var(--rgb),.8)}
+.hud path{fill:none;stroke:var(--ac);stroke-width:2;filter:drop-shadow(0 0 4px var(--ac))}
+.maptop{top:80px!important}
+.chip{border-radius:0!important;border:0!important;background:rgba(var(--rgb),.14)!important;box-shadow:inset 0 0 0 1px rgba(var(--rgb),.5)!important;font-family:Orbitron,"Chakra Petch",sans-serif;color:var(--ac2)}
+.mapstats{padding:70px 16px 28px!important;background:none!important}
+.mapstats>div{border-left:2px solid rgba(var(--rgb),.8);padding-left:8px}
+.mapstats span{font-family:Orbitron,"Chakra Petch",sans-serif;letter-spacing:.14em;font-size:9px!important;color:var(--ac)!important}
+.mapstats strong{font-family:Orbitron,"Chakra Petch",sans-serif;font-size:16px!important;text-shadow:0 0 12px rgba(var(--rgb),.9)!important;color:#fff!important}
+
+/* ---------- content ---------- */
+.content{position:relative;z-index:3;pointer-events:none}
+.content>*{pointer-events:auto}
+body[data-scene=home] .content{padding-top:calc(46vh - 74px)}
+body[data-scene=jobs] .content{padding-top:calc(38vh - 30px)}
+.sectiontitle h1{font-family:Orbitron,"Chakra Petch",sans-serif;font-size:20px;text-shadow:0 0 14px rgba(var(--rgb),.7)}
+.sectiontitle h1::before{display:block;font-size:9px;letter-spacing:.3em;color:var(--ac);margin-bottom:3px;font-weight:500}
+body[data-scene=home] .sectiontitle h1::before{content:"SECTOR 01 // COMMAND DECK"}
+body[data-scene=jobs] .sectiontitle h1::before{content:"SECTOR 02 // LONG-RANGE RADAR"}
+body[data-scene=history] .sectiontitle h1::before{content:"SECTOR 03 // DATA ARCHIVE"}
+body[data-scene=settings] .sectiontitle h1::before{content:"SECTOR 04 // HANGAR BAY"}
+.pill{border-radius:0!important;border:0!important;background:rgba(var(--rgb),.14)!important;box-shadow:inset 0 0 0 1px rgba(var(--rgb),.5);color:var(--ac2)!important;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}
+
+#screen.enter>*{animation:holoIn .55s cubic-bezier(.2,.8,.2,1) both}
+#screen.enter>*:nth-child(2){animation-delay:.07s}
+#screen.enter>*:nth-child(3){animation-delay:.14s}
+#screen.enter>*:nth-child(4){animation-delay:.21s}
+#screen.enter>*:nth-child(n+5){animation-delay:.28s}
+@keyframes holoIn{from{opacity:0;transform:translateY(16px);filter:blur(6px)}}
+
+/* ---------- holo cards ---------- */
+.card,.app .card{position:relative;background:linear-gradient(135deg,rgba(var(--rgb),.11),rgba(8,18,32,.64) 42%)!important;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:0!important;border-radius:0!important;box-shadow:none!important;padding:16px 14px!important;margin:12px 0!important;clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut))}
+.card::before{content:"";position:absolute;inset:0;padding:1px;pointer-events:none;background:linear-gradient(135deg,rgba(var(--rgb),.8),rgba(var(--rgb),.06) 45%,rgba(var(--rgb),.45));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+.card::after{content:"";position:absolute;top:7px;right:calc(var(--cut) + 2px);width:28px;height:3px;background:var(--ac);box-shadow:0 0 8px var(--ac);opacity:.85}
+.avatar{border-radius:0!important;clip-path:polygon(25% 4%,75% 4%,100% 50%,75% 96%,25% 96%,0 50%);background:rgba(var(--rgb),.2)!important;border:0!important;color:var(--ac2)!important}
+.amount{font-family:Orbitron,"Chakra Petch",sans-serif;font-size:19px!important;color:var(--ac2)!important;text-shadow:0 0 14px rgba(var(--rgb),.8)}
+.timeline .stop,.stop{border-left:2px solid rgba(var(--rgb),.35)!important}
+.stop:before{background:#03050b!important;border:2px solid var(--ac)!important;box-shadow:0 0 8px var(--ac)}
+.stop:last-child:before{background:var(--ac)!important;border-radius:0!important;transform:rotate(45deg)}
+
+/* ---------- telemetry on job cards ---------- */
+.tele{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:2px 0 14px}
+.tele div{padding:6px 8px;background:rgba(var(--rgb),.08);border-left:2px solid var(--ac)}
+.tele span{display:block;font-size:9px;color:var(--tx2)}
+.tele b{font-family:Orbitron,sans-serif;font-size:15px;color:var(--ac2);text-shadow:0 0 8px rgba(var(--rgb),.6)}
+.tele small{font-family:"Chakra Petch",sans-serif;font-size:10px;color:var(--tx2);margin-left:3px}
+.tele .bar{grid-column:1/-1;display:block;height:4px;background:rgba(255,255,255,.08);overflow:hidden}
+.tele .bar u{display:block;height:100%;background:linear-gradient(90deg,transparent,var(--ac));box-shadow:0 0 10px var(--ac)}
+
+/* ---------- buttons ---------- */
+.primary,.secondary{position:relative;overflow:hidden;border-radius:0!important;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);letter-spacing:.02em}
+.primary{background:linear-gradient(135deg,var(--ac),rgba(var(--rgb),.6))!important;color:#021018!important;box-shadow:none!important}
+.primary.danger{background:linear-gradient(135deg,#ff3b5c,#a01030)!important;color:#fff!important}
+.primary::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 35%,rgba(255,255,255,.45) 50%,transparent 65%);transform:translateX(-120%);transition:transform .6s}
+.primary:hover::after{transform:translateX(120%)}
+.secondary{background:rgba(var(--rgb),.1)!important;color:var(--ac2)!important;border:0!important;box-shadow:inset 0 0 0 1px rgba(var(--rgb),.5)}
+.linkbtn{color:var(--ac2)!important}
+
+/* ---------- ring gauges ---------- */
+.dash-stats button{position:relative;background:rgba(8,18,32,.6)!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:14px 4px 10px!important;clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)}
+.dash-stats button::before{content:"";position:absolute;inset:0;padding:1px;pointer-events:none;background:linear-gradient(135deg,rgba(var(--rgb),.7),rgba(var(--rgb),.05) 50%,rgba(var(--rgb),.4));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+.dash-stats strong{position:relative;display:grid;place-items:center;width:68px;height:68px;margin:0 auto 6px;font-family:Orbitron,sans-serif;font-size:24px!important;color:#fff!important;text-shadow:0 0 12px var(--ac)}
+.dash-stats strong::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--ac) calc(var(--p,0)*1%),rgba(255,255,255,.09) 0);-webkit-mask:radial-gradient(circle,transparent 58%,#000 60%);mask:radial-gradient(circle,transparent 58%,#000 60%);filter:drop-shadow(0 0 6px var(--ac))}
+.dash-stats strong::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:1px dashed rgba(var(--rgb),.45)}
+.dash-stats span{font-size:10px!important;color:var(--tx2)!important}
+
+.switch{border:0!important;border-radius:0!important;border-left:3px solid var(--ac)!important;background:rgba(8,18,32,.6)!important}
+.switch button{border-radius:0!important;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);border:0!important}
+.state,#notice,.empty{border-radius:0!important;background:rgba(8,18,32,.6)!important;border:0!important;border-left:3px solid var(--warn)!important}
+.empty{border-left-color:var(--ac)!important;border:1px dashed rgba(var(--rgb),.35)!important}
+
+/* ---------- history log ---------- */
+#screen{counter-reset:log}
+.hist{counter-increment:log;position:relative;padding:12px 0 12px 46px!important;border-bottom:1px dashed rgba(var(--rgb),.28)!important}
+.hist::before{content:"#" counter(log,decimal-leading-zero);position:absolute;left:0;top:13px;font:700 11px Orbitron,sans-serif;color:var(--ac);text-shadow:0 0 8px var(--ac)}
+.hist b{font-family:Orbitron,"Chakra Petch",sans-serif;color:var(--ac2)!important;text-shadow:0 0 10px rgba(var(--rgb),.7)}
+
+/* ---------- settings modules ---------- */
+.card h2{font-family:Orbitron,"Chakra Petch",sans-serif;color:var(--ac2);text-shadow:0 0 10px rgba(var(--rgb),.5)}
+.card h2 .ic{color:var(--ac)!important}
+input,select,textarea{border-radius:0!important;background:rgba(2,8,18,.72)!important;border:0!important;border-bottom:1px solid rgba(var(--rgb),.55)!important;color:var(--tx)!important}
+input:focus,select:focus,textarea:focus{box-shadow:0 6px 14px -8px var(--ac)}
+option{background:#06101c;color:#e6f7ff}
+.bigav,.slot{border-radius:0!important}
+.opt,.mrow{border-radius:0!important;border:0!important;box-shadow:inset 0 0 0 1px rgba(var(--rgb),.35);background:rgba(2,8,18,.6)!important}
+.opt[aria-pressed=true]{background:rgba(var(--rgb),.22)!important;box-shadow:inset 0 0 0 1px var(--ac)}
+.mrow.danger{background:linear-gradient(135deg,#ff3b5c,#a01030)!important}
+
+/* ---------- bottom nav ---------- */
+.nav{background:rgba(3,10,20,.84)!important;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:0!important;border-radius:0!important;box-shadow:none!important;padding:10px 8px 10px!important;clip-path:polygon(18px 0,calc(100% - 18px) 0,100% 18px,100% 100%,0 100%,0 18px)}
+.nav::before{content:"";position:absolute;left:18px;right:18px;top:0;height:2px;background:linear-gradient(90deg,transparent,var(--ac),transparent);box-shadow:0 0 12px var(--ac)}
+.nav button.active{filter:drop-shadow(0 0 6px rgba(var(--rgb),.9))}
+.nav button.active .tile{border-radius:0;clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);background:rgba(var(--rgb),.28);border-color:transparent}
+
+/* ---------- job bar, alert, sheet ---------- */
+.barcard{border-radius:0!important;border:0!important;background:rgba(3,10,20,.9)!important;clip-path:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px);box-shadow:none!important;border-left:3px solid var(--ac)!important}
+#alert{--ac:#ffb02e;--ac2:#ffd98a;--rgb:255,176,46;background:rgba(2,4,10,.9)!important}
+.alertcard{border-radius:0!important;border:0!important;box-shadow:none!important;background:linear-gradient(160deg,rgba(var(--rgb),.16),rgba(4,10,20,.97) 45%)!important;clip-path:polygon(20px 0,100% 0,100% calc(100% - 20px),calc(100% - 20px) 100%,0 100%,0 20px)}
+.alertcard::before{content:"INCOMING TRANSMISSION";display:block;padding:6px 16px;font:700 9px Orbitron,sans-serif;letter-spacing:.35em;color:#021018;background:var(--ac);animation:blink 1.2s steps(2) infinite}
+@keyframes blink{50%{opacity:.6}}
+.alertphoto,.adminbubble,.adminav{border-radius:0!important}
+.alertfee strong{font-family:Orbitron,sans-serif;text-shadow:0 0 14px rgba(var(--rgb),.9)}
+.alertbar{border-radius:0!important}
+.shpanel{border-radius:0!important;border-top:0!important;background:rgba(4,10,20,.97)!important;clip-path:polygon(22px 0,calc(100% - 22px) 0,100% 22px,100% 100%,0 100%,0 22px)}
+.shpanel::before{content:"";position:absolute;left:22px;right:22px;top:0;height:2px;background:linear-gradient(90deg,transparent,var(--ac),transparent);box-shadow:0 0 12px var(--ac)}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
