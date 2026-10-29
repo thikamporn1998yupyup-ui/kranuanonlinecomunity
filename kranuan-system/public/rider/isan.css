@@ -1,0 +1,228 @@
+@import url('https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&display=swap');
+
+@property --sky1{syntax:'<color>';inherits:true;initial-value:#86cdee}
+@property --sky2{syntax:'<color>';inherits:true;initial-value:#d3eff6}
+@property --sky3{syntax:'<color>';inherits:true;initial-value:#fff0cf}
+@property --suncol{syntax:'<color>';inherits:true;initial-value:#ffd54a}
+
+/* ================= สีและโหมดสว่าง (ค่าเริ่มต้น) ================= */
+body.isan{
+  --tx:#2b1d12;--tx2:#7d6550;--s0:transparent;--s1:rgba(255,251,242,.84);--s2:rgba(255,244,222,.94);--bg:#fff3dc;--top:transparent;
+  --ln:rgba(176,120,40,.28);--ln2:rgba(176,120,40,.45);--chip:rgba(255,250,238,.9);--btn:rgba(255,246,226,.96);
+  --navtx:#8a6e55;--ok:#1d8f4e;--okrgb:29,143,78;--warn:#b25f06;
+  --ac:#d9482a;--ac2:#b53213;--rgb:217,72,42;
+  --navon:var(--ac);--navtile:rgba(var(--rgb),.14);--tilebg:rgba(var(--rgb),.1);--tileln:rgba(var(--rgb),.3);
+  --gold:#e0a526;--ind:#24406e;
+  --sky1:#86cdee;--sky2:#d3eff6;--sky3:#fff0cf;--sunx:78%;--suny:14%;--suncol:#ffd54a;--sunglow:rgba(255,214,90,.6);
+  --lake1:#8fd0b4;--lake2:#3f9a86;--leaf:#3d9b4e;--leaf2:#256f3a;--leafhi:#63b85d;--far:#5aa46a;
+  --bridge:#e6502a;--bridge2:#b73a1b;--cable:#c8431f;--cloud:rgba(255,255,255,.92);--bird:#34475a;
+  margin:0;color:var(--tx);background:#fff3dc;
+  font-family:Seed,"Noto Sans Thai",Tahoma,sans-serif;
+  transition:--sky1 1.4s,--sky2 1.4s,--sky3 1.4s,--suncol 1.4s;
+}
+/* แต่ละเมนู = ช่วงเวลาต่างกันของสระหนองโก */
+body.isan[data-scene=jobs]{--sky1:#4fb3ea;--sky2:#c6ecf9;--sky3:#fff6dc;--sunx:50%;--suny:6%;--ac:#2a9150;--ac2:#1d6f3a;--rgb:42,145,80}
+body.isan[data-scene=history]{--sky1:#f2a05f;--sky2:#ffd2a3;--sky3:#ffe8c2;--sunx:20%;--suny:36%;--suncol:#ff8a3a;--sunglow:rgba(255,130,50,.55);--ac:#3b5bb0;--ac2:#2a4390;--rgb:59,91,176}
+body.isan[data-scene=settings]{--sky1:#9cc4ee;--sky2:#f1dcc4;--sky3:#ffe6c4;--sunx:86%;--suny:30%;--suncol:#ffc24d;--ac:#c58407;--ac2:#946000;--rgb:197,132,7}
+
+/* ================= โหมดมืด ================= */
+body.isan.dark{
+  --tx:#f6ead6;--tx2:#c3ad90;--s1:rgba(20,28,50,.82);--s2:rgba(10,16,32,.92);--bg:#070c1e;
+  --ln:rgba(240,190,100,.25);--ln2:rgba(240,190,100,.42);--chip:rgba(14,22,42,.88);--btn:rgba(26,36,64,.92);
+  --navtx:#b9a283;--ok:#46e08a;--okrgb:70,224,138;--warn:#ffc15a;
+  --ac:#ff7a45;--ac2:#ffb48a;--rgb:255,122,69;
+  --sky1:#060b20;--sky2:#14264a;--sky3:#2c3f63;--sunx:78%;--suny:14%;--suncol:#f2efd6;--sunglow:rgba(200,215,255,.35);
+  --lake1:#1b4a55;--lake2:#0a2229;--leaf:#17532e;--leaf2:#0d3a20;--leafhi:#238048;--far:#12402b;
+  --bridge:#d94624;--bridge2:#8e2a12;--cable:#e0643a;--cloud:rgba(130,150,200,.16);--bird:#f6efdc;
+  background:#070c1e;
+}
+body.isan.dark[data-scene=jobs]{--sky1:#041a1a;--sky2:#0c3f3c;--sky3:#1d5a52;--sunx:50%;--suny:8%;--ac:#4be08a;--ac2:#a6f5c6;--rgb:75,224,138}
+body.isan.dark[data-scene=history]{--sky1:#150b28;--sky2:#3b1d4d;--sky3:#6b3358;--sunx:20%;--suny:34%;--ac:#a9b8ff;--ac2:#d3dbff;--rgb:169,184,255}
+body.isan.dark[data-scene=settings]{--sky1:#1a1006;--sky2:#43290e;--sky3:#6d4a1c;--sunx:86%;--suny:28%;--ac:#ffc04d;--ac2:#ffdf9a;--rgb:255,192,77}
+
+.app{background:transparent!important;box-shadow:none!important;overflow:visible!important;border-radius:0!important;margin:0 auto!important}
+
+/* ================= ฉากหลังสระหนองโก ================= */
+.isan-bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.isan-bg .sky{position:absolute;inset:0;background:linear-gradient(to bottom,var(--sky1),var(--sky2) 52%,var(--sky3) 70%)}
+.isan-bg .stars{position:absolute;inset:0 0 40% 0;opacity:0;transition:opacity 1.2s;background-image:radial-gradient(1px 1px at 20px 30px,#fff,transparent),radial-gradient(1.5px 1.5px at 130px 90px,#ffe9b0,transparent),radial-gradient(1px 1px at 210px 160px,#fff,transparent),radial-gradient(1px 1px at 70px 200px,#cde,transparent),radial-gradient(1px 1px at 180px 30px,#fff,transparent);background-size:240px 240px;animation:twinkle 4s ease-in-out infinite alternate}
+body.dark .isan-bg .stars{opacity:.9}
+@keyframes twinkle{from{filter:brightness(.7)}to{filter:brightness(1.4)}}
+.isan-bg .sun{position:absolute;left:var(--sunx);top:var(--suny);width:80px;height:80px;margin:-40px 0 0 -40px;border-radius:50%;background:var(--suncol);box-shadow:0 0 70px 34px var(--sunglow);transition:left 1.6s ease,top 1.6s ease}
+.isan-bg .clouds i{position:absolute;left:-200px;width:150px;height:38px;border-radius:40px;background:var(--cloud);animation:cloud 90s linear infinite}
+.isan-bg .clouds i::before,.isan-bg .clouds i::after{content:"";position:absolute;background:inherit;border-radius:50%}
+.isan-bg .clouds i::before{width:62px;height:62px;left:22px;top:-26px}
+.isan-bg .clouds i::after{width:46px;height:46px;left:76px;top:-16px}
+.isan-bg .clouds i:nth-child(1){top:15%;animation-duration:100s}
+.isan-bg .clouds i:nth-child(2){top:30%;animation-duration:140s;animation-delay:-60s;transform:scale(.75)}
+.isan-bg .clouds i:nth-child(3){top:8%;animation-duration:120s;animation-delay:-95s;transform:scale(.55)}
+@keyframes cloud{to{translate:calc(100vw + 400px) 0}}
+.isan-bg .ground{position:absolute;left:0;right:0;bottom:0;height:29%;background:linear-gradient(var(--lake1),var(--lake2))}
+.isan-bg .land{position:absolute;left:50%;top:0;height:100%;width:min(100%,640px);transform:translateX(-50%)}
+@media(min-width:700px){.isan-bg .land{-webkit-mask-image:linear-gradient(to right,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(to right,transparent,#000 12%,#000 88%,transparent)}}
+.land .lake{fill:url(#lk)}
+.land .far{fill:var(--far)}
+.land .mid{fill:var(--leaf)}
+.land .brf{fill:var(--bridge)}
+.land .brd{fill:var(--bridge2)}
+.land .br{fill:var(--bridge)}
+.land .cab{stroke:var(--cable);stroke-width:2.4;fill:none;stroke-linecap:round}
+.land .cab2{stroke:var(--cable);stroke-width:1.4;fill:none;opacity:.55}
+.land .hang line{stroke:var(--cable);stroke-width:1;opacity:.75}
+.land .lamp{fill:#ffd37a;opacity:0}
+body.dark .land .lamp{opacity:1;filter:drop-shadow(0 0 5px #ffb347)}
+.land .leaf2{fill:var(--leaf2)}
+.land .leaf1{fill:var(--leaf)}
+.land .leafhi{fill:var(--leafhi)}
+.land .canopy{animation:sway 7s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:50% 0}
+.land .canopy.r{animation-delay:-3s}
+@keyframes sway{from{transform:rotate(-1.2deg)}to{transform:rotate(1.2deg)}}
+.land .rip{fill:none;stroke:rgba(255,255,255,.5);stroke-width:1.3;animation:rip 5s ease-in-out infinite alternate}
+.land .rip:nth-child(2n){animation-delay:-2s}
+@keyframes rip{from{transform:translateX(-8px);opacity:.25}to{transform:translateX(8px);opacity:.7}}
+.land .stepT{fill:#ee6a3c}.land .stepF{fill:var(--bridge2)}
+body.dark .land .stepT{fill:#b8401f}
+
+/* ================= นกบิน ================= */
+.flock{position:fixed;left:0;top:20vh;z-index:7;pointer-events:none;will-change:transform;animation-timing-function:linear;animation-fill-mode:forwards}
+.flock.ltr{animation-name:flyR}
+.flock.rtl{animation-name:flyL}
+@keyframes flyR{from{transform:translate3d(-180px,0,0)}to{transform:translate3d(calc(100vw + 180px),-34px,0)}}
+@keyframes flyL{from{transform:translate3d(calc(100vw + 180px),0,0)}to{transform:translate3d(-180px,-34px,0)}}
+.bird{position:absolute;animation:bob 1.3s ease-in-out infinite}
+.bird .bi{width:100%;height:100%}
+.flock.rtl .bird .bi{transform:rotateY(180deg)}
+.bird svg{width:100%;height:100%;overflow:visible;fill:var(--bird);animation:flap .42s ease-in-out infinite alternate;transform-origin:50% 65%}
+@keyframes bob{0%,100%{transform:translateY(-4px)}50%{transform:translateY(5px)}}
+@keyframes flap{from{transform:scaleY(1)}to{transform:scaleY(.22)}}
+
+/* ================= แถบบน + ปุ่มโหมด ================= */
+.topbar{position:relative;z-index:6;background:linear-gradient(to bottom,rgba(255,255,255,.55),rgba(255,255,255,0))!important;border-bottom:0!important}
+body.dark .topbar{background:linear-gradient(to bottom,rgba(4,8,22,.7),rgba(4,8,22,0))!important}
+.topbar small{font-family:Mitr,Seed,sans-serif;color:var(--ac2)!important;letter-spacing:.04em!important;font-size:11px!important;font-weight:500}
+.topbar strong{font-family:Mitr,Seed,sans-serif;color:var(--tx);font-weight:500}
+.rider-mini-avatar{border:2px solid var(--gold)!important;background:var(--ac)!important}
+.mepill,.online-status{background:var(--chip)!important;border:1px solid var(--ln)!important}
+.sosbtn{border-radius:14px!important;background:linear-gradient(135deg,#ef4a3a,#c0261c)!important;box-shadow:0 3px 10px rgba(192,38,28,.35)!important}
+.modebtn{flex:none;width:38px;height:38px;border-radius:50%;border:1px solid var(--ln2);background:var(--chip);color:var(--ac2);display:grid;place-items:center;padding:0;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.modebtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.modebtn .i-sun{display:none}
+body.dark .modebtn .i-sun{display:block}
+body.dark .modebtn .i-moon{display:none}
+body.dark .modebtn{color:#ffd37a}
+
+/* ================= แผนที่แบบไร้กรอบ (ซ้อนบนฉากหลัง) ================= */
+#realMapContainer{position:fixed!important;top:0;left:50%;transform:translateX(-50%);width:min(100%,600px);height:44vh;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important;z-index:1;overflow:hidden;transition:opacity .6s;mix-blend-mode:multiply;opacity:.85;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 18%,#000 56%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 18%,#000 56%,transparent 100%)}
+body.dark #realMapContainer{mix-blend-mode:screen;opacity:.6}
+body:not([data-scene=home]) #realMapContainer{opacity:0;visibility:hidden;pointer-events:none;transition:opacity .5s,visibility 0s .5s}
+.dark-map-tiles{filter:saturate(.7) sepia(.3) hue-rotate(-12deg) brightness(1.04)!important}
+body.dark .dark-map-tiles{filter:invert(1) hue-rotate(180deg) brightness(.75) contrast(1.1) saturate(.5)!important}
+#realMap .leaflet-marker-icon>div{background:var(--ac)!important;border:3px solid #fff!important;animation:pinPulse 2s ease-out infinite}
+@keyframes pinPulse{0%{box-shadow:0 0 0 0 rgba(var(--rgb),.7)}100%{box-shadow:0 0 0 26px rgba(var(--rgb),0)}}
+.leaflet-bottom.leaflet-right{bottom:auto!important;top:124px}
+.leaflet-control-attribution{background:rgba(255,255,255,.7)!important;font-size:9px!important}
+.maptop{top:80px!important}
+.chip{background:var(--chip)!important;border:1px solid var(--ln2)!important;border-radius:20px!important;color:var(--tx)!important;font-weight:600}
+.chip .ic{color:var(--ac)!important}
+.mapstats{padding:70px 14px 30px!important;background:none!important;gap:8px!important}
+.mapstats>div{background:var(--chip);border:1px solid var(--ln2);border-radius:14px;padding:6px 10px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.mapstats span{color:var(--tx2)!important;text-shadow:none!important;font-size:10px!important}
+.mapstats strong{color:var(--tx)!important;text-shadow:none!important;font-family:Mitr,Seed,sans-serif;font-weight:500;font-size:16px!important}
+.mapstats div:first-child strong{color:var(--ac2)!important}
+
+/* ================= เนื้อหา ================= */
+.content{position:relative;z-index:3;pointer-events:none}
+.content>*{pointer-events:auto}
+body[data-scene=home] .content{padding-top:calc(44vh - 74px)}
+.sectiontitle h1{font-family:Mitr,Seed,sans-serif;font-weight:500;font-size:24px;color:var(--tx);text-shadow:0 1px 0 rgba(255,255,255,.4);letter-spacing:0}
+body.dark .sectiontitle h1{text-shadow:0 2px 10px rgba(0,0,0,.5)}
+.sectiontitle h1::before{display:block;font-family:Seed,sans-serif;font-size:11px;font-weight:600;color:var(--ac2);margin-bottom:2px}
+body[data-scene=home] .sectiontitle h1::before{content:"บ้านเฮา · สระหนองโก กระนวน"}
+body[data-scene=jobs] .sectiontitle h1::before{content:"งานมาเด้อ · เลือกได้ตามใจ"}
+body[data-scene=history] .sectiontitle h1::before{content:"เส้นทางที่ผ่านมา · ยามเย็นริมหนอง"}
+body[data-scene=settings] .sectiontitle h1::before{content:"เฮือนของเฮา · ปรับแต่งได้เลย"}
+.sectiontitle h1::after{content:"";display:block;width:110px;height:8px;margin-top:5px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='8'%3E%3Cpath d='M11 0l5.5 4L11 8 5.5 4z' fill='%23d9482a'/%3E%3Cpath d='M0 4l2.5-2L5 4 2.5 6zM17 4l2.5-2L22 4l-2.5 2z' fill='%23e0a526'/%3E%3C/svg%3E") repeat-x}
+.pill{background:var(--chip)!important;color:var(--ac2)!important;border:1px solid var(--ln2)!important;font-weight:600}
+
+#screen.enter>*{animation:rise .55s cubic-bezier(.2,.8,.2,1) both}
+#screen.enter>*:nth-child(2){animation-delay:.07s}
+#screen.enter>*:nth-child(3){animation-delay:.14s}
+#screen.enter>*:nth-child(4){animation-delay:.21s}
+#screen.enter>*:nth-child(n+5){animation-delay:.28s}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+
+/* การ์ด: กระดาษครีม ขอบลายขิด */
+.card,.app .card{position:relative;overflow:hidden;background:var(--s1)!important;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid var(--ln2)!important;border-radius:20px!important;box-shadow:0 8px 22px rgba(90,50,10,.14)!important;padding:20px 14px 14px!important;margin:12px 0!important}
+body.dark .card,body.dark .app .card{box-shadow:0 8px 22px rgba(0,0,0,.4)!important}
+.card::before{content:"";position:absolute;left:0;right:0;top:0;height:8px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='8'%3E%3Cpath d='M12 0l6 4-6 4-6-4z' fill='%23d9482a'/%3E%3Cpath d='M0 4l3-2 3 2-3 2zM18 4l3-2 3 2-3 2z' fill='%23e0a526'/%3E%3C/svg%3E") repeat-x;opacity:.9}
+.avatar{border-radius:16px!important;background:rgba(var(--rgb),.14)!important;border:1px solid rgba(var(--rgb),.3)!important;color:var(--ac2)!important}
+.jobhead strong{font-family:Mitr,Seed,sans-serif;font-weight:500;color:var(--tx)}
+.amount{font-family:Mitr,Seed,sans-serif;font-weight:500;color:var(--ac2)!important}
+.stop{border-left:2px dotted var(--ac)!important;color:var(--tx)!important}
+.stop:before{background:var(--paperdot,#fffaf0)!important;border:2px solid var(--ac)!important}
+body.dark .stop:before{background:#141d36!important}
+.stop:last-child:before{background:var(--ac)!important;border-radius:3px!important}
+
+/* ข้อมูลสรุปในการ์ดงาน */
+.tele{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:2px 0 14px}
+.tele div{padding:6px 9px;background:rgba(var(--rgb),.09);border-radius:12px;border:1px solid rgba(var(--rgb),.2)}
+.tele span{display:block;font-size:10px;color:var(--tx2)}
+.tele b{font-family:Mitr,Seed,sans-serif;font-weight:500;font-size:16px;color:var(--ac2)}
+.tele small{font-size:10px;color:var(--tx2);margin-left:3px;font-weight:400}
+.tele .bar{grid-column:1/-1;display:block;height:6px;background:rgba(var(--rgb),.12);border-radius:3px;overflow:hidden}
+.tele .bar u{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--gold),var(--ac))}
+
+/* ปุ่ม */
+.primary,.secondary{border-radius:14px!important}
+.primary{background:linear-gradient(135deg,var(--ac),rgba(var(--rgb),.8))!important;color:#fff!important;box-shadow:0 4px 14px rgba(var(--rgb),.35)!important;border-bottom:2px solid rgba(0,0,0,.18)!important}
+body.dark .primary{color:#1b1206!important}
+.primary.danger{background:linear-gradient(135deg,#ef4a3a,#c0261c)!important;color:#fff!important}
+.secondary{background:var(--btn)!important;color:var(--tx)!important;border:1px solid var(--ln2)!important}
+.linkbtn{color:var(--ac2)!important}
+
+/* เกจวงกลม */
+.dash-stats button{position:relative;background:var(--s1)!important;border:1px solid var(--ln2)!important;border-radius:20px!important;box-shadow:0 6px 16px rgba(90,50,10,.12)!important;padding:12px 4px 10px!important;color:var(--tx)!important}
+.dash-stats strong{position:relative;display:grid;place-items:center;width:66px;height:66px;margin:0 auto 6px;font-family:Mitr,Seed,sans-serif;font-weight:500;font-size:24px!important;color:var(--tx)!important}
+.dash-stats strong::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--ac) calc(var(--p,0)*1%),rgba(var(--rgb),.14) 0);-webkit-mask:radial-gradient(circle,transparent 60%,#000 62%);mask:radial-gradient(circle,transparent 60%,#000 62%)}
+.dash-stats span{color:var(--tx2)!important;font-size:11px!important}
+
+.switch{background:var(--s1)!important;border:1px solid var(--ln2)!important;border-radius:18px!important}
+.switch span{color:var(--tx)!important}
+.state,#notice,.empty{background:var(--s1)!important;border:1px solid var(--ln2)!important;border-radius:16px!important;color:var(--tx2)!important}
+#notice{color:var(--warn)!important}
+.empty{border-style:dashed!important}
+
+.hist{border-bottom:1px dotted var(--ln2)!important;position:relative;padding-left:20px!important}
+.hist::before{content:"";position:absolute;left:2px;top:19px;width:8px;height:8px;background:var(--ac);transform:rotate(45deg)}
+.hist b{font-family:Mitr,Seed,sans-serif;font-weight:500;color:var(--ac2)!important}
+
+.card h2{font-family:Mitr,Seed,sans-serif;font-weight:500;color:var(--tx)}
+.card h2 .ic{color:var(--ac)!important}
+input,select,textarea{background:var(--s2)!important;border:1px solid var(--ln2)!important;border-radius:12px!important;color:var(--tx)!important}
+option{background:#fff8ea;color:#2b1d12}
+body.dark option{background:#141d36;color:#f6ead6}
+label{color:var(--tx2)!important}
+.opt,.mrow{background:var(--s2)!important;border:1px solid var(--ln2)!important;color:var(--tx)!important;border-radius:14px!important}
+.opt[aria-pressed=true]{background:rgba(var(--rgb),.2)!important;border-color:var(--ac)!important}
+.mrow.danger{background:linear-gradient(135deg,#ef4a3a,#c0261c)!important;color:#fff!important}
+.muted{color:var(--tx2)!important}
+
+/* แถบเมนูล่าง: ลายผ้าขาวม้า */
+.nav{background:var(--s1)!important;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--ln2)!important;border-radius:26px!important;box-shadow:0 10px 28px rgba(90,50,10,.22)!important;padding:12px 8px 8px!important}
+.nav::before{content:"";position:absolute;left:22px;right:22px;top:4px;height:4px;border-radius:2px;background:repeating-linear-gradient(90deg,#d9482a 0 10px,#fff8ea 10px 12px,#24406e 12px 22px,#fff8ea 22px 24px)}
+.nav button.active .tile{background:var(--ac)!important;color:#fff!important;border-radius:14px;border-color:transparent!important}
+body.dark .nav button.active .tile{color:#1b1206!important}
+.nav button.active{color:var(--ac2)!important}
+
+/* แถบงานที่กำลังทำ / แจ้งเตือน / แผ่นล่าง */
+.barcard{background:var(--s1)!important;border:1px solid var(--ln2)!important;border-radius:20px!important;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+#alert{background:rgba(40,20,5,.55)!important}
+.alertcard{background:var(--s2)!important;border:1px solid var(--ln2)!important;border-radius:24px!important;box-shadow:0 20px 60px rgba(0,0,0,.45)!important}
+.alertcard::before{content:"ติ๊งต่อง! งานใหม่มาแล้วเด้อ";display:block;padding:8px 16px;text-align:center;font-family:Mitr,Seed,sans-serif;font-size:13px;color:#fff;background:linear-gradient(90deg,#d9482a,#e0a526,#d9482a)}
+body.dark .alertcard::before{color:#1b1206}
+.alertphoto,.adminbubble{border-radius:16px!important}
+.alertfee strong{font-family:Mitr,Seed,sans-serif;font-weight:500}
+.alerthead,.alertfooter{border-color:var(--ln)!important}
+.shpanel{background:var(--s2)!important;border-top:1px solid var(--ln2)!important;border-radius:26px 26px 0 0!important}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.flock{display:none}}

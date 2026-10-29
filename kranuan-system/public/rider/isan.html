@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>กระนวนไรเดอร์ — ธีมอีสาน</title>
+<style>html,body{margin:0;background:#fff3dc;color:#b73a1b;font:16px sans-serif}body{display:grid;place-items:center;min-height:100vh}</style>
+</head>
+<body>กำลังโหลด...
+<script>
+/* โหลด index.html เดิมมาใช้ แล้วใส่ธีมอีสานทับ (ไม่แตะไฟล์เดิม) */
+fetch('index.html',{cache:'no-store'}).then(function(r){return r.text()}).then(function(h){
+  h=h.replace('</head>','<link rel="stylesheet" href="isan.css?v=1"></head>').replace('</body>','<script src="isan.js?v=1"><\/script></body>');
+  document.open();document.write(h);document.close();
+}).catch(function(e){document.body.textContent='โหลดไม่สำเร็จ: '+e.message});
+</script>
+</body>
+</html>
