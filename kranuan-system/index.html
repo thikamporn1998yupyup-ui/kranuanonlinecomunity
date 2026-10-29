@@ -11,10 +11,27 @@
     await OneSignal.init({
       appId: "8841f5f9-0ead-4d63-89d0-68d656f180f5",
       safari_web_id: "web.onesignal.auto.2c31ff0c-1624-4aec-8f89-a4f0b1da0ea1",
-      notifyButton: {
-        enable: true,
-      },
+      serviceWorkerPath: "/OneSignalSDKWorker.js",
+      serviceWorkerParam: { scope: "/" },
+      notifyButton: { enable: true },
+      promptOptions: {
+        slidedown: {
+          prompts: [
+            {
+              type: "push",
+              autoPrompt: true,
+              text: {
+                actionMessage: "เปิดการแจ้งเตือนเพื่อไม่พลาดออเดอร์และข่าวสารจากกระนวน",
+                acceptButton: "อนุญาต",
+                cancelButton: "ไว้ทีหลัง"
+              },
+              delay: { pageViews: 1, timeDelay: 3 }
+            }
+          ]
+        }
+      }
     });
+    OneSignal.User.addTag("role", "customer");
   });
 </script>
 
@@ -1366,5 +1383,49 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+
+<!-- ซ่อนลิงก์ท้ายหน้า: ผู้ดูแล/ร้านรับงาน, หน้าไรเดอร์, สถานะฐานข้อมูล, ออกจากบัญชีทีมงาน -->
+<script>
+(function(){
+  var TEXTS=['ผู้ดูแล / ร้านรับงาน','ผู้ดูแล/ร้านรับงาน','หน้าไรเดอร์','เชื่อมฐานข้อมูลกลางแล้ว','ออกจากบัญชีทีมงาน'];
+  var busy=false;
+  function norm(t){return (t||'').replace(/\s+/g,' ').trim()}
+  function hide(el){
+    el.style.setProperty('display','none','important');
+    el.setAttribute('data-hidden-footer','1');
+    var p=el.parentElement;
+    while(p&&p!==document.body&&p.id!=='app'){
+      var kids=[].slice.call(p.children);
+      var allHidden=kids.length>0&&kids.every(function(k){return k.getAttribute('data-hidden-footer')==='1'||k.tagName==='SCRIPT'||k.tagName==='STYLE'});
+      if(!allHidden)break;
+      p.style.setProperty('display','none','important');
+      p.setAttribute('data-hidden-footer','1');
+      p=p.parentElement;
+    }
+  }
+  function run(){
+    busy=false;
+    var list=document.querySelectorAll('a,button,span,small,p,div,li');
+    for(var i=0;i<list.length;i++){
+      var el=list[i];
+      if(el.getAttribute('data-hidden-footer'))continue;
+      if(el.tagName==='A'){
+        var h=el.getAttribute('href')||'';
+        if(/admin\.html(\?|#|$)/.test(h)||/\/rider\/?(\?|#|$)/.test(h)){hide(el);continue}
+      }
+      if(el.children.length>3)continue;
+      var t=norm(el.textContent);
+      if(t.length>40)continue;
+      if(TEXTS.indexOf(t)>-1)hide(el);
+    }
+  }
+  function schedule(){if(!busy){busy=true;setTimeout(run,150)}}
+  function boot(){
+    run();
+    new MutationObserver(schedule).observe(document.body,{childList:true,subtree:true});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
+</script>
 </body>
 </html>
