@@ -16,7 +16,7 @@ body{margin:0;background:#f6eee6;color:#332e29;font:400 15px/1.65 "LINE Seed San
 button,input,select,textarea{font:inherit}
 button{cursor:pointer}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #1e7470;outline-offset:3px}
-.phone{max-width:450px;margin:0 auto;background:#fffcf6;min-height:100vh;box-shadow:0 0 65px #49321c12;padding-bottom:110px;position:relative;overflow-x:hidden}
+.phone{max-width:480px;margin:auto;background:#fffcf6;min-height:100vh;box-shadow:0 0 65px #49321c12;padding-bottom:110px;position:relative;overflow-x:hidden}
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(6px); }
@@ -232,7 +232,7 @@ p{line-height:1.7}
 .newsrow h3{margin:0;font-size:14px}
 .newsrow p{font-size:11px;margin:4px 0}
 
-.bottomnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,450px);display:grid;grid-template-columns:repeat(5,1fr);background:#e95e2f;border-radius:23px 23px 0 0;padding:11px 8px 16px;z-index:1000}
+.bottomnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,480px);display:grid;grid-template-columns:repeat(5,1fr);background:#e95e2f;border-radius:23px 23px 0 0;padding:11px 8px 16px;z-index:100}
 .bottomnav button{border:0;background:none;color:#ffe4bf;font-size:10px;display:flex;align-items:center;flex-direction:column;gap:5px;padding:3px;font-weight:bold}
 .bottomnav button.active{color:white}
 .bottomnav button.active .icon{stroke-width:2.4}
@@ -1352,26 +1352,6 @@ function boot(){
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
 </script>
-<style id="screen-lock">
-/* ===== screen-lock: ล็อกสัดส่วนหน้าจอ (แก้เฉพาะหน้าตา ไม่แตะข้อมูล/สคริปต์) ===== */
-:root{--app-w:450px}
-html{-webkit-text-size-adjust:100%;text-size-adjust:100%;background:#f6eee6}
-body{touch-action:manipulation}
-/* 1) กรอบแอปกว้างสูงสุด 450px อยู่กึ่งกลาง + กันเมนูล่างบังเนื้อหา */
-.phone{width:100%;max-width:var(--app-w)!important;margin:0 auto!important;min-height:100vh;min-height:100dvh;padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))!important}
-/* 2) ดันหัวแอปเต็มจอ เว้นแถบด้านบน (notch / status bar) */
-body .phone .top{padding-top:calc(20px + env(safe-area-inset-top,0px))!important}
-/* 3) แบนเนอร์ / รูป ล็อกสัดส่วน ไม่ให้เบี้ยว */
-.poster-rail{align-items:flex-start}
-.local-poster{height:auto!important;aspect-ratio:16/9}
-.phone img{max-width:100%}
-.phone :is(.cover,.media,.thumb,.photo,.menu-img,.market-cover,.shop,.menu-card,.product-card,.food-card,.market-card) img,.local-poster>img{object-fit:cover}
-.poster-dialog img{aspect-ratio:3/2;object-fit:cover}
-/* 4) เมนูล่างล็อกขอบล่าง ลอยบนสุด และไม่กว้างเกินกรอบ */
-.bottomnav{position:fixed!important;bottom:0!important;left:50%!important;right:auto!important;transform:translateX(-50%)!important;width:100%!important;max-width:var(--app-w)!important;z-index:1000!important;padding-bottom:max(16px,env(safe-area-inset-bottom,0px))!important}
-/* 5) กัน iOS ซูมเองตอนแตะช่องกรอก (ข้อความ < 16px) */
-@supports(-webkit-touch-callout:none){input,select,textarea{font-size:16px!important}}
-</style>
 
 </body>
 </html>
