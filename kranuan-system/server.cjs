@@ -17,6 +17,36 @@ async function initialize(){
  const admin=require('firebase-admin');const credential=admin.credential.cert(JSON.parse(key));
  const app=admin.apps[0]||admin.initializeApp({credential,databaseURL:process.env.FIREBASE_DATABASE_URL});
  firebaseRef=app.database().ref('/kranuanonline/backend_v1/state');const saved=(await firebaseRef.get()).val();
+  // รองรับคอลัมน์เก่าจาก Firebase ก่อน Restore
+  if (saved?.version === 1 && saved.tables) {
+    for (const table of FIREBASE_TABLES) {
+      const existing = new Set(
+        db.prepare(`PRAGMA table_info("${table}")`)
+          .all().map(c => c.name)
+      );
+
+      for (const row of Object.values(saved.tables[table] || {})) {
+        if (!row || typeof row !== 'object' || Array.isArray(row)) {
+          throw new Error(`Invalid Firebase row in ${table}`);
+        }
+
+        for (const column of Object.keys(row)) {
+          if (existing.has(column)) continue;
+
+          if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(column)) {
+            throw new Error(`Invalid column: ${column}`);
+          }
+
+          db.exec(
+            `ALTER TABLE "${table}" ADD COLUMN "${column}" TEXT`
+          );
+          existing.add(column);
+          console.log(`Restored legacy column: ${table}.${column}`);
+        }
+      }
+    }
+  }
+
  if(saved?.version===1&&saved.tables){db.exec('BEGIN');try{for(const table of [...FIREBASE_TABLES].reverse())db.exec('DELETE FROM '+table);for(const table of FIREBASE_TABLES){for(const row of Object.values(saved.tables[table]||{})){const columns=Object.keys(row);run('INSERT INTO '+table+'('+columns.join(',')+') VALUES('+columns.map(()=>'?').join(',')+')',...columns.map(k=>row[k]))}}db.exec('COMMIT')}catch(e){db.exec('ROLLBACK');throw e}}
  firebaseBaseline=serializeTables();seedAdmin();await persistState();
 }
