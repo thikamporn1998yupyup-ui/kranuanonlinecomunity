@@ -1,1 +1,92 @@
-<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"><title>จัดการร้าน · กระนวนใกล้บ้าน</title><link rel="stylesheet" href="/system.css"><style>body{margin:0;background:#f6eee6;color:#332e29;font:14px/1.6 Tahoma,sans-serif}.wrap{max-width:1000px;margin:auto;padding:20px}header{background:#f9d35b;padding:20px;border-radius:0 0 24px 24px}header h1{font-size:23px;margin:0}a{color:#ad512c}.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}.toolbar button{flex:none}.card{border:1px solid #eadfce;background:#fffdf8;border-radius:16px;padding:17px;margin:12px 0}h2{font-size:19px;margin:0 0 10px}h3{font-size:16px;margin:0 0 8px}label{display:block;font-size:12px;margin:10px 0}input:not([type=checkbox]),select,textarea{box-sizing:border-box;width:100%;padding:10px;border:1px solid #dfd0bb;border-radius:9px;background:white;color:#332e29;font:inherit}input[type=checkbox]{width:auto}button{cursor:pointer}button:disabled{opacity:.5;cursor:wait}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}.muted{font-size:11px;color:#85735f}.status{padding:10px;background:#fff0ce;border-radius:10px}.small{font-size:11px}.stats{display:flex;gap:10px;flex-wrap:wrap}.stats span{background:white;padding:10px;border-radius:12px}.shop-actions{display:flex;gap:7px;flex-wrap:wrap}.shop-actions button{font-size:12px}nav button.active{background:#e95e30;color:#fff}.hidden{display:none!important}details summary{cursor:pointer}#adminNotice{position:sticky;top:4px;z-index:20}.thumb{width:65px;height:65px;border-radius:12px;object-fit:cover;float:right}.kdialog form+form{margin-top:14px;border-top:1px solid #eee2d3;padding-top:14px}</style><link rel="stylesheet" href="/commerce.css?v=20261027"><link rel="stylesheet" href="/dense-layout.css?v=20261027-balanced"><link rel="stylesheet" href="/staff-workspace.css?v=20261027-1"><link rel="stylesheet" href="/dense-layout.css?v=20261027-balanced"></head><body><header><div class="wrap"><h1>กระนวนใกล้บ้าน · จัดการระบบ</h1><div id="staffIdentity">กำลังเชื่อมต่อ...</div><a href="/">กลับหน้าเว็บ</a> · <a href="/rider/">หน้าไรเดอร์</a></div></header><main class="wrap"><p id="adminNotice" role="status"></p><nav class="toolbar" id="staffNav"></nav><div id="staffApp"></div></main><script src="/api.js"></script><script src="/admin.js"></script><script src="/commerce-media.js?v=20261027"></script><script src="/commerce-admin.js?v=20261027"></script><script src="/market-admin.js?v=20261027"></script><script src="/ads-admin.js?v=20261028"></script><script src="/staff-workspace.js?v=20261027-1"></script><script src="/app-zoom-lock.js?v=20261027-2"></script><script src="/rider-gallery-admin.js?v=20261027"></script></body></html>
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"><title>จัดการร้าน · กระนวนใกล้บ้าน</title><link rel="stylesheet" href="/system.css"><style>body{margin:0;background:#f6eee6;color:#332e29;font:14px/1.6 Tahoma,sans-serif}.wrap{max-width:1000px;margin:auto;padding:20px}header{background:#f9d35b;padding:20px;border-radius:0 0 24px 24px}header h1{font-size:23px;margin:0}a{color:#ad512c}.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}.toolbar button{flex:none}.card{border:1px solid #eadfce;background:#fffdf8;border-radius:16px;padding:17px;margin:12px 0}h2{font-size:19px;margin:0 0 10px}h3{font-size:16px;margin:0 0 8px}label{display:block;font-size:12px;margin:10px 0}input:not([type=checkbox]),select,textarea{box-sizing:border-box;width:100%;padding:10px;border:1px solid #dfd0bb;border-radius:9px;background:white;color:#332e29;font:inherit}input[type=checkbox]{width:auto}button{cursor:pointer}button:disabled{opacity:.5;cursor:wait}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}.muted{font-size:11px;color:#85735f}.status{padding:10px;background:#fff0ce;border-radius:10px}.small{font-size:11px}.stats{display:flex;gap:10px;flex-wrap:wrap}.stats span{background:white;padding:10px;border-radius:12px}.shop-actions{display:flex;gap:7px;flex-wrap:wrap}.shop-actions button{font-size:12px}nav button.active{background:#e95e30;color:#fff}.hidden{display:none!important}details summary{cursor:pointer}#adminNotice{position:sticky;top:4px;z-index:20}.thumb{width:65px;height:65px;border-radius:12px;object-fit:cover;float:right}.kdialog form+form{margin-top:14px;border-top:1px solid #eee2d3;padding-top:14px}</style><link rel="stylesheet" href="/commerce.css?v=20261027"><link rel="stylesheet" href="/dense-layout.css?v=20261027-balanced"><link rel="stylesheet" href="/staff-workspace.css?v=20261027-1"><link rel="stylesheet" href="/dense-layout.css?v=20261027-balanced"></head><body><header><div class="wrap"><h1>กระนวนใกล้บ้าน · จัดการระบบ</h1><div id="staffIdentity">กำลังเชื่อมต่อ...</div><a href="/">กลับหน้าเว็บ</a> · <a href="/rider/">หน้าไรเดอร์</a></div></header><main class="wrap"><p id="adminNotice" role="status"></p><nav class="toolbar" id="staffNav"></nav><div id="staffApp"></div></main><script src="/api.js"></script><script src="/admin.js"></script><script src="/commerce-media.js?v=20261027"></script><script src="/commerce-admin.js?v=20261027"></script><script src="/market-admin.js?v=20261027"></script><script src="/ads-admin.js?v=20261028"></script><script src="/staff-workspace.js?v=20261027-1"></script><script src="/app-zoom-lock.js?v=20261027-2"></script><script src="/rider-gallery-admin.js?v=20261027"></script>
+<!-- ========================================== -->
+<!-- 🌟 ระบบจัดการ KYC สำหรับแอดมิน 🌟 -->
+<!-- ========================================== -->
+<div id="kycAdminPanel" style="max-width: 1000px; margin: 20px auto; padding: 20px; background: #fffdf8; border: 1px solid #eadfce; border-radius: 16px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+  <h2 style="font-size: 19px; margin: 0 0 15px 0; color: #ad512c; display: flex; align-items: center; gap: 8px;">
+    🪪 รายการรอตรวจสอบ KYC
+  </h2>
+  <div id="kycList" style="display: flex; flex-direction: column; gap: 12px;"></div>
+</div>
+
+<script>
+  (function() {
+    // ฟังก์ชันโหลดข้อมูล KYC
+    async function loadPendingKYC() {
+      try {
+        const res = await fetch('/api/admin/kyc');
+        if (!res.ok) return; // ถ้าไม่ใช่แอดมิน ให้ข้ามไป
+
+        const users = await res.json();
+        const panel = document.getElementById('kycAdminPanel');
+        const list = document.getElementById('kycList');
+        
+        if (users && users.length > 0) {
+          panel.style.display = 'block'; // แสดงแผงถ้ามีข้อมูล
+          list.innerHTML = '';
+          
+          users.forEach(u => {
+            list.innerHTML += `
+              <div class="card" id="kyc-card-${u.id}" style="margin: 0; padding: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                <div>
+                  <h3 style="margin: 0 0 5px 0; font-size: 16px;">👤 ${u.name}</h3>
+                  <div class="muted" style="margin-bottom: 3px;">🆔 เลขบัตร: <b>${u.id_card || '-'}</b></div>
+                  <div class="muted">📞 เบอร์โทร: <b>${u.phone_number || '-'}</b></div>
+                </div>
+                <div class="shop-actions">
+                  <button onclick="handleKYC('${u.id}', 'approve')" style="background: #2ecc71; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer;">✅ อนุมัติ</button>
+                  <button onclick="handleKYC('${u.id}', 'reject')" style="background: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer;">❌ ปฏิเสธ</button>
+                </div>
+              </div>
+            `;
+          });
+        } else {
+          panel.style.display = 'none'; // ซ่อนแผงถ้าไม่มีคนรอ
+        }
+      } catch (e) {
+        console.error("โหลด KYC ไม่สำเร็จ:", e);
+      }
+    }
+
+    // ฟังก์ชันจัดการกด อนุมัติ / ปฏิเสธ
+    window.handleKYC = async function(userId, action) {
+      const actionText = action === 'approve' ? 'อนุมัติ' : 'ปฏิเสธ';
+      if (!confirm(`คุณแน่ใจหรือไม่ที่จะ ${actionText} การยืนยันตัวตนของลูกค้าคนนี้?`)) return;
+
+      try {
+        // ขอ CSRF Token ก่อน (ระบบความปลอดภัย)
+        const sessionRes = await fetch('/api/session', { method: 'POST' });
+        const sessionData = await sessionRes.json();
+
+        const res = await fetch(`/api/admin/kyc/${userId}/${action}`, {
+          method: 'POST',
+          headers: { 'x-csrf-token': sessionData.csrf }
+        });
+
+        const data = await res.json();
+        
+        if (res.ok) {
+          alert('✅ ' + data.message);
+          // ลบการ์ดที่จัดการแล้วออกจากหน้าจอ
+          const card = document.getElementById(`kyc-card-${userId}`);
+          if (card) card.remove(); 
+          
+          // ถ้าไม่มีข้อมูลเหลือแล้ว ให้ซ่อนแผง
+          if (document.getElementById('kycList').children.length === 0) {
+            document.getElementById('kycAdminPanel').style.display = 'none';
+          }
+        } else {
+          alert('❌ เกิดข้อผิดพลาด: ' + data.error);
+        }
+      } catch (e) {
+        alert('❌ ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+      }
+    };
+
+    // สั่งให้โหลดข้อมูลเมื่อหน้าเว็บโหลดเสร็จ
+    document.addEventListener('DOMContentLoaded', loadPendingKYC);
+  })();
+</script>
+<!-- ========================================== -->
+</body>
+</html>
