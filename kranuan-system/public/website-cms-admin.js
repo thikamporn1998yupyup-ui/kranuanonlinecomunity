@@ -122,7 +122,8 @@
       '<button class="kbutton primary" type="submit">' +
       'บันทึกฉบับร่าง</button>' +
       '<button class="kbutton" type="button" id="cmsPublish">' +
-      'เผยแพร่เว็บไซต์</button>' +
+      'เผยแพร่เว็บไซต์</button>' +'<button class="kbutton" type="button" id="cmsPreview">' +
+'ดูตัวอย่างเว็บไซต์</button>' +
       '</div><p id="cmsMessage" role="status"></p>' +
       '</form>';
 
@@ -201,6 +202,8 @@
 
         picker.disabled = true;
         const msg = document.getElementById('cmsMessage');
+
+
         msg.textContent = 'กำลังอัปโหลดไอคอน...';
 
         try {
@@ -285,6 +288,37 @@
     }
 
     const msg = document.getElementById('cmsMessage');
+    document.getElementById('cmsPreview').onclick = () => {
+      const data = Object.fromEntries(new FormData(form));
+
+      const previewData = {
+        brand_name: data.brand_name || '',
+        logo: data.logo || '',
+        heroes: {
+          welcome: {
+            image: data.hero_image || '',
+            title: data.hero_title || '',
+            desc: data.hero_desc || ''
+          }
+        },
+        icons: {}
+      };
+
+      for (const key of iconKeys) {
+        previewData.icons[key] = {
+          label: iconInputs[key].name.value.trim(),
+          image: iconInputs[key].url.value.trim()
+        };
+      }
+
+      sessionStorage.setItem(
+        'kranuan.cms.preview',
+        JSON.stringify(previewData)
+      );
+
+      window.location.href = '/?cms_preview=1';
+    };
+
 
     form.onsubmit = async event => {
       event.preventDefault();
