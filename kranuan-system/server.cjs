@@ -152,10 +152,76 @@ async function api(req,res,url){
  }
 
  const adImg=p.match(/^\/api\/ads\/([A-Za-z0-9-]+)\/image$/);if(adImg&&method==='GET'){const row=get('SELECT image_url FROM ads WHERE id=?',adImg[1]),m=row&&row.image_url.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);if(!m)fail(404,'ไม่พบรูปโฆษณา');res.writeHead(200,{'Content-Type':m[1],'Cache-Control':'public, max-age=86400'});return res.end(Buffer.from(m[2],'base64'))}
+ // CMS: แสดงภาพที่อัปโหลดไว้
+ const cmsImg=p.match(
+  /^\/api\/site-cms\/image\/([a-f0-9-]{36})$/
+ );
+ if(cmsImg&&method==='GET'){
+  if(!firebaseRef)fail(503,'Firebase ยังไม่พร้อม');
+  const snap=await firebaseRef
+   .child('site_cms/images/'+cmsImg[1]).get();
+  const value=snap.val();
+  if(typeof value!=='string')fail(404,'ไม่พบรูปภาพ');
+  const m=value.match(
+   /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/
+  );
+  if(!m)fail(404,'รูปภาพไม่ถูกต้อง');
+  res.writeHead(200,{
+   'Content-Type':m[1],
+   'Cache-Control':'public, max-age=86400',
+   'X-Content-Type-Options':'nosniff'
+  });
+  return res.end(Buffer.from(m[2],'base64'));
+ }
+
  if(p==='/api/health')return send(res,200,{ok:true});
  needUser(u);
  if(!['GET','HEAD'].includes(method)&&req.headers['x-csrf-token']!==u.csrf)fail(403,'เซสชันเปลี่ยน กรุณาโหลดหน้าใหม่');
  const b=['POST','PATCH','PUT'].includes(method)?await body(req):{};
+ // CMS: อัปโหลดภาพ (เฉพาะแอดมิน)
+ if(p==='/api/admin/site-cms/upload'&&method==='POST'){
+  needUser(u,['admin']);
+  if(!firebaseRef)fail(503,'Firebase ยังไม่พร้อม');
+
+  const image=b.image;
+  if(typeof image!=='string')
+   fail(400,'กรุณาเลือกรูปภาพ');
+
+  const m=image.match(
+   /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/
+  );
+  if(!m)fail(400,'รองรับเฉพาะ JPG PNG และ WebP');
+
+  const bytes=Buffer.from(m[2],'base64');
+  if(!bytes.length||bytes.length>500000)
+   fail(413,'รูปภาพต้องมีขนาดไม่เกิน 500 KB');
+
+  if(bytes.toString('base64')!==m[2])
+   fail(400,'ข้อมูลรูปภาพไม่ถูกต้อง');
+
+  const signature=bytes.subarray(0,12);
+  const isJpeg=signature[0]===0xff&&signature[1]===0xd8&&signature[2]===0xff;
+  const isPng=signature.subarray(0,8).equals(
+   Buffer.from('89504e470d0a1a0a','hex')
+  );
+  const isWebp=signature.toString('ascii',0,4)==='RIFF'&&
+   signature.toString('ascii',8,12)==='WEBP';
+  if(!(m[1]==='image/jpeg'&&isJpeg||
+       m[1]==='image/png'&&isPng||
+       m[1]==='image/webp'&&isWebp))
+   fail(400,'รูปภาพไม่ตรงกับประเภทไฟล์');
+
+  const imageId=crypto.randomUUID();
+  await firebaseRef.child('site_cms/images/'+imageId)
+   .set(image);
+
+  audit(u,'upload cms image',imageId);
+  return send(res,200,{
+   ok:true,
+   url:'/api/site-cms/image/'+imageId
+  });
+ }
+
  // CMS: อ่านฉบับร่าง (เฉพาะแอดมิน)
  if(p==='/api/admin/site-cms'&&method==='GET'){
   needUser(u,['admin']);
