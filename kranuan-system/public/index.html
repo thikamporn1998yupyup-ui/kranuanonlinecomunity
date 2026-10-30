@@ -863,6 +863,70 @@ window.addEventListener('DOMContentLoaded', () => {
 <script src="/commerce-media.js?v=20261027"></script><script src="/commerce-customer.js?v=20261027"></script><script src="/market.js?v=20261027-market"></script><script src="/app-zoom-lock.js?v=20261027-2"></script><script src="/courier-grab-ui.js?v=20261027-2"></script><script src="/ride-mode-ui.js?v=20261030"></script><script src="/mobile-catalog.js?v=20261027-3"></script><script src="/rider-profiles.js?v=20261027"></script><script src="/compact-activity.js?v=20261027"></script><script src="/rider-team-board.js?v=20261027"></script><script src="/ads-config.js?v=20261028"></script><script src="/home-upgrade.js?v=20261028"></script>
 
 
+<!-- ========================================== -->
+<!-- 🌟 ระบบล็อกอินด้วย Google (พร้อมใช้งาน) 🌟 -->
+<!-- ========================================== -->
+<div style="display: flex; justify-content: center; margin: 20px 0;">
+  <button id="googleLoginBtn" style="padding: 12px 20px; background: #fff; border: 1px solid #dadce0; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; max-width: 320px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-family: 'Kanit', sans-serif;">
+    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" height="20"> 
+    เข้าสู่ระบบด้วย Google
+  </button>
+</div>
 
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+  // 1. ตั้งค่า Firebase ของคุณ
+  const firebaseConfig = {
+    apiKey: "AIzaSyChVHvlAidaeXKqhOk9ekJwLutjbWcCCbs",
+    authDomain: "kranuan-app.firebaseapp.com",
+    databaseURL: "https://kranuan-app-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "kranuan-app",
+    storageBucket: "kranuan-app.firebasestorage.app",
+    messagingSenderId: "719095302980",
+    appId: "1:719095302980:web:0e4adabe60db4a98446511",
+    measurementId: "G-XGFZLXQ3WG"
+  };
+
+  // 2. เริ่มต้น Firebase
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+
+  // 3. จัดการเมื่อกดปุ่มล็อกอิน
+  document.getElementById('googleLoginBtn').addEventListener('click', () => {
+    signInWithPopup(auth, provider).then(async (result) => {
+      const user = result.user;
+      
+      // 4. ส่งข้อมูลไปที่หลังบ้าน (server.cjs) เพื่อสร้าง Session
+      try {
+        const response = await fetch('/api/auth/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            email: user.email, 
+            name: user.displayName 
+          })
+        });
+        
+        if(response.ok) {
+          alert(`ยินดีต้อนรับคุณ ${user.displayName}!`);
+          window.location.reload(); // รีโหลดหน้าเพื่อเข้าสู่ระบบ
+        } else {
+          alert('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์');
+        }
+      } catch (error) {
+        alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+      }
+      
+    }).catch((error) => {
+      console.error("Google Login Error:", error);
+      alert('ยกเลิกการล็อกอิน หรือเกิดข้อผิดพลาด: ' + error.message);
+    });
+  });
+</script>
+<!-- ========================================== -->
+  
 </body>
 </html>
