@@ -130,8 +130,31 @@ function safeImage(src) {
     });
   }
 
-   const isPreview = new URLSearchParams(   window.location.search ).get('cms_preview') === '1';  let previewSettings = null;  if (isPreview) {   try {     previewSettings = JSON.parse(       sessionStorage.getItem('kranuan.cms.preview') || 'null'     );   } catch (err) {     console.warn('CMS Preview:', err);   }    // ใช้ข้อมูลเฉพาะครั้งนี้ ไม่ให้ค้างสำหรับการดูครั้งต่อไป   sessionStorage.removeItem('kranuan.cms.preview'); }  const cmsSource = isPreview   ? Promise.resolve({ settings: previewSettings })   : fetch('/api/site-cms', { cache: 'no-store' })       .then(response => response.ok ? response.json() : null);  cmsSource
-   
+const isPreview = new URLSearchParams(
+  window.location.search
+).get('cms_preview') === '1';
+
+let previewSettings = null;
+
+if (isPreview) {
+  try {
+    previewSettings = JSON.parse(
+      sessionStorage.getItem('kranuan.cms.preview') || 'null'
+    );
+  } catch (err) {
+    console.warn('CMS Preview:', err);
+  }
+
+  sessionStorage.removeItem('kranuan.cms.preview');
+}
+
+const cmsSource = isPreview
+  ? Promise.resolve({ settings: previewSettings })
+  : fetch('/api/site-cms', { cache: 'no-store' })
+      .then(response => response.ok ? response.json() : null);
+
+cmsSource
+
     .then(data => {
       if (!data?.settings) return;
 
