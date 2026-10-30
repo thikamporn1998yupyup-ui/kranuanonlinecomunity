@@ -146,22 +146,40 @@ async function api(req,res,url){
  needUser(u);
  if(!['GET','HEAD'].includes(method)&&req.headers['x-csrf-token']!==u.csrf)fail(403,'เซสชันเปลี่ยน กรุณาโหลดหน้าใหม่');
  const b=['POST','PATCH','PUT'].includes(method)?await body(req):{};
-  if(p==='/api/auth/kyc'&&method==='POST'){
+  // 🌟 API สำหรับรับข้อมูลโซน (แทนบัตรประชาชน)
+ if(p==='/api/auth/kyc'&&method==='POST'){
    try {
      const fullName = required(b.full_name,'ชื่อ-นามสกุล',100);
-     const idCard = required(b.id_card,'เลขบัตรประชาชน',13);
      const phone = required(b.phone,'เบอร์โทรศัพท์',10);
+     const subdistrict = required(b.subdistrict,'ตำบล',50);
+     const village = required(b.village,'หมู่ที่',10);
      
-     try { db.exec("ALTER TABLE users ADD COLUMN id_card TEXT"); } catch(e) {}
      try { db.exec("ALTER TABLE users ADD COLUMN phone_number TEXT"); } catch(e) {}
+     try { db.exec("ALTER TABLE users ADD COLUMN subdistrict TEXT"); } catch(e) {}
+     try { db.exec("ALTER TABLE users ADD COLUMN village TEXT"); } catch(e) {}
      try { db.exec("ALTER TABLE users ADD COLUMN kyc_status TEXT DEFAULT 'unverified'"); } catch(e) {}
 
-     run('UPDATE users SET name=?, id_card=?, phone_number=?, kyc_status=? WHERE id=?', fullName, idCard, phone, 'pending_review', u.id);
-     return send(res,200,{ok:true, message:'ส่งข้อมูลยืนยันตัวตนสำเร็จ รอเจ้าหน้าที่ตรวจสอบ'});
+     run('UPDATE users SET name=?, phone_number=?, subdistrict=?, village=?, kyc_status=? WHERE id=?', fullName, phone, subdistrict, village, 'verified', u.id);
+     return send(res,200,{ok:true, message:'บันทึกข้อมูลโซนสำเร็จ'});
    } catch (err) {
-     console.error("KYC Error:", err.message);
-     return send(res, 500, { error: err.message });
+     return send(res, 500, { error: err.message }); 
    }
+ }
+
+ // 🌟 API สำหรับเชื่อม Google Login
+ if(p==='/api/auth/google'&&method==='POST'){
+   const email = text(b.email,100);
+   const name = text(b.name,100) || 'ผู้ใช้ Google';
+   if(!email) fail(400, 'ไม่พบอีเมล');
+   
+   let user = get('SELECT * FROM users WHERE username=?', email);
+   if(!user) {
+     const uid = id();
+     run('INSERT INTO users(id,username,role,name,created_at,kyc_status) VALUES(?,?,?,?,?,?)', uid, email, 'customer', name, now(), 'unverified');
+     user = get('SELECT * FROM users WHERE id=?', uid);
+   }
+   return send(res,200, newSession(res, user.id));
+ }
  }
   // 🌟 API สำหรับแอดมิน: ดูรายการ KYC ที่รอตรวจสอบ
  if(p==='/api/admin/kyc'&&method==='GET'){
