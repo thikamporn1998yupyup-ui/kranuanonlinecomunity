@@ -4,7 +4,6 @@ const {DatabaseSync}=require('node:sqlite');
 const publicDir=path.join(__dirname,'public');
 const db=new DatabaseSync(':memory:');db.exec(fs.readFileSync(path.join(__dirname,'schema.sql'),'utf8'));db.exec('PRAGMA busy_timeout=5000');
 db.exec('CREATE INDEX IF NOT EXISTS idx_orders_rider ON orders(rider_id); CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);');
-// 🌟 เพิ่มคอลัมน์สำหรับ KYC ในฐานข้อมูล
 try { db.exec("ALTER TABLE users ADD COLUMN kyc_status TEXT DEFAULT 'unverified'"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN id_card TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN phone_number TEXT"); } catch(e) {}
@@ -114,14 +113,17 @@ const myActivity=require('./activity.cjs')({all,now});
 const marketApi=require('./market.cjs')({get,all,run,fail,text,required,coord,imageURL,id,now,transaction,audit,emit,send,orderView});
 async function api(req,res,url){
  checkOrigin(req);let u=session(req);const method=req.method,p=url.pathname;limit(req,p==='/api/login'?'login':'api:'+(u?.id||'public'),p==='/api/login'?10:240);
+ 
+ // 🌟 ย้ายตัวแปร b ขึ้นมาบนสุด เพื่อให้ทุก API เรียกใช้ได้
+ const b=['POST','PATCH','PUT'].includes(method)?await body(req):{};
+
  if(p==='/api/session'&&method==='POST'){if(u)return send(res,200,{user:publicUser(u),csrf:u.csrf});const uid=id();run('INSERT INTO users(id,role,name,created_at) VALUES(?,?,?,?)',uid,'customer','ลูกค้ากระนวน',now());return send(res,201,newSession(res,uid))}
  
- // 🌟 API สำหรับล็อคอิน LINE
+ // 🌟 API ล็อคอิน LINE
  if(p==='/api/auth/line'&&method==='POST'){
    const lineId=text(b.lineId,100);
    const displayName=text(b.name,100)||'ผู้ใช้ LINE';
    if(!lineId)fail(400,'ไม่พบ LINE ID');
-   
    let user=get('SELECT * FROM users WHERE username=?',lineId);
    if(!user){
      const uid=id();
@@ -132,6 +134,20 @@ async function api(req,res,url){
      user.name=displayName;
    }
    return send(res,200,newSession(res,user.id));
+ }
+
+ // 🌟 API ล็อคอิน Google
+ if(p==='/api/auth/google'&&method==='POST'){
+   const email = text(b.email,100);
+   const name = text(b.name,100) || 'ผู้ใช้ Google';
+   if(!email) fail(400, 'ไม่พบอีเมล');
+   let user = get('SELECT * FROM users WHERE username=?', email);
+   if(!user) {
+     const uid = id();
+     run('INSERT INTO users(id,username,role,name,created_at,kyc_status) VALUES(?,?,?,?,?,?)', uid, email, 'customer', name, now(), 'unverified');
+     user = get('SELECT * FROM users WHERE id=?', uid);
+   }
+   return send(res,200, newSession(res, user.id));
  }
 
  if(p==='/api/shops'&&method==='GET')return send(res,200,all('SELECT * FROM shops ORDER BY accepting DESC, name ASC').map(s=>{const v=shopView(s);delete v.survey_note;delete v.verified_by;return v}));
@@ -146,23 +162,22 @@ async function api(req,res,url){
  const shopImg=p.match(/^\/api\/shops\/([^/]+)\/image$/);if(shopImg&&method==='GET'){const row=get('SELECT image_url FROM shops WHERE id=?',shopImg[1]),m=row&&row.image_url.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);if(!m)fail(404,'ไม่พบรูปภาพร้านค้า');res.writeHead(200,{'Content-Type':m[1],'Cache-Control':'public, max-age=86400'});return res.end(Buffer.from(m[2],'base64'))}
  const menuImg=p.match(/^\/api\/menus\/([^/]+)\/image$/);if(menuImg&&method==='GET'){const row=get('SELECT image_url FROM menus WHERE id=?',menuImg[1]),m=row&&row.image_url.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);if(!m)fail(404,'ไม่พบรูปภาพเมนู');res.writeHead(200,{'Content-Type':m[1],'Cache-Control':'public, max-age=86400'});return res.end(Buffer.from(m[2],'base64'))}
  if(p==='/api/health')return send(res,200,{ok:true});
+ 
+ // 🌟 ด่านตรวจ (ต้องล็อกอินก่อน)
  needUser(u);
  if(!['GET','HEAD'].includes(method)&&req.headers['x-csrf-token']!==u.csrf)fail(403,'เซสชันเปลี่ยน กรุณาโหลดหน้าใหม่');
- const b=['POST','PATCH','PUT'].includes(method)?await body(req):{};
  
- // 🌟 API สำหรับรับข้อมูลโซน (แทนบัตรประชาชน)
+ // 🌟 API รับข้อมูลโซน
  if(p==='/api/auth/kyc'&&method==='POST'){
    try {
      const fullName = required(b.full_name,'ชื่อ-นามสกุล',100);
      const phone = required(b.phone,'เบอร์โทรศัพท์',10);
      const subdistrict = required(b.subdistrict,'ตำบล',50);
      const village = required(b.village,'หมู่ที่',10);
-     
      try { db.exec("ALTER TABLE users ADD COLUMN phone_number TEXT"); } catch(e) {}
      try { db.exec("ALTER TABLE users ADD COLUMN subdistrict TEXT"); } catch(e) {}
      try { db.exec("ALTER TABLE users ADD COLUMN village TEXT"); } catch(e) {}
      try { db.exec("ALTER TABLE users ADD COLUMN kyc_status TEXT DEFAULT 'unverified'"); } catch(e) {}
-
      run('UPDATE users SET name=?, phone_number=?, subdistrict=?, village=?, kyc_status=? WHERE id=?', fullName, phone, subdistrict, village, 'verified', u.id);
      return send(res,200,{ok:true, message:'บันทึกข้อมูลโซนสำเร็จ'});
    } catch (err) {
@@ -170,49 +185,30 @@ async function api(req,res,url){
    }
  }
 
- // 🌟 API สำหรับเชื่อม Google Login
- if(p==='/api/auth/google'&&method==='POST'){
-   const email = text(b.email,100);
-   const name = text(b.name,100) || 'ผู้ใช้ Google';
-   if(!email) fail(400, 'ไม่พบอีเมล');
-   
-   let user = get('SELECT * FROM users WHERE username=?', email);
-   if(!user) {
-     const uid = id();
-     run('INSERT INTO users(id,username,role,name,created_at,kyc_status) VALUES(?,?,?,?,?,?)', uid, email, 'customer', name, now(), 'unverified');
-     user = get('SELECT * FROM users WHERE id=?', uid);
-   }
-   return send(res,200, newSession(res, user.id));
- }
-
- // 🌟 API สำหรับแอดมิน: ดูรายการ KYC ที่รอตรวจสอบ
+ // 🌟 API แอดมิน: KYC
  if(p==='/api/admin/kyc'&&method==='GET'){
    needUser(u,['admin']); 
    const pending = all("SELECT id, name, subdistrict, village, phone_number, kyc_status, created_at FROM users WHERE kyc_status='pending_review' ORDER BY created_at DESC");
    return send(res,200,pending);
  }
-  
- // 🌟 API สำหรับแอดมิน: ดูรายชื่อที่ยืนยันตัวตนแล้ว หรือถูกปฏิเสธ
  if(p==='/api/admin/kyc/all'&&method==='GET'){
    needUser(u,['admin']);
    const allKyc = all("SELECT id, name, subdistrict, village, phone_number, kyc_status, created_at FROM users WHERE kyc_status IN ('verified', 'rejected') ORDER BY created_at DESC LIMIT 50");
    return send(res,200,allKyc);
  }
-
- // 🌟 API สำหรับแอดมิน: กดอนุมัติ หรือ ปฏิเสธ KYC
  const kycActionMatch = p.match(/^\/api\/admin\/kyc\/([^/]+)\/(approve|reject)$/);
  if(kycActionMatch && method==='POST'){
    needUser(u,['admin']);
    const targetUserId = kycActionMatch[1];
    const action = kycActionMatch[2];
    const newStatus = action === 'approve' ? 'verified' : 'rejected';
-   
    run('UPDATE users SET kyc_status=? WHERE id=?', newStatus, targetUserId);
    audit(u, 'kyc_'+action, targetUserId); 
    emit(); 
    return send(res,200,{ok:true, message: action==='approve' ? 'อนุมัติสำเร็จ' : 'ปฏิเสธสำเร็จ'});
  }
 
+ // ... (API อื่นๆ ที่เหลืออยู่เหมือนเดิม) ...
  if(p==='/api/my-activity'&&method==='GET')return send(res,200,myActivity(u.id));
  if(p==='/api/orders'&&method==='POST'&&(b.preferred_rider_id||b.selected_rider_id))fail(409,'ระบบเลือกไรเดอร์สำหรับ VIP ยังไม่เปิดใช้งาน');
 
