@@ -8,6 +8,8 @@ db.exec('CREATE INDEX IF NOT EXISTS idx_orders_rider ON orders(rider_id); CREATE
 try { db.exec("ALTER TABLE users ADD COLUMN kyc_status TEXT DEFAULT 'unverified'"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN id_card TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN phone_number TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE users ADD COLUMN subdistrict TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE users ADD COLUMN village TEXT"); } catch(e) {}
 
 const now=()=>new Date().toISOString(),id=()=>crypto.randomUUID(),hash=s=>crypto.createHash('sha256').update(s).digest('hex');
 const get=(sql,...v)=>db.prepare(sql).get(...v),all=(sql,...v)=>db.prepare(sql).all(...v),run=(sql,...v)=>db.prepare(sql).run(...v);
@@ -20,6 +22,8 @@ async function initialize(){
  try { db.exec("ALTER TABLE users ADD COLUMN kyc_status TEXT DEFAULT 'unverified'"); } catch(e) {}
  try { db.exec("ALTER TABLE users ADD COLUMN id_card TEXT"); } catch(e) {}
  try { db.exec("ALTER TABLE users ADD COLUMN phone_number TEXT"); } catch(e) {}
+ try { db.exec("ALTER TABLE users ADD COLUMN subdistrict TEXT"); } catch(e) {}
+ try { db.exec("ALTER TABLE users ADD COLUMN village TEXT"); } catch(e) {}
  if(process.env.KRANUAN_TEST_SQLITE==='1')return seedAdmin();
  const key=process.env.FIREBASE_SERVICE_ACCOUNT_JSON;if(!key||!process.env.FIREBASE_DATABASE_URL)throw Error('Set FIREBASE_SERVICE_ACCOUNT_JSON and FIREBASE_DATABASE_URL.');
  const admin=require('firebase-admin');const credential=admin.credential.cert(JSON.parse(key));
@@ -38,7 +42,7 @@ function passHash(pass){const salt=crypto.randomBytes(16).toString('hex');return
 function checkPass(pass,stored){try{const [salt,key]=stored.split(':');const a=crypto.scryptSync(pass,salt,64),b=Buffer.from(key,'hex');return a.length===b.length&&crypto.timingSafeEqual(a,b)}catch{return false}}
 const production=process.env.NODE_ENV==='production';
 if(production&&!process.env.APP_ORIGIN)throw Error('Set APP_ORIGIN for production.');
-function publicUser(u){return {id:u.id,username:u.username,role:u.role,name:u.name,shop_id:u.shop_id,online:!!u.online,accepts_rides:!!u.accepts_rides,kyc_status:u.kyc_status||'unverified'}}
+function publicUser(u){return {id:u.id,username:u.username,role:u.role,name:u.name,shop_id:u.shop_id,online:!!u.online,accepts_rides:!!u.accepts_rides,kyc_status:u.kyc_status||'unverified',subdistrict:u.subdistrict,village:u.village}}
 function session(req){const token=(req.headers.cookie||'').split(';').map(s=>s.trim()).find(s=>s.startsWith('kranuan_session='))?.slice(16);if(!token)return null;return get('SELECT s.csrf,s.token_hash,u.* FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires>?',hash(token),Date.now())||null}
 function newSession(res,userId){const token=crypto.randomBytes(32).toString('hex'),csrf=crypto.randomBytes(24).toString('hex');run('INSERT INTO sessions VALUES(?,?,?,?)',hash(token),userId,csrf,Date.now()+30*86400000);res.setHeader('Set-Cookie','kranuan_session='+token+'; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000'+(production?'; Secure':''));return {user:publicUser(get('SELECT * FROM users WHERE id=?',userId)),csrf}}
 function needUser(u,roles){if(!u)fail(401,'กรุณาเข้าสู่ระบบ');if(roles&&!roles.includes(u.role))fail(403,'บัญชีนี้ไม่มีสิทธิ์ทำรายการ');return u}
@@ -130,7 +134,6 @@ async function api(req,res,url){
    return send(res,200,newSession(res,user.id));
  }
 
-
  if(p==='/api/shops'&&method==='GET')return send(res,200,all('SELECT * FROM shops ORDER BY accepting DESC, name ASC').map(s=>{const v=shopView(s);delete v.survey_note;delete v.verified_by;return v}));
  if(p==='/api/menus'&&method==='GET'){const shopId=required(url.searchParams.get('shop'),'ร้าน');return send(res,200,all('SELECT id,shop_id,name,price_satang,image_url,available FROM menus WHERE shop_id=? ORDER BY name',shopId).map(m=>{const img = m.image_url ? (m.image_url.startsWith('data:') ? '/api/menus/'+m.id+'/image' : m.image_url) : '';return {...m,image_url:img,price:m.price_satang/100,available:!!m.available}}))}
  if(p==='/api/config'&&method==='GET')return send(res,200,{delivery_fee:Number(process.env.DELIVERY_FEE_THB||25),ride_fee:Number(process.env.RIDE_FEE_THB||process.env.DELIVERY_FEE_THB||25),ride_passenger_limit:1});
@@ -181,19 +184,18 @@ async function api(req,res,url){
    }
    return send(res,200, newSession(res, user.id));
  }
- // 🚨 ลบวงเล็บปีกกาเกินตรงนี้ออกแล้วครับ! 🚨
 
  // 🌟 API สำหรับแอดมิน: ดูรายการ KYC ที่รอตรวจสอบ
  if(p==='/api/admin/kyc'&&method==='GET'){
-   needUser(u,['admin']); // ต้องเป็นแอดมินเท่านั้น
-   const pending = all("SELECT id, name, id_card, phone_number, kyc_status, created_at FROM users WHERE kyc_status='pending_review' ORDER BY created_at DESC");
+   needUser(u,['admin']); 
+   const pending = all("SELECT id, name, subdistrict, village, phone_number, kyc_status, created_at FROM users WHERE kyc_status='pending_review' ORDER BY created_at DESC");
    return send(res,200,pending);
  }
   
  // 🌟 API สำหรับแอดมิน: ดูรายชื่อที่ยืนยันตัวตนแล้ว หรือถูกปฏิเสธ
  if(p==='/api/admin/kyc/all'&&method==='GET'){
    needUser(u,['admin']);
-   const allKyc = all("SELECT id, name, id_card, phone_number, kyc_status, created_at FROM users WHERE kyc_status IN ('verified', 'rejected') ORDER BY created_at DESC LIMIT 50");
+   const allKyc = all("SELECT id, name, subdistrict, village, phone_number, kyc_status, created_at FROM users WHERE kyc_status IN ('verified', 'rejected') ORDER BY created_at DESC LIMIT 50");
    return send(res,200,allKyc);
  }
 
@@ -206,8 +208,8 @@ async function api(req,res,url){
    const newStatus = action === 'approve' ? 'verified' : 'rejected';
    
    run('UPDATE users SET kyc_status=? WHERE id=?', newStatus, targetUserId);
-   audit(u, 'kyc_'+action, targetUserId); // บันทึกประวัติว่าแอดมินคนไหนกด
-   emit(); // แจ้งเตือนหน้าบ้านให้อัปเดต
+   audit(u, 'kyc_'+action, targetUserId); 
+   emit(); 
    return send(res,200,{ok:true, message: action==='approve' ? 'อนุมัติสำเร็จ' : 'ปฏิเสธสำเร็จ'});
  }
 
