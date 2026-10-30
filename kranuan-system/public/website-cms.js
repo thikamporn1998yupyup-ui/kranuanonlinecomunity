@@ -10,11 +10,19 @@
     'อาหาร', 'เครื่องดื่ม', 'บริการ', 'ตลาด', 'เรียกไรเดอร์'
   ];
 
-  function safeImage(src) {
-    return typeof src === 'string' &&
-      /^(https:\/\/|\/api\/site-cms\/image\/)/.test(src)
-      ? src : '';
+  
+function safeImage(src) {
+  if (typeof src !== 'string') return '';
+
+  if (src.startsWith('https://')) return src;
+
+  if (/^\/api\/site-cms\/image\/[a-f0-9-]{36}$/.test(src)) {
+    return src;
   }
+
+  return '';
+}
+
 
   function apply() {
     if (!config) return;
