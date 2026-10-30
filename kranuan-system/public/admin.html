@@ -87,6 +87,62 @@
     document.addEventListener('DOMContentLoaded', loadPendingKYC);
   })();
 </script>
+
+  <!-- ========================================== -->
+<!-- 🌟 ระบบดูรายชื่อที่อนุมัติแล้ว (KYC) 🌟 -->
 <!-- ========================================== -->
+<div style="max-width: 1000px; margin: 20px auto; text-align: right; padding: 0 20px;">
+  <button onclick="loadVerifiedKYC()" style="background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer;">📋 ดูรายชื่อที่อนุมัติแล้ว</button>
+</div>
+
+<div id="verifiedKycPanel" style="max-width: 1000px; margin: 20px auto; padding: 20px; background: #fffdf8; border: 1px solid #eadfce; border-radius: 16px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+  <h2 style="font-size: 19px; margin: 0 0 15px 0; color: #333; display: flex; justify-content: space-between;">
+    <span>📋 รายชื่อลูกค้าที่ตรวจสอบแล้ว</span>
+    <button onclick="document.getElementById('verifiedKycPanel').style.display='none'" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #888;">&times;</button>
+  </h2>
+  <div id="verifiedKycList" style="display: flex; flex-direction: column; gap: 12px;"></div>
+</div>
+
+<script>
+  async function loadVerifiedKYC() {
+    const panel = document.getElementById('verifiedKycPanel');
+    const list = document.getElementById('verifiedKycList');
+    
+    panel.style.display = 'block';
+    list.innerHTML = '<p style="color: #888;">กำลังโหลดข้อมูล...</p>';
+
+    try {
+      const res = await fetch('/api/admin/kyc/all');
+      const users = await res.json();
+      
+      if (users.length > 0) {
+        list.innerHTML = '';
+        users.forEach(u => {
+          const badgeColor = u.kyc_status === 'verified' ? '#2ecc71' : '#e74c3c';
+          const statusText = u.kyc_status === 'verified' ? '✅ อนุมัติแล้ว' : '❌ ถูกปฏิเสธ';
+          
+          list.innerHTML += `
+            <div class="card" style="margin: 0; padding: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+              <div>
+                <h3 style="margin: 0 0 5px 0; font-size: 16px; color: #332e29;">👤 ${u.name}</h3>
+                <div class="muted" style="margin-bottom: 3px;">🆔 เลขบัตร: <b>${u.id_card || '-'}</b></div>
+                <div class="muted">📞 เบอร์โทร: <b>${u.phone_number || '-'}</b></div>
+              </div>
+              <div>
+                <span style="background: ${badgeColor}; color: white; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: bold;">${statusText}</span>
+              </div>
+            </div>
+          `;
+        });
+      } else {
+        list.innerHTML = '<p style="color: #888;">ยังไม่มีข้อมูล</p>';
+      }
+    } catch (e) {
+      list.innerHTML = '<p style="color: #e74c3c;">ไม่สามารถโหลดข้อมูลได้</p>';
+    }
+  }
+</script>
+<!-- ========================================== -->
+
 </body>
 </html>
