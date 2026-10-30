@@ -70,11 +70,11 @@
     }
 
     const buttons = document.querySelectorAll(
-      '.categories .category'
+    '.categories .category[data-cms-category]'
     );
 
-    buttons.forEach((button, index) => {
-      const item = config.icons?.[categories[index]];
+    buttons.forEach(button => {
+      const item = config.icons?.[button.dataset.cmsCategory];
 
       if (!item) return;
 
