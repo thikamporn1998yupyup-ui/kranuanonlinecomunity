@@ -243,13 +243,39 @@ async function api(req,res,url){
   if(!input||typeof input!=='object'||
      Array.isArray(input))fail(400,'ข้อมูล CMS ไม่ถูกต้อง');
 
-  const clean={
-   brand_name:text(input.brand_name,100),
-   logo:text(input.logo,1000),
-   hero_image:text(input.hero_image,1000),
-   hero_title:text(input.hero_title,150),
-   hero_desc:text(input.hero_desc,300)
-  };
+ 
+const iconKeys = ['อาหาร', 'เครื่องดื่ม', 'บริการ', 'ตลาด', 'เรียกไรเดอร์'];
+const icons = {};
+
+for (const key of iconKeys) {
+  const item = input.icons?.[key];
+  if (!item) continue;
+
+  if (typeof item !== 'object' || Array.isArray(item)) {
+    fail(400, 'ข้อมูลไอคอนไม่ถูกต้อง');
+  }
+
+  const image = text(item.image || '', 1000);
+  const label = text(item.label || '', 60);
+
+  if (image &&
+      !/^https:\/\//i.test(image) &&
+      !/^\/api\/site-cms\/image\/[a-f0-9-]{36}$/.test(image)) {
+    fail(400, 'URL รูปไอคอนไม่ถูกต้อง');
+  }
+
+  icons[key] = { image, label };
+}
+
+const clean = {
+  brand_name: text(input.brand_name, 100),
+  logo: text(input.logo, 1000),
+  hero_image: text(input.hero_image, 1000),
+  hero_title: text(input.hero_title, 150),
+  hero_desc: text(input.hero_desc, 300),
+  icons
+};
+
 
   for(const key of ['logo','hero_image']){
    if(clean[key]&&!/^https:\/\//i.test(clean[key])&&!/^\/api\/site-cms\/image\/[a-f0-9-]{36}$/.test(clean[key]))
@@ -280,7 +306,7 @@ async function api(req,res,url){
      desc:draft.hero_desc||''
     }
    },
-   icons:{}
+   icons:draft.icons||{}
   };
 
   await firebaseRef.child('site_cms/published').set(published);
