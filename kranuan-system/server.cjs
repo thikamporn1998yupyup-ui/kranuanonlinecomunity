@@ -1,28 +1,17 @@
+
 'use strict';
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {DatabaseSync}=require('node:sqlite');
 const publicDir=path.join(__dirname,'public');
 const db=new DatabaseSync(':memory:');db.exec(fs.readFileSync(path.join(__dirname,'schema.sql'),'utf8'));db.exec('PRAGMA busy_timeout=5000');
-db.exec('CREATE INDEX IF NOT EXISTS idx_orders_rider ON orders(rider_id); CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);');
-try { db.exec("ALTER TABLE users ADD COLUMN kyc_status TEXT DEFAULT 'unverified'"); } catch(e) {}
-try { db.exec("ALTER TABLE users ADD COLUMN id_card TEXT"); } catch(e) {}
-try { db.exec("ALTER TABLE users ADD COLUMN phone_number TEXT"); } catch(e) {}
-try { db.exec("ALTER TABLE users ADD COLUMN subdistrict TEXT"); } catch(e) {}
-try { db.exec("ALTER TABLE users ADD COLUMN village TEXT"); } catch(e) {}
-
 const now=()=>new Date().toISOString(),id=()=>crypto.randomUUID(),hash=s=>crypto.createHash('sha256').update(s).digest('hex');
 const get=(sql,...v)=>db.prepare(sql).get(...v),all=(sql,...v)=>db.prepare(sql).all(...v),run=(sql,...v)=>db.prepare(sql).run(...v);
-const FIREBASE_TABLES=['users','shops','menus','sessions','orders','order_events','reports','audit','market_listings','market_comments','market_reports','staff_profiles','shop_reviews','rider_gallery','ads'];
+const FIREBASE_TABLES=['users','shops','menus','sessions','orders','order_events','reports','audit','market_listings','market_comments','market_reports','staff_profiles','shop_reviews','rider_gallery','ads','member_profiles','member_identities'];
 let firebaseRef=null,saveQueue=Promise.resolve(),firebaseBaseline={};
 function serializeTables(){const tables={};for(const table of FIREBASE_TABLES){const rows=all('SELECT * FROM '+table);tables[table]=JSON.stringify(Object.fromEntries(rows.map((r,i)=>[String(r.id??i),r])))}return tables}
-async function persistState(){if(!firebaseRef)return;const current=serializeTables(),updates={};for(const table of FIREBASE_TABLES)if(current[table]!==firebaseBaseline[table])updates['tables/'+table]=JSON.parse(current[table]);if(!Object.keys(updates).length)return;updates.version=1;await firebaseRef.update(updates);firebaseBaseline=current}
+async function persistState(){if(!firebaseRef)return;const current=serializeTables(),updates={};for(const table of FIREBASE_TABLES)if(current[table]!==firebaseBaseline[table])updates['tables/'+table]=JSON.parse(current[table]);if(!Object.keys(updates).length)return;updates.version=1;/* update() touches only the listed tables, so tables this version does not know are never deleted */await firebaseRef.update(updates);firebaseBaseline=current}
 async function initialize(){
  db.exec(fs.readFileSync(path.join(__dirname,'schema.sql'),'utf8'));
- try { db.exec("ALTER TABLE users ADD COLUMN kyc_status TEXT DEFAULT 'unverified'"); } catch(e) {}
- try { db.exec("ALTER TABLE users ADD COLUMN id_card TEXT"); } catch(e) {}
- try { db.exec("ALTER TABLE users ADD COLUMN phone_number TEXT"); } catch(e) {}
- try { db.exec("ALTER TABLE users ADD COLUMN subdistrict TEXT"); } catch(e) {}
- try { db.exec("ALTER TABLE users ADD COLUMN village TEXT"); } catch(e) {}
  if(process.env.KRANUAN_TEST_SQLITE==='1')return seedAdmin();
  const key=process.env.FIREBASE_SERVICE_ACCOUNT_JSON;if(!key||!process.env.FIREBASE_DATABASE_URL)throw Error('Set FIREBASE_SERVICE_ACCOUNT_JSON and FIREBASE_DATABASE_URL.');
  const admin=require('firebase-admin');const credential=admin.credential.cert(JSON.parse(key));
@@ -41,26 +30,27 @@ function passHash(pass){const salt=crypto.randomBytes(16).toString('hex');return
 function checkPass(pass,stored){try{const [salt,key]=stored.split(':');const a=crypto.scryptSync(pass,salt,64),b=Buffer.from(key,'hex');return a.length===b.length&&crypto.timingSafeEqual(a,b)}catch{return false}}
 const production=process.env.NODE_ENV==='production';
 if(production&&!process.env.APP_ORIGIN)throw Error('Set APP_ORIGIN for production.');
-function publicUser(u){return {id:u.id,username:u.username,role:u.role,name:u.name,shop_id:u.shop_id,online:!!u.online,accepts_rides:!!u.accepts_rides,kyc_status:u.kyc_status||'unverified',subdistrict:u.subdistrict,village:u.village}}
-function session(req){const token=(req.headers.cookie||'').split(';').map(s=>s.trim()).find(s=>s.startsWith('kranuan_session='))?.slice(16);if(!token)return null;return get('SELECT s.csrf,s.token_hash,u.* FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires>?',hash(token),Date.now())||null}
-function newSession(res,userId){const token=crypto.randomBytes(32).toString('hex'),csrf=crypto.randomBytes(24).toString('hex');run('INSERT INTO sessions VALUES(?,?,?,?)',hash(token),userId,csrf,Date.now()+30*86400000);res.setHeader('Set-Cookie','kranuan_session='+token+'; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000'+(production?'; Secure':''));return {user:publicUser(get('SELECT * FROM users WHERE id=?',userId)),csrf}}
+function publicUser(u){return {id:u.id,username:u.username,role:u.role,name:u.name,shop_id:u.shop_id,online:!!u.online,accepts_rides:!!u.accepts_rides,member:accounts.verified(u.id),profile_complete:accounts.ready(u.id)}}
+function session(req){const token=(req.headers.cookie||'').split(';').map(s=>s.trim()).find(s=>s.startsWith('kranuan_session='))?.slice(16);if(!token)return null;const found=get('SELECT s.csrf,s.token_hash,u.* FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires>?',hash(token),Date.now());return found&&accounts.active(found.id)?found:null}
+function newSession(res,userId){if(!accounts.active(userId))fail(403,'บัญชีนี้ถูกระงับ');const token=crypto.randomBytes(32).toString('hex'),csrf=crypto.randomBytes(24).toString('hex');run('INSERT INTO sessions VALUES(?,?,?,?)',hash(token),userId,csrf,Date.now()+30*86400000);res.setHeader('Set-Cookie','kranuan_session='+token+'; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000'+(production?'; Secure':''));return {user:publicUser(get('SELECT * FROM users WHERE id=?',userId)),csrf}}
 function needUser(u,roles){if(!u)fail(401,'กรุณาเข้าสู่ระบบ');if(roles&&!roles.includes(u.role))fail(403,'บัญชีนี้ไม่มีสิทธิ์ทำรายการ');return u}
 function ownShop(u,shopId){needUser(u,['admin','merchant']);if(u.role==='merchant'&&u.shop_id!==shopId)fail(403,'แก้ไขได้เฉพาะร้านของคุณ')}
 function audit(u,action,target){run('INSERT INTO audit(actor_id,action,target,created_at) VALUES(?,?,?,?)',u.id,action,target,now())}
 function adsToday(){return new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Bangkok'})}
 function adView(a,admin){const img=a.image_url.startsWith('data:')?'/api/ads/'+a.id+'/image?v='+encodeURIComponent(a.updated_at):a.image_url;const v={id:a.id,kind:a.kind,title:a.title,text:a.text,tag:a.tag,image:img,link:a.link_url,linkLabel:a.link_label};if(admin)Object.assign(v,{enabled:!!a.enabled,start_date:a.start_date,end_date:a.end_date,sort_order:a.sort_order});return v}
 function adsPublic(){const t=adsToday();return all('SELECT * FROM ads WHERE enabled=1 ORDER BY sort_order,created_at').filter(a=>(!a.start_date||t>=a.start_date)&&(!a.end_date||t<=a.end_date)).map(a=>adView(a))}
-function shopView(s){const img = s.image_url ? (s.image_url.startsWith('data:') ? '/api/shops/'+s.id+'/image' : s.image_url) : '';return {...s, image_url: img, opt_in:!!s.opt_in, accepting:!!s.accepting}}
-function orderView(o,u){const snap=JSON.parse(o.snapshot);return {rider:staffApi.publicInfo(o.rider_id),id:o.id,shop_id:o.shop_id,rider_id:o.rider_id,status:o.status,customer_id:o.customer_id,seller_id:snap.seller_id||null,listingId:snap.listing_id||null,paymentMethod:snap.payment_method||null,type:o.kind,passenger_count:snap.passenger_count||null,service_label:o.kind==='ride'?'รับ–ส่งผู้โดยสาร':o.kind==='parcel'?'รับ–ส่งของ':'อาหารจากร้าน',shop:snap.shop,shop_image_url:(snap.shop_image_url||'').startsWith('data:')?'':snap.shop_image_url,product_image_url:(snap.items?.[0]?.image_url||'').startsWith('data:')?'':snap.items?.[0]?.image_url,items:(snap.items||[]).map(i=>({...i,image_url:(i.image_url||'').startsWith('data:')?'':i.image_url})),item:snap.items?.map(i=>i.name+' × '+i.quantity).join(', ')||snap.description,pickup:o.pickup,pickup_phone:snap.seller_phone||snap.shop_phone||'',pickup_lat:snap.pickup_lat??null,pickup_lng:snap.pickup_lng??null,dropoff:o.dropoff,customer_name:o.customer_name,phone:u.role==='rider'&&o.rider_id!==u.id?'':o.phone,dropoff_lat:o.lat,dropoff_lng:o.lng,note:o.note,image:o.image,insideImage:o.inside_image,goods_total:o.goods_satang/100,fee:o.fee_satang/100,deliveryFee:o.fee_satang/100,total:(o.goods_satang+o.fee_satang)/100,created_at:o.created_at,updated_at:o.updated_at,order_mode:snap.order_mode}}
-function visibleOrders(u){if(u.role==='admin')return all('SELECT * FROM orders ORDER BY created_at DESC LIMIT 300');if(u.role==='merchant')return all("SELECT * FROM orders WHERE shop_id=? OR (kind='market' AND json_extract(snapshot,'$.seller_id')=?) ORDER BY created_at DESC LIMIT 100",u.shop_id,u.id);if(u.role==='rider')return all("SELECT * FROM orders WHERE rider_id=? OR (status='ready' AND rider_id IS NULL AND (kind<>'ride' OR ?=1)) ORDER BY created_at DESC LIMIT 20",u.id,u.accepts_rides?1:0);return all("SELECT * FROM orders WHERE customer_id=? OR (kind='market' AND json_extract(snapshot,'$.seller_id')=?) ORDER BY created_at DESC LIMIT 100",u.id,u.id)}
+function shopView(s){return {...s,opt_in:!!s.opt_in,accepting:!!s.accepting}}
+function orderView(o,u){const snap=JSON.parse(o.snapshot);return {rider:staffApi.publicInfo(o.rider_id),id:o.id,shop_id:o.shop_id,rider_id:o.rider_id,status:o.status,customer_id:o.customer_id,seller_id:snap.seller_id||null,listingId:snap.listing_id||null,paymentMethod:snap.payment_method||null,type:o.kind,vehicle:snap.vehicle||(['ride','parcel'].includes(o.kind)?'bike':null),vehicle_label:snap.vehicle==='car'?'รถยนต์':'รถจักรยานยนต์',passenger_count:snap.passenger_count||null,service_label:o.kind==='ride'?'รับ–ส่งผู้โดยสาร':o.kind==='parcel'?'รับ–ส่งของ':'อาหารจากร้าน',shop:snap.shop,shop_image_url:snap.shop_image_url||'',product_image_url:snap.items?.[0]?.image_url||'',items:snap.items||[],item:snap.items?.map(i=>i.name+' × '+i.quantity).join(', ')||snap.description,pickup:o.pickup,pickup_phone:snap.seller_phone||snap.shop_phone||'',pickup_lat:snap.pickup_lat??null,pickup_lng:snap.pickup_lng??null,dropoff:o.dropoff,customer_name:o.customer_name,phone:u.role==='rider'&&o.rider_id!==u.id?'':o.phone,dropoff_lat:o.lat,dropoff_lng:o.lng,note:o.note,image:o.image,insideImage:o.inside_image,goods_total:o.goods_satang/100,fee:o.fee_satang/100,deliveryFee:o.fee_satang/100,total:(o.goods_satang+o.fee_satang)/100,created_at:o.created_at,updated_at:o.updated_at,order_mode:snap.order_mode}}
+
+function transportConfig(){const value=(key,fallback)=>{const n=Number(process.env[key]??fallback);if(!Number.isFinite(n)||n<0||n>10000)fail(500,'ตั้งค่าบริการรถไม่ถูกต้อง');return Math.round(n*100)/100};return {bike_base:value('DELIVERY_FEE_THB',25),bike_ride_base:value('RIDE_FEE_THB',process.env.DELIVERY_FEE_THB||25),car_base:value('TRANSPORT_CAR_BASE_THB',55),passenger_extra:value('TRANSPORT_PASSENGER_THB',15),bike_limit:1,car_limit:4}}
+function transportVehicle(uid){const r=get("SELECT payload FROM reports WHERE user_id=? AND kind='transport_vehicle' ORDER BY created_at DESC LIMIT 1",uid);try{return JSON.parse(r?.payload||'{}').vehicle==='car'?'car':'bike'}catch{return 'bike'}}
+function visibleOrders(u){if(u.role==='admin')return all('SELECT * FROM orders ORDER BY created_at DESC LIMIT 300');if(u.role==='merchant')return all("SELECT * FROM orders WHERE shop_id=? OR (kind='market' AND json_extract(snapshot,'$.seller_id')=?) ORDER BY created_at DESC LIMIT 100",u.shop_id,u.id);if(u.role==='rider')return all("SELECT * FROM orders WHERE rider_id=? OR (status='ready' AND rider_id IS NULL AND (kind<>'ride' OR ?=1)) ORDER BY created_at DESC LIMIT 100",u.id,u.accepts_rides?1:0).filter(o=>!['ride','parcel'].includes(o.kind)||(JSON.parse(o.snapshot).vehicle||'bike')===transportVehicle(u.id));return all("SELECT * FROM orders WHERE customer_id=? OR (kind='market' AND json_extract(snapshot,'$.seller_id')=?) ORDER BY created_at DESC LIMIT 100",u.id,u.id)}
 function canReadOrder(u,o){return u.role==='admin'||o.customer_id===u.id||o.rider_id===u.id||(u.role==='merchant'&&o.shop_id===u.shop_id)||(o.kind==='market'&&JSON.parse(o.snapshot).seller_id===u.id)}
 const clients=new Map();function emit(){for(const [res] of clients){try{res.write('event: refresh\ndata: {}\n\n')}catch{clients.delete(res)}}}
 function transaction(fn){db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result}catch(e){db.exec('ROLLBACK');throw e}}
 function addEvent(orderId,u,status,note=''){run('INSERT INTO order_events(order_id,actor_id,status,note,created_at) VALUES(?,?,?,?,?)',orderId,u.id,status,note,now())}
 const buckets=new Map();function limit(req,key,max=200){const ip=req.socket.remoteAddress;const k=ip+':'+key;let b=buckets.get(k);if(!b||b.until<Date.now()){b={n:0,until:Date.now()+60000};buckets.set(k,b)}if(++b.n>max)fail(429,'ทำรายการบ่อยเกินไป กรุณารอสักครู่')}
-let syncTimeout = null;
-function triggerBackgroundSync() { if (syncTimeout) clearTimeout(syncTimeout); syncTimeout = setTimeout(async () => { try { await persistState(); } catch (e) { console.error("Firebase sync error:", e); } }, 1500); }
-function send(res, status, value) { if (!res.destroyed) { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(value)); } triggerBackgroundSync(); return Promise.resolve(); }
+function send(res,status,value){const task=saveQueue.then(async()=>{await persistState();if(!res.destroyed){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(value))}});saveQueue=task.catch(()=>{});return task}
 async function body(req){let size=0,chunks=[];for await(const chunk of req){size+=chunk.length;if(size>3500000)fail(413,'รูปหรือข้อมูลใหญ่เกินไป');chunks.push(chunk)}try{return JSON.parse(Buffer.concat(chunks).toString()||'{}')}catch{fail(400,'JSON ไม่ถูกต้อง')}}
 function checkOrigin(req){const allowed=process.env.APP_ORIGIN||'http://'+req.headers.host;const origin=req.headers.origin;if(origin&&origin!==allowed)fail(403,'Origin ไม่ถูกต้อง');if(req.headers['sec-fetch-site']==='cross-site')fail(403,'ไม่รับคำขอข้ามเว็บไซต์')}
 let importBusy=false;
@@ -108,107 +98,30 @@ function importShops(u,data){
  for(const m of r.menus){const old=get('SELECT * FROM menus WHERE shop_id=? AND name=?',sid,m.name);if(old){if(!old.image_url&&m.image_url){run('UPDATE menus SET image_url=? WHERE id=?',m.image_url,old.id);images_added++}continue}run('INSERT INTO menus(id,shop_id,name,price_satang,image_url,available) VALUES(?,?,?,?,?,0)',id(),sid,m.name,Math.round(m.price*100),m.image_url);menus_added++;if(m.image_url)images_added++}
  }audit(u,'import shops and media',String(added))});emit();return {added,skipped,images_added,menus_added,total:plan.length,note:'เติมเฉพาะรูปที่ขาด ไม่เปลี่ยนสถานะร้าน เมนูนำเข้าใหม่พักขายไว้จนกว่าจะตรวจราคาและเปิดขาย'};
 }
+const accounts=require('./accounts.cjs')({db,get,all,run,fail,text,required,id,now,transaction,audit,send,newSession,publicUser,terminate:()=>{for(const [stream,s]of clients)if(!get('SELECT token_hash FROM sessions WHERE token_hash=?',s.token)){stream.end();clients.delete(stream)}}});
 const staffApi=require('./staff.cjs')({get,all,run,fail,text,required,id,now,transaction,audit,emit,send});
 const myActivity=require('./activity.cjs')({all,now});
 const marketApi=require('./market.cjs')({get,all,run,fail,text,required,coord,imageURL,id,now,transaction,audit,emit,send,orderView});
 async function api(req,res,url){
  checkOrigin(req);let u=session(req);const method=req.method,p=url.pathname;limit(req,p==='/api/login'?'login':'api:'+(u?.id||'public'),p==='/api/login'?10:240);
- 
- // 🌟 ย้ายตัวแปร b ขึ้นมาบนสุด เพื่อให้ทุก API เรียกใช้ได้
- const b=['POST','PATCH','PUT'].includes(method)?await body(req):{};
-
  if(p==='/api/session'&&method==='POST'){if(u)return send(res,200,{user:publicUser(u),csrf:u.csrf});const uid=id();run('INSERT INTO users(id,role,name,created_at) VALUES(?,?,?,?)',uid,'customer','ลูกค้ากระนวน',now());return send(res,201,newSession(res,uid))}
- 
- // 🌟 API ล็อคอิน LINE
- if(p==='/api/auth/line'&&method==='POST'){
-   const lineId=text(b.lineId,100);
-   const displayName=text(b.name,100)||'ผู้ใช้ LINE';
-   if(!lineId)fail(400,'ไม่พบ LINE ID');
-   let user=get('SELECT * FROM users WHERE username=?',lineId);
-   if(!user){
-     const uid=id();
-     run('INSERT INTO users(id,username,role,name,created_at,kyc_status) VALUES(?,?,?,?,?,?)',uid,lineId,'customer',displayName,now(),'unverified');
-     user=get('SELECT * FROM users WHERE id=?',uid);
-   } else {
-     if(displayName!==user.name)run('UPDATE users SET name=? WHERE id=?',displayName,user.id);
-     user.name=displayName;
-   }
-   return send(res,200,newSession(res,user.id));
- }
+ if(p==='/api/shops'&&method==='GET')return send(res,200,all('SELECT * FROM shops ORDER BY name').map(s=>{const v=shopView(s);delete v.survey_note;delete v.verified_by;return v}));
+ if(p==='/api/menus'&&method==='GET'){const shopId=required(url.searchParams.get('shop'),'ร้าน');return send(res,200,all('SELECT id,shop_id,name,price_satang,image_url,available FROM menus WHERE shop_id=? ORDER BY name',shopId).map(m=>({...m,price:m.price_satang/100,available:!!m.available})))}
+ if(p==='/api/config'&&method==='GET')return send(res,200,{delivery_fee:Number(process.env.DELIVERY_FEE_THB||25),ride_fee:Number(process.env.RIDE_FEE_THB||process.env.DELIVERY_FEE_THB||25),ride_passenger_limit:1,transport:transportConfig()});
 
- // 🌟 API ล็อคอิน Google
- if(p==='/api/auth/google'&&method==='POST'){
-   const email = text(b.email,100);
-   const name = text(b.name,100) || 'ผู้ใช้ Google';
-   if(!email) fail(400, 'ไม่พบอีเมล');
-   let user = get('SELECT * FROM users WHERE username=?', email);
-   if(!user) {
-     const uid = id();
-     run('INSERT INTO users(id,username,role,name,created_at,kyc_status) VALUES(?,?,?,?,?,?)', uid, email, 'customer', name, now(), 'unverified');
-     user = get('SELECT * FROM users WHERE id=?', uid);
-   }
-   return send(res,200, newSession(res, user.id));
- }
-
- if(p==='/api/shops'&&method==='GET')return send(res,200,all('SELECT * FROM shops ORDER BY accepting DESC, name ASC').map(s=>{const v=shopView(s);delete v.survey_note;delete v.verified_by;return v}));
- if(p==='/api/menus'&&method==='GET'){const shopId=required(url.searchParams.get('shop'),'ร้าน');return send(res,200,all('SELECT id,shop_id,name,price_satang,image_url,available FROM menus WHERE shop_id=? ORDER BY name',shopId).map(m=>{const img = m.image_url ? (m.image_url.startsWith('data:') ? '/api/menus/'+m.id+'/image' : m.image_url) : '';return {...m,image_url:img,price:m.price_satang/100,available:!!m.available}}))}
- if(p==='/api/config'&&method==='GET')return send(res,200,{delivery_fee:Number(process.env.DELIVERY_FEE_THB||25),ride_fee:Number(process.env.RIDE_FEE_THB||process.env.DELIVERY_FEE_THB||25),ride_passenger_limit:1});
- if(p==='/api/catalog'&&method==='GET'){const pictures=all("SELECT id,shop_id,name,image_url FROM menus ORDER BY available DESC,name");const ratings=all('SELECT shop_id,COUNT(*) AS review_count,ROUND(AVG(rating),1) AS rating FROM shop_reviews GROUP BY shop_id');return send(res,200,all('SELECT id,image_url FROM shops').map(s=>{const sImg = s.image_url ? (s.image_url.startsWith('data:') ? '/api/shops/'+s.id+'/image' : s.image_url) : '';const mImgs = pictures.filter(m=>m.shop_id===s.id).map(m => m.image_url ? (m.image_url.startsWith('data:') ? '/api/menus/'+m.id+'/image' : m.image_url) : '').filter(Boolean);return {id:s.id,menu_names:pictures.filter(m=>m.shop_id===s.id).map(m=>m.name).slice(0,100),images:[...new Set([sImg, ...mImgs])].slice(0,3),rating:ratings.find(r=>r.shop_id===s.id)?.rating??null,review_count:ratings.find(r=>r.shop_id===s.id)?.review_count||0}}))}
+ if(p==='/api/catalog'&&method==='GET'){const pictures=all("SELECT shop_id,name,image_url FROM menus ORDER BY available DESC,name");const ratings=all('SELECT shop_id,COUNT(*) AS review_count,ROUND(AVG(rating),1) AS rating FROM shop_reviews GROUP BY shop_id');return send(res,200,all('SELECT id,image_url FROM shops').map(s=>({id:s.id,menu_names:pictures.filter(m=>m.shop_id===s.id).map(m=>m.name).slice(0,100),images:[...new Set([s.image_url,...pictures.filter(m=>m.shop_id===s.id).map(m=>m.image_url)].filter(Boolean))].slice(0,3),rating:ratings.find(r=>r.shop_id===s.id)?.rating??null,review_count:ratings.find(r=>r.shop_id===s.id)?.review_count||0})))}
  if(p==='/api/shop-reviews'&&method==='GET'){const sid=required(url.searchParams.get('shop'),'ร้าน');return send(res,200,all('SELECT rating,comment,created_at FROM shop_reviews WHERE shop_id=? ORDER BY created_at DESC LIMIT 20',sid))}
  const publicRiderPhoto=p.match(/^\/api\/riders\/([^/]+)\/photo\/(avatar|p[0-3])$/);if(publicRiderPhoto&&method==='GET'){const image=staffApi.publicPhoto(publicRiderPhoto[1],publicRiderPhoto[2]);if(!image)fail(404,'ยังไม่เผยแพร่รูปนี้');const match=image.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);if(!match)fail(404,'รูปไม่พร้อมใช้งาน');res.writeHead(200,{'Content-Type':match[1],'Cache-Control':'private, no-store'});return res.end(Buffer.from(match[2],'base64'))}
  if(p==='/api/riders'&&method==='GET')return send(res,200,{riders:staffApi.publicList(),vip:{available:false,price:299,currency:'THB',billing_period:null}});
  if(p==='/api/ads'&&method==='GET')return send(res,200,{ads:adsPublic()});
  const adImg=p.match(/^\/api\/ads\/([A-Za-z0-9-]+)\/image$/);if(adImg&&method==='GET'){const row=get('SELECT image_url FROM ads WHERE id=?',adImg[1]),m=row&&row.image_url.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);if(!m)fail(404,'ไม่พบรูปโฆษณา');res.writeHead(200,{'Content-Type':m[1],'Cache-Control':'public, max-age=86400'});return res.end(Buffer.from(m[2],'base64'))}
- const shopImg=p.match(/^\/api\/shops\/([^/]+)\/image$/);if(shopImg&&method==='GET'){const row=get('SELECT image_url FROM shops WHERE id=?',shopImg[1]),m=row&&row.image_url.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);if(!m)fail(404,'ไม่พบรูปภาพร้านค้า');res.writeHead(200,{'Content-Type':m[1],'Cache-Control':'public, max-age=86400'});return res.end(Buffer.from(m[2],'base64'))}
- const menuImg=p.match(/^\/api\/menus\/([^/]+)\/image$/);if(menuImg&&method==='GET'){const row=get('SELECT image_url FROM menus WHERE id=?',menuImg[1]),m=row&&row.image_url.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);if(!m)fail(404,'ไม่พบรูปภาพเมนู');res.writeHead(200,{'Content-Type':m[1],'Cache-Control':'public, max-age=86400'});return res.end(Buffer.from(m[2],'base64'))}
  if(p==='/api/health')return send(res,200,{ok:true});
- 
- // 🌟 ด่านตรวจ (ต้องล็อกอินก่อน)
  needUser(u);
  if(!['GET','HEAD'].includes(method)&&req.headers['x-csrf-token']!==u.csrf)fail(403,'เซสชันเปลี่ยน กรุณาโหลดหน้าใหม่');
- 
- // 🌟 API รับข้อมูลโซน
- if(p==='/api/auth/kyc'&&method==='POST'){
-   try {
-     const fullName = required(b.full_name,'ชื่อ-นามสกุล',100);
-     const phone = required(b.phone,'เบอร์โทรศัพท์',10);
-     const subdistrict = required(b.subdistrict,'ตำบล',50);
-     const village = required(b.village,'หมู่ที่',10);
-     try { db.exec("ALTER TABLE users ADD COLUMN phone_number TEXT"); } catch(e) {}
-     try { db.exec("ALTER TABLE users ADD COLUMN subdistrict TEXT"); } catch(e) {}
-     try { db.exec("ALTER TABLE users ADD COLUMN village TEXT"); } catch(e) {}
-     try { db.exec("ALTER TABLE users ADD COLUMN kyc_status TEXT DEFAULT 'unverified'"); } catch(e) {}
-     run('UPDATE users SET name=?, phone_number=?, subdistrict=?, village=?, kyc_status=? WHERE id=?', fullName, phone, subdistrict, village, 'verified', u.id);
-     return send(res,200,{ok:true, message:'บันทึกข้อมูลโซนสำเร็จ'});
-   } catch (err) {
-     return send(res, 500, { error: err.message }); 
-   }
- }
-
- // 🌟 API แอดมิน: KYC
- if(p==='/api/admin/kyc'&&method==='GET'){
-   needUser(u,['admin']); 
-   const pending = all("SELECT id, name, subdistrict, village, phone_number, kyc_status, created_at FROM users WHERE kyc_status='pending_review' ORDER BY created_at DESC");
-   return send(res,200,pending);
- }
- if(p==='/api/admin/kyc/all'&&method==='GET'){
-   needUser(u,['admin']);
-   const allKyc = all("SELECT id, name, subdistrict, village, phone_number, kyc_status, created_at FROM users WHERE kyc_status IN ('verified', 'rejected') ORDER BY created_at DESC LIMIT 50");
-   return send(res,200,allKyc);
- }
- const kycActionMatch = p.match(/^\/api\/admin\/kyc\/([^/]+)\/(approve|reject)$/);
- if(kycActionMatch && method==='POST'){
-   needUser(u,['admin']);
-   const targetUserId = kycActionMatch[1];
-   const action = kycActionMatch[2];
-   const newStatus = action === 'approve' ? 'verified' : 'rejected';
-   run('UPDATE users SET kyc_status=? WHERE id=?', newStatus, targetUserId);
-   audit(u, 'kyc_'+action, targetUserId); 
-   emit(); 
-   return send(res,200,{ok:true, message: action==='approve' ? 'อนุมัติสำเร็จ' : 'ปฏิเสธสำเร็จ'});
- }
-
- // ... (API อื่นๆ ที่เหลืออยู่เหมือนเดิม) ...
+ const b=['POST','PATCH','PUT'].includes(method)?await body(req):{};
+ if(url.pathname.startsWith('/api/accounts/')||url.pathname.startsWith('/api/admin/members')){const handled=await accounts.handle(req,res,url,u,b);if(handled!==false)return handled;}
+ if(method==='POST'&&['/api/orders','/api/market/orders'].includes(p)&&u.role==='customer'&&!accounts.verified(u.id))fail(401,'กรุณาเข้าสู่ระบบ Google ก่อนสั่งซื้อหรือเรียกรถ');
+ if(method==='POST'&&['/api/orders','/api/market/orders'].includes(p)&&u.role==='customer'&&!accounts.ready(u.id))fail(428,'กรุณากรอกชื่อที่แสดง เบอร์โทร และพิกัดบ้านก่อนสั่งซื้อหรือเรียกรถ');
  if(p==='/api/my-activity'&&method==='GET')return send(res,200,myActivity(u.id));
  if(p==='/api/orders'&&method==='POST'&&(b.preferred_rider_id||b.selected_rider_id))fail(409,'ระบบเลือกไรเดอร์สำหรับ VIP ยังไม่เปิดใช้งาน');
 
@@ -223,6 +136,8 @@ async function api(req,res,url){
  if(p==='/api/events'&&method==='GET'){
  if([...clients.values()].filter(s=>s.token===u.token_hash).length>=3)fail(429,'เปิดหน้าจอแจ้งเตือนมากเกินไป');res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache, no-transform','Connection':'keep-alive','X-Accel-Buffering':'no'});res.write('event: refresh\ndata: {}\n\n');clients.set(res,{token:u.token_hash});req.on('close',()=>clients.delete(res));return;
  }
+ if(p==='/api/transport/search'&&method==='GET'){const query=required(url.searchParams.get('q'),'ชื่อสถานที่',200);limit(req,'transport-geocode',12);if(!process.env.GEOAPIFY_API_KEY)fail(503,'ยังไม่ได้ตั้งค่าค้นหาสถานที่ ใช้พิกัดหรือเลือกบนแผนที่แทนได้');const target=new URL('https://api.geoapify.com/v1/geocode/search');target.search=new URLSearchParams({text:query,lang:'th',format:'json',limit:'5',bias:'proximity:103.078,16.706',apiKey:process.env.GEOAPIFY_API_KEY}).toString();let response;try{response=await fetch(target,{signal:AbortSignal.timeout(8000)})}catch{fail(503,'ค้นหาสถานที่ไม่สำเร็จ ลองใหม่ภายหลัง')}if(!response.ok)fail(503,'บริการค้นหายังไม่พร้อม ใช้การปักหมุดแทนได้');const data=await response.json();return send(res,200,{results:(data.results||[]).filter(x=>Number.isFinite(x.lat)&&Number.isFinite(x.lon)).map(x=>({lat:x.lat,lng:x.lon,name:x.formatted||x.name||query})).slice(0,5),attribution:'Powered by Geoapify | © OpenStreetMap contributors'})}
+ if(p==='/api/transport/vehicle'&&['GET','POST'].includes(method)){needUser(u,['rider']);if(method==='POST'){if(!['bike','car'].includes(b.vehicle))fail(400,'เลือกประเภทรถให้ถูกต้อง');if(get("SELECT id FROM orders WHERE rider_id=? AND status IN ('assigned','picked')",u.id))fail(409,'ส่งงานปัจจุบันให้เสร็จก่อนเปลี่ยนรถ');const r=get("SELECT id FROM reports WHERE user_id=? AND kind='transport_vehicle' ORDER BY created_at DESC LIMIT 1",u.id);if(r)run('UPDATE reports SET payload=?,created_at=? WHERE id=?',JSON.stringify({vehicle:b.vehicle}),now(),r.id);else run('INSERT INTO reports VALUES(?,?,?,?,?)',id(),u.id,'transport_vehicle',JSON.stringify({vehicle:b.vehicle}),now());emit()}return send(res,200,{vehicle:transportVehicle(u.id)})}
  if(p==='/api/presence'&&method==='POST'){needUser(u,['rider']);if(b.accepts_rides!==undefined&&typeof b.accepts_rides!=='boolean')fail(400,'สถานะรับส่งคนไม่ถูกต้อง');const online=b.online===undefined?!!u.online:b.online===true,rides=b.accepts_rides===undefined?!!u.accepts_rides:b.accepts_rides;run('UPDATE users SET online=?,accepts_rides=? WHERE id=?',online?1:0,rides?1:0,u.id);return send(res,200,{ok:true,user:publicUser(get('SELECT * FROM users WHERE id=?',u.id))})}
  if(p==='/api/reports'&&method==='POST'){run('INSERT INTO reports VALUES(?,?,?,?,?)',id(),u.id,text(b.kind,50),JSON.stringify(b).slice(0,10000),now());return send(res,201,{ok:true,message:'บันทึกเรื่องแล้ว ยังไม่มีระบบโทรหรือแจ้งเจ้าหน้าที่ภายนอก'})}
  if(p==='/api/orders'&&method==='GET')return send(res,200,visibleOrders(u).map(o=>orderView(o,u)));
@@ -236,11 +151,11 @@ async function api(req,res,url){
  if(!isTransport){
  shop=get('SELECT * FROM shops WHERE id=?',text(b.shop_id));if(!shop||shop.verification!=='verified'||!shop.opt_in||!shop.accepting)fail(409,'ร้านนี้ยังไม่เปิดรับออเดอร์');
  if(!Array.isArray(b.items)||!b.items.length||b.items.length>20)fail(400,'เลือกสินค้า 1–20 รายการ');const menuIds=new Set();
- for(const line of b.items){if(menuIds.has(line.menu_id))fail(400,'รายการสินค้าซ้ำ');menuIds.add(line.menu_id);const m=get('SELECT * FROM menus WHERE id=? AND shop_id=?',text(line.menu_id),shop.id);if(!m?.available)fail(409,'บางรายการหมดหรือเปลี่ยนแปลง กรุณาเลือกใหม่');const q=Number(line.quantity);if(!Number.isInteger(q)||q<1||q>20)fail(400,'จำนวนต้องอยู่ระหว่าง 1–20');items.push({menu_id:m.id,name:m.name,quantity:q,price:m.price_satang/100,image_url:(m.image_url||'').startsWith('data:')?'':m.image_url});goods+=m.price_satang*q}
+ for(const line of b.items){if(menuIds.has(line.menu_id))fail(400,'รายการสินค้าซ้ำ');menuIds.add(line.menu_id);const m=get('SELECT * FROM menus WHERE id=? AND shop_id=?',text(line.menu_id),shop.id);if(!m?.available)fail(409,'บางรายการหมดหรือเปลี่ยนแปลง กรุณาเลือกใหม่');const q=Number(line.quantity);if(!Number.isInteger(q)||q<1||q>20)fail(400,'จำนวนต้องอยู่ระหว่าง 1–20');items.push({menu_id:m.id,name:m.name,quantity:q,price:m.price_satang/100,image_url:m.image_url});goods+=m.price_satang*q}
  if(goods>1000000)fail(400,'ยอดสินค้าสูงเกินวงเงิน 10,000 บาท');kind='food';pickup=shop.address||shop.name;status=shop.order_mode==='merchant_confirm'?'waiting':'ready';
- snapshot={shop:shop.name,shop_image_url:(shop.image_url||'').startsWith('data:')?'':shop.image_url,shop_phone:shop.phone,items,order_mode:shop.order_mode,pickup_lat:shop.lat,pickup_lng:shop.lng};
- }else {const pickupLat=coord(b.pickup_lat,-90,90),pickupLng=coord(b.pickup_lng,-180,180);if((pickupLat===null)!==(pickupLng===null))fail(400,'ระบุพิกัดจุดรับให้ครบทั้งสองค่า');if(isRide&&Number(b.passenger_count??1)!==1)fail(400,'รับ–ส่งผู้โดยสารได้ 1 คนต่อคำขอ');snapshot={shop:isRide?'เรียกรถรับ–ส่งผู้โดยสาร':'เรียกไรเดอร์รับ–ส่งของ',description:isRide?'ผู้โดยสาร 1 คน'+(text(b.description,200)?' · '+text(b.description,200):''):required(b.description,'รายละเอียดสิ่งของ',300),items:[],order_mode:'rider_purchase',pickup_lat:pickupLat,pickup_lng:pickupLng,passenger_count:isRide?1:null};}
- const fee=Math.round(Number(isRide?(process.env.RIDE_FEE_THB||process.env.DELIVERY_FEE_THB||25):(process.env.DELIVERY_FEE_THB||25))*100);if(!Number.isInteger(fee)||fee<0)fail(500,'ตั้งค่าค่าส่งไม่ถูกต้อง');
+ snapshot={shop:shop.name,shop_image_url:shop.image_url,shop_phone:shop.phone,items,order_mode:shop.order_mode,pickup_lat:shop.lat,pickup_lng:shop.lng};
+ }else {const pickupLat=coord(b.pickup_lat,-90,90),pickupLng=coord(b.pickup_lng,-180,180);if((pickupLat===null)!==(pickupLng===null))fail(400,'ระบุพิกัดจุดรับให้ครบทั้งสองค่า');const vehicle=b.vehicle===undefined?'bike':b.vehicle;if(!['bike','car'].includes(vehicle))fail(400,'ประเภทรถไม่ถูกต้อง');const passengers=isRide?Number(b.passenger_count??1):0;if(isRide&&(!Number.isInteger(passengers)||passengers<1||passengers>(vehicle==='car'?4:1)))fail(400,'จำนวนผู้โดยสารเกินความจุรถ');if(b.vehicle!==undefined){if(pickupLat===null||pickupLng===null||lat===null||lng===null)fail(400,'กรุณาปักหมุดจุดรับและจุดส่ง');if(!isRide&&b.inspection_consent!==true)fail(400,'กรุณายินยอมให้ตรวจสิ่งของก่อนรับส่ง');}snapshot={shop:isRide?'เรียกรถรับ–ส่งผู้โดยสาร':'เรียกไรเดอร์รับ–ส่งของ',vehicle,description:isRide?'ผู้โดยสาร '+passengers+' คน'+(text(b.description,200)?' · '+text(b.description,200):''):required(b.description,'รายละเอียดสิ่งของ',300),items:[],order_mode:'rider_purchase',pickup_lat:pickupLat,pickup_lng:pickupLng,passenger_count:isRide?passengers:null};}
+ const rate=transportConfig();const transportFee=isTransport&&b.vehicle!==undefined?((b.vehicle==='car'?rate.car_base:isRide?rate.bike_ride_base:rate.bike_base)+(isRide?Number(b.passenger_count??1)*rate.passenger_extra:0)):null;const fee=transportFee!==null?Math.round(transportFee*100):Math.round(Number(isRide?(process.env.RIDE_FEE_THB||process.env.DELIVERY_FEE_THB||25):(process.env.DELIVERY_FEE_THB||25))*100);if(!Number.isInteger(fee)||fee<0)fail(500,'ตั้งค่าค่าส่งไม่ถูกต้อง');
  run('INSERT INTO orders(id,customer_id,shop_id,status,kind,snapshot,pickup,dropoff,customer_name,phone,lat,lng,note,image,inside_image,goods_satang,fee_satang,created_at,updated_at,idempotency_key) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',oid,u.id,shop?.id||null,status,kind,JSON.stringify(snapshot),pickup,dropoff,name,phone,lat,lng,text(b.note,500),imageURL(b.image),imageURL(b.inside_image),goods,fee,now(),now(),idem);
  addEvent(oid,u,status);return oid;
  });emit();return send(res,201,orderView(get('SELECT * FROM orders WHERE id=?',orderId),u));
@@ -256,7 +171,7 @@ async function api(req,res,url){
  if(method==='POST'){if(o.customer_id!==u.id)fail(403,'เฉพาะผู้สั่งที่ให้คะแนนได้');if(o.status!=='done')fail(409,'ให้คะแนนและทิปได้เมื่อส่งสำเร็จแล้ว');let rating=oldFeedback.rating??null,tip=oldFeedback.tip_amount??null;if(b.rating!==undefined){rating=Number(b.rating);if(!Number.isInteger(rating)||rating<1||rating>5)fail(400,'คะแนนต้องเป็น 1–5');}if(b.tip_amount!==undefined){tip=Number(b.tip_amount);if(!Number.isInteger(tip)||tip<1||tip>10000)fail(400,'ทิปต้องเป็นจำนวนเต็ม 1–10,000 บาท');}if(b.rating===undefined&&b.tip_amount===undefined)fail(400,'ระบุคะแนนหรือจำนวนทิป');const payload={order_id:oid,rider_id:o.rider_id,rating,comment:b.comment===undefined?(oldFeedback.comment||''):text(b.comment,500),tip_amount:tip,tip_method:'direct',tip_status:tip?'intent':null,updated_at:now()};if(found)run('UPDATE reports SET payload=? WHERE id=?',JSON.stringify(payload),found.id);else run('INSERT INTO reports VALUES(?,?,?,?,?)',id(),u.id,'customer_feedback',JSON.stringify(payload),now());return send(res,200,{ok:true,paid:false,feedback:payload})}
  }
  if(action==='claim'&&method==='POST'){
- needUser(u,['rider']);if(!u.online)fail(409,'เปิดออนไลน์ก่อนรับงาน');if(o.kind==='ride'&&!u.accepts_rides)fail(409,'เปิดรับงานส่งคนก่อนรับงานผู้โดยสาร');
+ needUser(u,['rider']);if(['ride','parcel'].includes(o.kind)&&(JSON.parse(o.snapshot).vehicle||'bike')!==transportVehicle(u.id))fail(409,'งานนี้ต้องใช้ประเภทรถให้ตรงกับที่ลูกค้าเลือก');if(!u.online)fail(409,'เปิดออนไลน์ก่อนรับงาน');if(o.kind==='ride'&&!u.accepts_rides)fail(409,'เปิดรับงานส่งคนก่อนรับงานผู้โดยสาร');
  transaction(()=>{if(get("SELECT id FROM orders WHERE rider_id=? AND status IN ('assigned','picked')",u.id))fail(409,'ส่งงานปัจจุบันให้เสร็จก่อน');const r=run("UPDATE orders SET status='assigned',rider_id=?,updated_at=? WHERE id=? AND status='ready' AND rider_id IS NULL",u.id,now(),oid);if(!r.changes)fail(409,'งานถูกยกเลิกหรือไรเดอร์คนอื่นรับแล้ว');addEvent(oid,u,'assigned')});emit();return send(res,200,orderView(get('SELECT * FROM orders WHERE id=?',oid),u));
  }
  if(action==='status'&&method==='POST'){
