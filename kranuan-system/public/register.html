@@ -72,7 +72,7 @@
 
         try {
       // 🌟 1. ดึง CSRF Token จากเซิร์ฟเวอร์ก่อน
-      const sessionRes = await fetch('/api/session');
+      const sessionRes = await fetch('/api/session', { method: 'POST' });
       const sessionData = await sessionRes.json();
       
       if (!sessionData.csrf) {
