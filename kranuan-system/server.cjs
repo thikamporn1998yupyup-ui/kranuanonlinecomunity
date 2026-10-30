@@ -144,11 +144,84 @@ async function api(req,res,url){
  const publicRiderPhoto=p.match(/^\/api\/riders\/([^/]+)\/photo\/(avatar|p[0-3])$/);if(publicRiderPhoto&&method==='GET'){const image=staffApi.publicPhoto(publicRiderPhoto[1],publicRiderPhoto[2]);if(!image)fail(404,'ยังไม่เผยแพร่รูปนี้');const match=image.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);if(!match)fail(404,'รูปไม่พร้อมใช้งาน');res.writeHead(200,{'Content-Type':match[1],'Cache-Control':'private, no-store'});return res.end(Buffer.from(match[2],'base64'))}
  if(p==='/api/riders'&&method==='GET')return send(res,200,{riders:staffApi.publicList(),vip:{available:false,price:299,currency:'THB',billing_period:null}});
  if(p==='/api/ads'&&method==='GET')return send(res,200,{ads:adsPublic()});
+ // CMS: ข้อมูลที่เผยแพร่แล้วสำหรับหน้าเว็บไซต์
+ if(p==='/api/site-cms'&&method==='GET'){
+  if(!firebaseRef)return send(res,200,{settings:{}});
+  const snap=await firebaseRef.child('site_cms/published').get();
+  return send(res,200,{settings:snap.val()||{}});
+ }
+
  const adImg=p.match(/^\/api\/ads\/([A-Za-z0-9-]+)\/image$/);if(adImg&&method==='GET'){const row=get('SELECT image_url FROM ads WHERE id=?',adImg[1]),m=row&&row.image_url.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);if(!m)fail(404,'ไม่พบรูปโฆษณา');res.writeHead(200,{'Content-Type':m[1],'Cache-Control':'public, max-age=86400'});return res.end(Buffer.from(m[2],'base64'))}
  if(p==='/api/health')return send(res,200,{ok:true});
  needUser(u);
  if(!['GET','HEAD'].includes(method)&&req.headers['x-csrf-token']!==u.csrf)fail(403,'เซสชันเปลี่ยน กรุณาโหลดหน้าใหม่');
  const b=['POST','PATCH','PUT'].includes(method)?await body(req):{};
+ // CMS: อ่านฉบับร่าง (เฉพาะแอดมิน)
+ if(p==='/api/admin/site-cms'&&method==='GET'){
+  needUser(u,['admin']);
+  if(!firebaseRef)fail(503,'Firebase ยังไม่พร้อม');
+  const snap=await firebaseRef.child('site_cms').get();
+  const value=snap.val()||{};
+  return send(res,200,{
+   draft:value.draft||{},
+   settings:value.published||{}
+  });
+ }
+
+ // CMS: บันทึกฉบับร่าง
+ if(p==='/api/admin/site-cms'&&method==='POST'){
+  needUser(u,['admin']);
+  if(!firebaseRef)fail(503,'Firebase ยังไม่พร้อม');
+
+  const input=b.settings;
+  if(!input||typeof input!=='object'||
+     Array.isArray(input))fail(400,'ข้อมูล CMS ไม่ถูกต้อง');
+
+  const clean={
+   brand_name:text(input.brand_name,100),
+   logo:text(input.logo,1000),
+   hero_image:text(input.hero_image,1000),
+   hero_title:text(input.hero_title,150),
+   hero_desc:text(input.hero_desc,300)
+  };
+
+  for(const key of ['logo','hero_image']){
+   if(clean[key]&&!/^https:\/\//i.test(clean[key]))
+    fail(400,'URL รูปต้องขึ้นต้นด้วย https://');
+  }
+
+  await firebaseRef.child('site_cms/draft').set(clean);
+  audit(u,'save cms draft','website');
+  return send(res,200,{ok:true});
+ }
+
+ // CMS: เผยแพร่ฉบับร่างสู่หน้าเว็บไซต์
+ if(p==='/api/admin/site-cms/publish'&&method==='POST'){
+  needUser(u,['admin']);
+  if(!firebaseRef)fail(503,'Firebase ยังไม่พร้อม');
+
+  const snap=await firebaseRef.child('site_cms/draft').get();
+  const draft=snap.val();
+  if(!draft)fail(400,'กรุณาบันทึกฉบับร่างก่อน');
+
+  const published={
+   brand_name:draft.brand_name||'',
+   logo:draft.logo||'',
+   heroes:{
+    welcome:{
+     image:draft.hero_image||'',
+     title:draft.hero_title||'',
+     desc:draft.hero_desc||''
+    }
+   },
+   icons:{}
+  };
+
+  await firebaseRef.child('site_cms/published').set(published);
+  audit(u,'publish cms','website');
+  return send(res,200,{ok:true});
+ }
+
  if(url.pathname.startsWith('/api/accounts/')||url.pathname.startsWith('/api/admin/members')){const handled=await accounts.handle(req,res,url,u,b);if(handled!==false)return handled;}
  if(method==='POST'&&['/api/orders','/api/market/orders'].includes(p)&&u.role==='customer'&&!accounts.verified(u.id))fail(401,'กรุณาเข้าสู่ระบบ Google ก่อนสั่งซื้อหรือเรียกรถ');
  if(method==='POST'&&['/api/orders','/api/market/orders'].includes(p)&&u.role==='customer'&&!accounts.ready(u.id))fail(428,'กรุณากรอกชื่อที่แสดง เบอร์โทร และพิกัดบ้านก่อนสั่งซื้อหรือเรียกรถ');
