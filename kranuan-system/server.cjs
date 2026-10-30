@@ -252,7 +252,7 @@ async function api(req,res,url){
   };
 
   for(const key of ['logo','hero_image']){
-   if(clean[key]&&!/^https:\/\//i.test(clean[key]))
+   if(clean[key]&&!/^https:\/\//i.test(clean[key])&&!/^\/api\/site-cms\/image\/[a-f0-9-]{36}$/.test(clean[key]))
     fail(400,'URL รูปต้องขึ้นต้นด้วย https://');
   }
 
