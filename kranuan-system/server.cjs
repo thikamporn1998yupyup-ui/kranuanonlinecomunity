@@ -169,6 +169,13 @@ async function api(req,res,url){
    const pending = all("SELECT id, name, id_card, phone_number, kyc_status, created_at FROM users WHERE kyc_status='pending_review' ORDER BY created_at DESC");
    return send(res,200,pending);
  }
+  
+ // 🌟 API สำหรับแอดมิน: ดูรายชื่อที่ยืนยันตัวตนแล้ว หรือถูกปฏิเสธ
+ if(p==='/api/admin/kyc/all'&&method==='GET'){
+   needUser(u,['admin']);
+   const allKyc = all("SELECT id, name, id_card, phone_number, kyc_status, created_at FROM users WHERE kyc_status IN ('verified', 'rejected') ORDER BY created_at DESC LIMIT 50");
+   return send(res,200,allKyc);
+ }
 
  // 🌟 API สำหรับแอดมิน: กดอนุมัติ หรือ ปฏิเสธ KYC
  const kycActionMatch = p.match(/^\/api\/admin\/kyc\/([^/]+)\/(approve|reject)$/);
