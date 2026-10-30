@@ -178,6 +178,44 @@ async function api(req,res,url){
  needUser(u);
  if(!['GET','HEAD'].includes(method)&&req.headers['x-csrf-token']!==u.csrf)fail(403,'เซสชันเปลี่ยน กรุณาโหลดหน้าใหม่');
  const b=['POST','PATCH','PUT'].includes(method)?await body(req):{};
+ // One-time customer/order test reset. Admin + CSRF + explicit server flag.
+ if(p==='/api/admin/test-data-reset'&&['GET','POST'].includes(method)){
+  needUser(u,['admin']);
+  if(process.env.KRANUAN_ALLOW_TEST_RESET!=='YES')fail(403,'ปิดคำสั่งล้างข้อมูลอยู่: ตั้ง KRANUAN_ALLOW_TEST_RESET=YES ชั่วคราว');
+  const count=table=>get('SELECT COUNT(*) AS n FROM '+table).n;
+  const counts=()=>({customers:get("SELECT COUNT(*) AS n FROM users WHERE role='customer'").n,orders:count('orders'),order_events:count('order_events'),shop_reviews:count('shop_reviews'),customer_listings:get("SELECT COUNT(*) AS n FROM market_listings WHERE owner_id IN (SELECT id FROM users WHERE role='customer')").n,admin:get("SELECT COUNT(*) AS n FROM users WHERE role='admin'").n,merchant:get("SELECT COUNT(*) AS n FROM users WHERE role='merchant'").n,rider:get("SELECT COUNT(*) AS n FROM users WHERE role='rider'").n});
+  if(method==='GET')return send(res,200,{counts:counts(),note:'ข้อมูล dispatch_food_v1 แยกจากตารางหลัก ยังไม่ได้ล้าง'});
+  if(b.confirm!=='RESET CUSTOMERS AND ORDERS')fail(400,'กรุณาพิมพ์คำยืนยันให้ตรง');
+  const before=counts();
+  // Prevent deletion of orders currently being delivered without explicitly clearing them first.
+  const active=get("SELECT COUNT(*) AS n FROM orders WHERE status IN ('assigned','picked')").n;
+  if(active)fail(409,'มีงานกำลังจัดส่ง '+active+' รายการ ต้องปิดงานก่อนล้าง');
+  transaction(()=>{
+   // Referencing rows first; retain merchant and rider account records.
+   run('DELETE FROM shop_reviews');
+   run('DELETE FROM order_events');
+   run('DELETE FROM orders');
+   run("DELETE FROM market_comments WHERE listing_id IN (SELECT id FROM market_listings WHERE owner_id IN (SELECT id FROM users WHERE role='customer')) OR user_id IN (SELECT id FROM users WHERE role='customer')");
+   run("DELETE FROM market_reports WHERE listing_id IN (SELECT id FROM market_listings WHERE owner_id IN (SELECT id FROM users WHERE role='customer')) OR user_id IN (SELECT id FROM users WHERE role='customer')");
+   run("DELETE FROM market_listings WHERE owner_id IN (SELECT id FROM users WHERE role='customer')");
+   run("DELETE FROM reports WHERE user_id IN (SELECT id FROM users WHERE role='customer')");
+   run("DELETE FROM audit WHERE actor_id IN (SELECT id FROM users WHERE role='customer')");
+   run("DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE role='customer')");
+   run("DELETE FROM member_identities WHERE user_id IN (SELECT id FROM users WHERE role='customer')");
+   run("DELETE FROM member_profiles WHERE id IN (SELECT id FROM users WHERE role='customer')");
+   // Defensive FK cleanup for formerly promoted accounts / legacy data.
+   run("UPDATE shops SET verified_by=NULL WHERE verified_by IN (SELECT id FROM users WHERE role='customer')");
+   run("DELETE FROM staff_profiles WHERE user_id IN (SELECT id FROM users WHERE role='customer')");
+   run("DELETE FROM rider_gallery WHERE user_id IN (SELECT id FROM users WHERE role='customer')");
+   run("DELETE FROM users WHERE role='customer'");
+   const integrity=all('PRAGMA foreign_key_check');
+   if(integrity.length)throw Error('Foreign key check failed: '+JSON.stringify(integrity.slice(0,3)));
+   audit(u,'reset test customers/orders','customers='+before.customers+',orders='+before.orders);
+  });
+  // send() persists serialized SQLite tables to Firebase before returning success.
+  emit();
+  return send(res,200,{ok:true,before,after:counts(),warning:'dispatch_food_v1 ข้อมูลแยกยังไม่ได้ล้าง'});
+ }
  // CMS: อัปโหลดภาพ (เฉพาะแอดมิน)
  if(p==='/api/admin/site-cms/upload'&&method==='POST'){
   needUser(u,['admin']);
