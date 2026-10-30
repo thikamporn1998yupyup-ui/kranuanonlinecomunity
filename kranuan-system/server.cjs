@@ -146,7 +146,8 @@ async function api(req,res,url){
  needUser(u);
  if(!['GET','HEAD'].includes(method)&&req.headers['x-csrf-token']!==u.csrf)fail(403,'เซสชันเปลี่ยน กรุณาโหลดหน้าใหม่');
  const b=['POST','PATCH','PUT'].includes(method)?await body(req):{};
-  // 🌟 API สำหรับรับข้อมูลโซน (แทนบัตรประชาชน)
+ 
+ // 🌟 API สำหรับรับข้อมูลโซน (แทนบัตรประชาชน)
  if(p==='/api/auth/kyc'&&method==='POST'){
    try {
      const fullName = required(b.full_name,'ชื่อ-นามสกุล',100);
@@ -180,8 +181,9 @@ async function api(req,res,url){
    }
    return send(res,200, newSession(res, user.id));
  }
- }
-  // 🌟 API สำหรับแอดมิน: ดูรายการ KYC ที่รอตรวจสอบ
+ // 🚨 ลบวงเล็บปีกกาเกินตรงนี้ออกแล้วครับ! 🚨
+
+ // 🌟 API สำหรับแอดมิน: ดูรายการ KYC ที่รอตรวจสอบ
  if(p==='/api/admin/kyc'&&method==='GET'){
    needUser(u,['admin']); // ต้องเป็นแอดมินเท่านั้น
    const pending = all("SELECT id, name, id_card, phone_number, kyc_status, created_at FROM users WHERE kyc_status='pending_review' ORDER BY created_at DESC");
