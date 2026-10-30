@@ -239,7 +239,7 @@
             method: 'POST',
             body: JSON.stringify({
               status: 'picked',
-              pickup_photo: photoData
+              photo: photoData
             })
           }
         );
