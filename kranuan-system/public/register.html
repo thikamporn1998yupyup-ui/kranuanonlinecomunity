@@ -70,12 +70,26 @@
         phone: document.getElementById('kycPhone').value.trim()
       };
 
-      try {
-        const response = await fetch('/api/auth/kyc', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
+        try {
+      // 🌟 1. ดึง CSRF Token จากเซิร์ฟเวอร์ก่อน
+      const sessionRes = await fetch('/api/session');
+      const sessionData = await sessionRes.json();
+      
+      if (!sessionData.csrf) {
+        alert('ไม่พบข้อมูลเซสชัน กรุณาล็อกอินใหม่');
+        window.location.href = '/';
+        return;
+      }
+
+      // 🌟 2. ส่งข้อมูล KYC พร้อมแนบ Token ไปด้วย
+      const response = await fetch('/api/auth/kyc', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-csrf-token': sessionData.csrf  // แนบรหัสลับตรงนี้
+        },
+        body: JSON.stringify(data)
+      });
         
         const result = await response.json();
         
