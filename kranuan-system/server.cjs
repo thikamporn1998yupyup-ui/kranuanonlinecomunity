@@ -163,6 +163,27 @@ async function api(req,res,url){
      return send(res, 500, { error: err.message });
    }
  }
+  // 🌟 API สำหรับแอดมิน: ดูรายการ KYC ที่รอตรวจสอบ
+ if(p==='/api/admin/kyc'&&method==='GET'){
+   needUser(u,['admin']); // ต้องเป็นแอดมินเท่านั้น
+   const pending = all("SELECT id, name, id_card, phone_number, kyc_status, created_at FROM users WHERE kyc_status='pending_review' ORDER BY created_at DESC");
+   return send(res,200,pending);
+ }
+
+ // 🌟 API สำหรับแอดมิน: กดอนุมัติ หรือ ปฏิเสธ KYC
+ const kycActionMatch = p.match(/^\/api\/admin\/kyc\/([^/]+)\/(approve|reject)$/);
+ if(kycActionMatch && method==='POST'){
+   needUser(u,['admin']);
+   const targetUserId = kycActionMatch[1];
+   const action = kycActionMatch[2];
+   const newStatus = action === 'approve' ? 'verified' : 'rejected';
+   
+   run('UPDATE users SET kyc_status=? WHERE id=?', newStatus, targetUserId);
+   audit(u, 'kyc_'+action, targetUserId); // บันทึกประวัติว่าแอดมินคนไหนกด
+   emit(); // แจ้งเตือนหน้าบ้านให้อัปเดต
+   return send(res,200,{ok:true, message: action==='approve' ? 'อนุมัติสำเร็จ' : 'ปฏิเสธสำเร็จ'});
+ }
+
  if(p==='/api/my-activity'&&method==='GET')return send(res,200,myActivity(u.id));
  if(p==='/api/orders'&&method==='POST'&&(b.preferred_rider_id||b.selected_rider_id))fail(409,'ระบบเลือกไรเดอร์สำหรับ VIP ยังไม่เปิดใช้งาน');
 
