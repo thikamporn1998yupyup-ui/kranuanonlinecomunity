@@ -127,6 +127,114 @@
       '</form>';
 
     const form = document.getElementById('cmsForm');
+    // CMS: จัดการไอคอนหมวดบริการ
+    const iconKeys = [
+      'อาหาร', 'เครื่องดื่ม', 'บริการ',
+      'ตลาด', 'เรียกไรเดอร์'
+    ];
+
+    const iconSection = document.createElement('section');
+    iconSection.className = 'card';
+    iconSection.innerHTML =
+      '<h3>จัดการไอคอนหมวดบริการ</h3>' +
+      '<p class="muted">แก้ชื่อและเลือกรูปไอคอนใหม่ได้</p>';
+
+    form.insertBefore(
+      iconSection,
+      form.querySelector('.toolbar')
+    );
+
+    const iconInputs = {};
+
+    for (const key of iconKeys) {
+      const item = settings.icons?.[key] || {};
+
+      const row = document.createElement('div');
+      row.style.cssText =
+        'padding:12px 0;border-top:1px solid #eadfce';
+
+      const title = document.createElement('strong');
+      title.textContent = key;
+
+      const nameLabel = document.createElement('label');
+      nameLabel.textContent = 'ชื่อที่แสดง';
+
+      const name = document.createElement('input');
+      name.maxLength = 60;
+      name.value = item.label || key;
+      nameLabel.append(name);
+
+      const imageLabel = document.createElement('label');
+      imageLabel.textContent = 'URL รูปไอคอน';
+
+      const url = document.createElement('input');
+      url.value = item.image || '';
+      imageLabel.append(url);
+
+      const picker = document.createElement('input');
+      picker.type = 'file';
+      picker.accept = 'image/jpeg,image/png,image/webp';
+
+      const preview = document.createElement('img');
+      preview.alt = 'ตัวอย่างไอคอน';
+      preview.style.cssText =
+        'display:none;width:72px;height:72px;' +
+        'object-fit:contain;margin:8px 0';
+
+      function paint() {
+        const value = url.value.trim();
+        if (/^(https:\/\/|\/api\/site-cms\/image\/)/.test(value)) {
+          preview.src = value;
+          preview.style.display = 'block';
+        } else {
+          preview.removeAttribute('src');
+          preview.style.display = 'none';
+        }
+      }
+
+      url.addEventListener('input', paint);
+      paint();
+
+      picker.addEventListener('change', async () => {
+        const file = picker.files?.[0];
+        if (!file) return;
+
+        picker.disabled = true;
+        const msg = document.getElementById('cmsMessage');
+        msg.textContent = 'กำลังอัปโหลดไอคอน...';
+
+        try {
+          url.value = await uploadCmsImage(file);
+          paint();
+          msg.textContent =
+            'อัปโหลดไอคอนสำเร็จ กรุณาบันทึกฉบับร่าง';
+        } catch (err) {
+          msg.textContent = err.message;
+        } finally {
+          picker.disabled = false;
+          picker.value = '';
+        }
+      });
+
+      row.append(title, nameLabel, imageLabel, picker, preview);
+      iconSection.append(row);
+      iconInputs[key] = { name, url };
+    }
+
+    // เก็บข้อมูลไอคอนร่วมกับข้อมูล CMS เดิม
+    form.addEventListener('formdata', event => {
+      const icons = {};
+
+      for (const key of iconKeys) {
+        icons[key] = {
+          label: iconInputs[key].name.value.trim(),
+          image: iconInputs[key].url.value.trim()
+        };
+      }
+
+      event.formData.set('_cms_icons', JSON.stringify(icons));
+    });
+
     for (const fieldName of ['logo', 'hero_image']) {
       const input = form.elements.namedItem(fieldName);
       if (!input) continue;
@@ -184,7 +292,7 @@
       button.disabled = true;
 
       try {
-        const data = Object.fromEntries(new FormData(form));
+         const data = Object.fromEntries(new FormData(form)); data.icons = JSON.parse(data._cms_icons || '{}'); delete data._cms_icons;
         await K.request('/admin/site-cms', {
           method: 'POST',
           body: JSON.stringify({ settings: data })
