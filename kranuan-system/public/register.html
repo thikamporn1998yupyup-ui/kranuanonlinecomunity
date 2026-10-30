@@ -3,101 +3,91 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ยืนยันตัวตน (KYC)</title>
+  <title>ระบุข้อมูลที่อยู่</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap');
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Kanit', sans-serif; }
     body { background: #f4f6f8; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
-    
-    .kyc-card { background: #fff; width: 100%; max-width: 400px; border-radius: 24px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-    .kyc-header { text-align: center; margin-bottom: 25px; }
-    .kyc-header h2 { font-size: 22px; color: #333; margin-bottom: 5px; }
-    .kyc-header p { font-size: 14px; color: #888; }
-    
+    .card { background: #fff; width: 100%; max-width: 400px; border-radius: 24px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+    .header { text-align: center; margin-bottom: 25px; }
+    .header h2 { font-size: 22px; color: #333; margin-bottom: 5px; }
+    .header p { font-size: 14px; color: #888; }
     .form-group { margin-bottom: 15px; }
     .form-group label { display: block; font-size: 14px; font-weight: 500; color: #333; margin-bottom: 8px; }
-    .input-control { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 12px; font-size: 15px; outline: none; }
+    .input-control { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 12px; font-size: 15px; outline: none; background: #fff; }
     .input-control:focus { border-color: #D46231; }
-    
-    .upload-box { border: 2px dashed #ddd; border-radius: 12px; padding: 25px; text-align: center; cursor: pointer; color: #888; font-size: 14px; }
-    
     .btn-submit { width: 100%; padding: 16px; background: #D46231; color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 20px; }
   </style>
 </head>
 <body>
-
-  <div class="kyc-card">
-    <div class="kyc-header">
-      <div style="font-size: 50px; margin-bottom: 10px;">🪪</div>
-      <h2>ยืนยันตัวตน</h2>
-      <p>กรุณากรอกข้อมูลให้ครบถ้วนเพื่อใช้งาน</p>
+  <div class="card">
+    <div class="header">
+      <div style="font-size: 50px; margin-bottom: 10px;">📍</div>
+      <h2>ข้อมูลที่อยู่จัดส่ง</h2>
+      <p>เพื่อให้ไรเดอร์ส่งของได้รวดเร็วขึ้น</p>
     </div>
-
     <form id="kycForm">
       <div class="form-group">
-        <label>ชื่อ - นามสกุลจริง</label>
+        <label>ชื่อ - นามสกุล</label>
         <input type="text" id="kycName" class="input-control" placeholder="เช่น สมชาย ใจดี" required>
       </div>
-
       <div class="form-group">
-        <label>เลขประจำตัวประชาชน (13 หลัก)</label>
-        <input type="text" id="kycIdCard" class="input-control" placeholder="x-xxxx-xxxxx-xx-x" maxlength="13" required>
-      </div>
-
-      <div class="form-group">
-        <label>เบอร์โทรศัพท์ติดต่อ</label>
+        <label>เบอร์โทรศัพท์</label>
         <input type="tel" id="kycPhone" class="input-control" placeholder="08x-xxx-xxxx" maxlength="10" required>
       </div>
-
       <div class="form-group">
-        <label>รูปถ่ายบัตรประชาชน</label>
-        <div class="upload-box" onclick="alert('ในระบบจริงจะเปิดกล้องหรือเลือกไฟล์รูปภาพครับ')">
-          📷 คลิกเพื่ออัปโหลดบัตรประชาชน
-        </div>
+        <label>ตำบล</label>
+        <select id="kycSubdistrict" class="input-control" required>
+          <option value="">-- เลือกตำบล --</option>
+          <option value="กระนวน">ตำบลกระนวน</option>
+          <option value="หนองโก">ตำบลหนองโก</option>
+          <option value="หนองโน">ตำบลหนองโน</option>
+          <option value="ห้วยโจด">ตำบลห้วยโจด</option>
+          <option value="คำแมด">ตำบลคำแมด</option>
+          <option value="บ้านแฮด">ตำบลบ้านแฮด</option>
+          <option value="โนนสมบูรณ์">ตำบลโนนสมบูรณ์</option>
+          <option value="น้ำอ้อม">ตำบลน้ำอ้อม</option>
+          <option value="ท่าม่วง">ตำบลท่าม่วง</option>
+          <option value="วังน้ำเขียว">ตำบลวังน้ำเขียว</option>
+        </select>
       </div>
-
-      <button type="submit" class="btn-submit">ยืนยันข้อมูล</button>
+      <div class="form-group">
+        <label>หมู่ที่</label>
+        <input type="number" id="kycVillage" class="input-control" placeholder="เช่น 1, 2, 5" min="1" max="20" required>
+      </div>
+      <button type="submit" class="btn-submit">บันทึกข้อมูล</button>
     </form>
   </div>
-
   <script>
     document.getElementById('kycForm').addEventListener('submit', async function(e) {
       e.preventDefault();
-      
       const data = {
         full_name: document.getElementById('kycName').value.trim(),
-        id_card: document.getElementById('kycIdCard').value.trim(),
-        phone: document.getElementById('kycPhone').value.trim()
+        phone: document.getElementById('kycPhone').value.trim(),
+        subdistrict: document.getElementById('kycSubdistrict').value,
+        village: document.getElementById('kycVillage').value.trim()
       };
-
-        try {
-      // 🌟 1. ดึง CSRF Token จากเซิร์ฟเวอร์ก่อน
-      const sessionRes = await fetch('/api/session', { method: 'POST' });
-      const sessionData = await sessionRes.json();
-      
-      if (!sessionData.csrf) {
-        alert('ไม่พบข้อมูลเซสชัน กรุณาล็อกอินใหม่');
-        window.location.href = '/';
-        return;
-      }
-
-      // 🌟 2. ส่งข้อมูล KYC พร้อมแนบ Token ไปด้วย
-      const response = await fetch('/api/auth/kyc', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-csrf-token': sessionData.csrf  // แนบรหัสลับตรงนี้
-        },
-        body: JSON.stringify(data)
-      });
+      try {
+        const sessionRes = await fetch('/api/session', { method: 'POST' });
+        const sessionData = await sessionRes.json();
         
+        if (!sessionData.csrf) {
+          alert('ไม่พบข้อมูลเซสชัน กรุณาล็อกอินใหม่');
+          window.location.href = '/';
+          return;
+        }
+
+        const response = await fetch('/api/auth/kyc', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-csrf-token': sessionData.csrf },
+          body: JSON.stringify(data)
+        });
         const result = await response.json();
-        
         if (response.ok) {
           alert('✅ ' + result.message);
-          window.location.href = '/'; // กลับไปหน้าแรก
+          window.location.href = '/'; 
         } else {
-          alert('❌ เกิดข้อผิดพลาด: ' + result.error);
+          alert('❌ ' + result.error);
         }
       } catch (error) {
         alert('❌ ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
