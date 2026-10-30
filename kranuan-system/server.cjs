@@ -70,7 +70,7 @@ function adsToday(){return new Date().toLocaleDateString('en-CA',{timeZone:'Asia
 function adView(a,admin){const img=a.image_url.startsWith('data:')?'/api/ads/'+a.id+'/image?v='+encodeURIComponent(a.updated_at):a.image_url;const v={id:a.id,kind:a.kind,title:a.title,text:a.text,tag:a.tag,image:img,link:a.link_url,linkLabel:a.link_label};if(admin)Object.assign(v,{enabled:!!a.enabled,start_date:a.start_date,end_date:a.end_date,sort_order:a.sort_order});return v}
 function adsPublic(){const t=adsToday();return all('SELECT * FROM ads WHERE enabled=1 ORDER BY sort_order,created_at').filter(a=>(!a.start_date||t>=a.start_date)&&(!a.end_date||t<=a.end_date)).map(a=>adView(a))}
 function shopView(s){return {...s,opt_in:!!s.opt_in,accepting:!!s.accepting}}
-function orderView(o,u){const snap=JSON.parse(o.snapshot);return {rider:staffApi.publicInfo(o.rider_id),id:o.id,shop_id:o.shop_id,rider_id:o.rider_id,status:o.status,customer_id:o.customer_id,seller_id:snap.seller_id||null,listingId:snap.listing_id||null,paymentMethod:snap.payment_method||null,type:o.kind,vehicle:snap.vehicle||(['ride','parcel'].includes(o.kind)?'bike':null),vehicle_label:snap.vehicle==='car'?'รถยนต์':'รถจักรยานยนต์',passenger_count:snap.passenger_count||null,service_label:o.kind==='ride'?'รับ–ส่งผู้โดยสาร':o.kind==='parcel'?'รับ–ส่งของ':'อาหารจากร้าน',shop:snap.shop,shop_image_url:snap.shop_image_url||'',product_image_url:snap.items?.[0]?.image_url||'',items:snap.items||[],item:snap.items?.map(i=>i.name+' × '+i.quantity).join(', ')||snap.description,pickup:o.pickup,pickup_phone:snap.seller_phone||snap.shop_phone||'',pickup_lat:snap.pickup_lat??null,pickup_lng:snap.pickup_lng??null,dropoff:o.dropoff,customer_name:o.customer_name,phone:u.role==='rider'&&o.rider_id!==u.id?'':o.phone,dropoff_lat:o.lat,dropoff_lng:o.lng,note:o.note,image:o.image,insideImage:o.inside_image,goods_total:o.goods_satang/100,fee:o.fee_satang/100,deliveryFee:o.fee_satang/100,total:(o.goods_satang+o.fee_satang)/100,created_at:o.created_at,updated_at:o.updated_at,order_mode:snap.order_mode}}
+function orderView(o,u){const snap=JSON.parse(o.snapshot);return {rider:staffApi.publicInfo(o.rider_id),id:o.id,shop_id:o.shop_id,rider_id:o.rider_id,status:o.status,customer_id:o.customer_id,seller_id:snap.seller_id||null,listingId:snap.listing_id||null,paymentMethod:snap.payment_method||null,type:o.kind,vehicle:snap.vehicle||(['ride','parcel'].includes(o.kind)?'bike':null),vehicle_label:snap.vehicle==='car'?'รถยนต์':'รถจักรยานยนต์',passenger_count:snap.passenger_count||null,service_label:o.kind==='ride'?'รับ–ส่งผู้โดยสาร':o.kind==='parcel'?'รับ–ส่งของ':'อาหารจากร้าน',shop:snap.shop,shop_image_url:snap.shop_image_url||'',product_image_url:snap.items?.[0]?.image_url||'',items:snap.items||[],item:snap.items?.map(i=>i.name+' × '+i.quantity).join(', ')||snap.description,pickup:o.pickup,pickup_phone:snap.seller_phone||snap.shop_phone||'',pickup_lat:snap.pickup_lat??null,pickup_lng:snap.pickup_lng??null,dropoff:o.dropoff,customer_name:o.customer_name,phone:u.role==='rider'&&o.rider_id!==u.id?'':o.phone,dropoff_lat:o.lat,dropoff_lng:o.lng,note:o.note,image:o.image,insideImage:o.inside_image,goods_total:o.goods_satang/100,fee:o.fee_satang/100,deliveryFee:o.fee_satang/100,total:(o.goods_satang+o.fee_satang)/100,created_at:o.created_at,updated_at:o.updated_at, order_mode: snap.order_mode, short_code: snap.short_code || '',  food_stage: snap.food_stage || '', pickup_photo: snap.pickup_photo || ''}}
 
 function transportConfig(){const value=(key,fallback)=>{const n=Number(process.env[key]??fallback);if(!Number.isFinite(n)||n<0||n>10000)fail(500,'ตั้งค่าบริการรถไม่ถูกต้อง');return Math.round(n*100)/100};return {bike_base:value('DELIVERY_FEE_THB',25),bike_ride_base:value('RIDE_FEE_THB',process.env.DELIVERY_FEE_THB||25),car_base:value('TRANSPORT_CAR_BASE_THB',55),passenger_extra:value('TRANSPORT_PASSENGER_THB',15),bike_limit:1,car_limit:4}}
 function transportVehicle(uid){const r=get("SELECT payload FROM reports WHERE user_id=? AND kind='transport_vehicle' ORDER BY created_at DESC LIMIT 1",uid);try{return JSON.parse(r?.payload||'{}').vehicle==='car'?'car':'bike'}catch{return 'bike'}}
@@ -385,8 +385,50 @@ const clean = {
  shop=get('SELECT * FROM shops WHERE id=?',text(b.shop_id));if(!shop||shop.verification!=='verified'||!shop.opt_in||!shop.accepting)fail(409,'ร้านนี้ยังไม่เปิดรับออเดอร์');
  if(!Array.isArray(b.items)||!b.items.length||b.items.length>20)fail(400,'เลือกสินค้า 1–20 รายการ');const menuIds=new Set();
  for(const line of b.items){if(menuIds.has(line.menu_id))fail(400,'รายการสินค้าซ้ำ');menuIds.add(line.menu_id);const m=get('SELECT * FROM menus WHERE id=? AND shop_id=?',text(line.menu_id),shop.id);if(!m?.available)fail(409,'บางรายการหมดหรือเปลี่ยนแปลง กรุณาเลือกใหม่');const q=Number(line.quantity);if(!Number.isInteger(q)||q<1||q>20)fail(400,'จำนวนต้องอยู่ระหว่าง 1–20');items.push({menu_id:m.id,name:m.name,quantity:q,price:m.price_satang/100,image_url:m.image_url});goods+=m.price_satang*q}
- if(goods>1000000)fail(400,'ยอดสินค้าสูงเกินวงเงิน 10,000 บาท');kind='food';pickup=shop.address||shop.name;status=shop.order_mode==='merchant_confirm'?'waiting':'ready';
- snapshot={shop:shop.name,shop_image_url:shop.image_url,shop_phone:shop.phone,items,order_mode:shop.order_mode,pickup_lat:shop.lat,pickup_lng:shop.lng};
+ 
+if (goods > 1000000) {
+  fail(400, 'ยอดสินค้าสูงเกินวงเงิน 10,000 บาท');
+}
+
+kind = 'food';
+pickup = shop.address || shop.name;
+status = 'waiting';
+
+// สร้างเลขออเดอร์สั้นสำหรับร้านค้า ลูกค้า และไรเดอร์
+let shortCode = '';
+
+for (let attempt = 0; attempt < 30; attempt++) {
+  const candidate = 'K' + String(
+    require('node:crypto').randomInt(100000, 1000000)
+  );
+
+  const exists = get(
+    "SELECT id FROM orders WHERE json_extract(snapshot, '$.short_code')=?",
+    candidate
+  );
+
+  if (!exists) {
+    shortCode = candidate;
+    break;
+  }
+}
+
+if (!shortCode) {
+  fail(503, 'ไม่สามารถออกเลขออเดอร์ได้ กรุณาลองใหม่');
+}
+
+snapshot = {
+  shop: shop.name,
+  shop_image_url: shop.image_url,
+  shop_phone: shop.phone,
+  items,
+  order_mode: shop.order_mode,
+  pickup_lat: shop.lat,
+  pickup_lng: shop.lng,
+  food_stage: 'waiting',
+  short_code: shortCode
+};
+
  }else {const pickupLat=coord(b.pickup_lat,-90,90),pickupLng=coord(b.pickup_lng,-180,180);if((pickupLat===null)!==(pickupLng===null))fail(400,'ระบุพิกัดจุดรับให้ครบทั้งสองค่า');const vehicle=b.vehicle===undefined?'bike':b.vehicle;if(!['bike','car'].includes(vehicle))fail(400,'ประเภทรถไม่ถูกต้อง');const passengers=isRide?Number(b.passenger_count??1):0;if(isRide&&(!Number.isInteger(passengers)||passengers<1||passengers>(vehicle==='car'?4:1)))fail(400,'จำนวนผู้โดยสารเกินความจุรถ');if(b.vehicle!==undefined){if(pickupLat===null||pickupLng===null||lat===null||lng===null)fail(400,'กรุณาปักหมุดจุดรับและจุดส่ง');if(!isRide&&b.inspection_consent!==true)fail(400,'กรุณายินยอมให้ตรวจสิ่งของก่อนรับส่ง');}snapshot={shop:isRide?'เรียกรถรับ–ส่งผู้โดยสาร':'เรียกไรเดอร์รับ–ส่งของ',vehicle,description:isRide?'ผู้โดยสาร '+passengers+' คน'+(text(b.description,200)?' · '+text(b.description,200):''):required(b.description,'รายละเอียดสิ่งของ',300),items:[],order_mode:'rider_purchase',pickup_lat:pickupLat,pickup_lng:pickupLng,passenger_count:isRide?passengers:null};}
  const rate=transportConfig();const transportFee=isTransport&&b.vehicle!==undefined?((b.vehicle==='car'?rate.car_base:isRide?rate.bike_ride_base:rate.bike_base)+(isRide?Number(b.passenger_count??1)*rate.passenger_extra:0)):null;const fee=transportFee!==null?Math.round(transportFee*100):Math.round(Number(isRide?(process.env.RIDE_FEE_THB||process.env.DELIVERY_FEE_THB||25):(process.env.DELIVERY_FEE_THB||25))*100);if(!Number.isInteger(fee)||fee<0)fail(500,'ตั้งค่าค่าส่งไม่ถูกต้อง');
  run('INSERT INTO orders(id,customer_id,shop_id,status,kind,snapshot,pickup,dropoff,customer_name,phone,lat,lng,note,image,inside_image,goods_satang,fee_satang,created_at,updated_at,idempotency_key) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',oid,u.id,shop?.id||null,status,kind,JSON.stringify(snapshot),pickup,dropoff,name,phone,lat,lng,text(b.note,500),imageURL(b.image),imageURL(b.inside_image),goods,fee,now(),now(),idem);
@@ -407,15 +449,208 @@ const clean = {
  needUser(u,['rider']);if(['ride','parcel'].includes(o.kind)&&(JSON.parse(o.snapshot).vehicle||'bike')!==transportVehicle(u.id))fail(409,'งานนี้ต้องใช้ประเภทรถให้ตรงกับที่ลูกค้าเลือก');if(!u.online)fail(409,'เปิดออนไลน์ก่อนรับงาน');if(o.kind==='ride'&&!u.accepts_rides)fail(409,'เปิดรับงานส่งคนก่อนรับงานผู้โดยสาร');
  transaction(()=>{if(get("SELECT id FROM orders WHERE rider_id=? AND status IN ('assigned','picked')",u.id))fail(409,'ส่งงานปัจจุบันให้เสร็จก่อน');const r=run("UPDATE orders SET status='assigned',rider_id=?,updated_at=? WHERE id=? AND status='ready' AND rider_id IS NULL",u.id,now(),oid);if(!r.changes)fail(409,'งานถูกยกเลิกหรือไรเดอร์คนอื่นรับแล้ว');addEvent(oid,u,'assigned')});emit();return send(res,200,orderView(get('SELECT * FROM orders WHERE id=?',oid),u));
  }
- if(action==='status'&&method==='POST'){
- const next=text(b.status,20);let allowed=false;
- if(u.role==='rider'&&o.rider_id===u.id)allowed=(o.status==='assigned'&&next==='picked')||(o.status==='picked'&&next==='done');
- if(u.role==='merchant'&&u.shop_id===o.shop_id)allowed=o.status==='waiting'&&['ready','cancelled'].includes(next);
- if(o.customer_id===u.id)allowed=['waiting','ready'].includes(o.status)&&next==='cancelled';
- if(u.role==='admin')allowed=['waiting','ready','assigned'].includes(o.status)&&next==='cancelled';
- if(!allowed)fail(409,'เปลี่ยนสถานะนี้ไม่ได้ หรือคุณไม่มีสิทธิ์');
- transaction(()=>{const r=run('UPDATE orders SET status=?,updated_at=? WHERE id=? AND status=?',next,now(),oid,o.status);if(!r.changes)fail(409,'สถานะเปลี่ยนแล้ว กรุณาโหลดใหม่');addEvent(oid,u,next,text(b.note,500));if(o.kind==='market'){const listing=JSON.parse(o.snapshot).listing_id;if(next==='done')run("UPDATE market_listings SET stock='sold',updated_at=? WHERE id=?",Date.now(),listing);else if(next==='cancelled')run("UPDATE market_listings SET stock='available',updated_at=? WHERE id=? AND stock='reserved'",Date.now(),listing)}});emit();return send(res,200,orderView(get('SELECT * FROM orders WHERE id=?',oid),u));
- }
+ 
+  // FOOD V2: ร้านต้องรับออเดอร์และเตรียมอาหารก่อนพร้อมส่ง
+  if (
+    action === 'status' &&
+    method === 'POST' &&
+    o.kind === 'food' &&
+    u.role === 'merchant' &&
+    u.shop_id === o.shop_id
+  ) {
+    const nextStage = text(b.status, 20);
+    const foodSnapshot = JSON.parse(o.snapshot);
+    const currentStage = foodSnapshot.food_stage || 'waiting';
+
+    const requiredPreviousStage = {
+      confirmed: 'waiting',
+      preparing: 'confirmed'
+    };
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        requiredPreviousStage, nextStage
+      )
+    ) {
+      if (
+        o.status !== 'waiting' ||
+        currentStage !== requiredPreviousStage[nextStage]
+      ) {
+        fail(409, 'กรุณาดำเนินการตามลำดับสถานะอาหาร');
+      }
+
+      foodSnapshot.food_stage = nextStage;
+
+      transaction(() => {
+        const result = run(
+          'UPDATE orders SET snapshot=?,updated_at=? ' +
+          'WHERE id=? AND status=? AND snapshot=?',
+          JSON.stringify(foodSnapshot),
+          now(),
+          oid,
+          'waiting',
+          o.snapshot
+        );
+
+        if (!result.changes) {
+          fail(409, 'สถานะออเดอร์เปลี่ยนแล้ว กรุณาโหลดใหม่');
+        }
+
+        addEvent(oid, u, nextStage);
+      });
+
+      emit();
+
+      return send(
+        res,
+        200,
+        orderView(get('SELECT * FROM orders WHERE id=?', oid), u)
+      );
+    }
+
+    // ห้ามกดพร้อมส่ง หากยังไม่ผ่านขั้นตอนเตรียมอาหาร
+    if (
+      nextStage === 'ready' &&
+      (o.status !== 'waiting' || currentStage !== 'preparing')
+    ) {
+      fail(409, 'ร้านต้องรับออเดอร์และเตรียมอาหารก่อน');
+    }
+    }
+if (action === 'status' && method === 'POST') {
+  const next = text(b.status, 20);
+  let allowed = false;
+  const snap = JSON.parse(o.snapshot);
+  let pickupPhoto = '';
+
+  // ไรเดอร์ที่รับงานแล้วเท่านั้น
+  if (u.role === 'rider' && o.rider_id === u.id) {
+    allowed =
+      (o.status === 'assigned' && next === 'picked') ||
+      (o.status === 'picked' && next === 'done');
+  }
+
+  // ร้านค้า: อาหารต้องผ่านขั้นตอน preparing ก่อน
+  if (u.role === 'merchant' && u.shop_id === o.shop_id) {
+    allowed =
+      o.status === 'waiting' &&
+      (
+        next === 'cancelled' ||
+        (
+          next === 'ready' &&
+          (
+            o.kind !== 'food' ||
+            snap.food_stage === 'preparing'
+          )
+        )
+      );
+  }
+
+  // ลูกค้ายกเลิกได้ตามเงื่อนไขเดิม
+  if (o.customer_id === u.id) {
+    allowed =
+      ['waiting', 'ready'].includes(o.status) &&
+      next === 'cancelled';
+  }
+
+  // แอดมิน
+  if (u.role === 'admin') {
+    allowed =
+      ['waiting', 'ready', 'assigned'].includes(o.status) &&
+      next === 'cancelled';
+  }
+
+  if (!allowed) {
+    fail(409, 'เปลี่ยนสถานะนี้ไม่ได้ หรือคุณไม่มีสิทธิ์');
+  }
+
+  // ออเดอร์อาหารต้องมีภาพเมื่อไรเดอร์กดรับสินค้า
+  if (o.kind === 'food' && next === 'picked') {
+    pickupPhoto = b.photo;
+
+    if (
+      typeof pickupPhoto !== 'string' ||
+      pickupPhoto.length > 700000 ||
+      !/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(pickupPhoto)
+    ) {
+      fail(400, 'กรุณาถ่ายภาพอาหาร JPEG ก่อนรับสินค้า');
+    }
+
+    const photoBytes = Buffer.from(
+      pickupPhoto.split(',')[1],
+      'base64'
+    );
+
+    if (
+      photoBytes.length < 100 ||
+      photoBytes.length > 500000 ||
+      photoBytes[0] !== 255 ||
+      photoBytes[1] !== 216 ||
+      photoBytes[2] !== 255
+    ) {
+      fail(400, 'รูปภาพไม่ถูกต้องหรือมีขนาดใหญ่เกินไป');
+    }
+
+    snap.pickup_photo = pickupPhoto;
+    snap.pickup_photo_at = now();
+  }
+
+  transaction(() => {
+    const result = run(
+      'UPDATE orders SET status=?,snapshot=?,updated_at=? ' +
+      'WHERE id=? AND status=?',
+      next,
+      JSON.stringify(snap),
+      now(),
+      oid,
+      o.status
+    );
+
+    if (!result.changes) {
+      fail(409, 'สถานะเปลี่ยนแล้ว กรุณาโหลดใหม่');
+    }
+
+    addEvent(
+      oid,
+      u,
+      next,
+      pickupPhoto
+        ? 'ไรเดอร์รับอาหารจากร้านและถ่ายภาพยืนยัน'
+        : text(b.note, 500)
+    );
+
+    // รักษาการทำงานของระบบตลาดเดิม
+    if (o.kind === 'market') {
+      const listing = snap.listing_id;
+
+      if (next === 'done') {
+        run(
+          "UPDATE market_listings SET stock='sold',updated_at=? WHERE id=?",
+          Date.now(),
+          listing
+        );
+      } else if (next === 'cancelled') {
+        run(
+          "UPDATE market_listings SET stock='available',updated_at=? " +
+          "WHERE id=? AND stock='reserved'",
+          Date.now(),
+          listing
+        );
+      }
+    }
+  });
+
+  emit();
+
+  return send(
+    res,
+    200,
+    orderView(
+      get('SELECT * FROM orders WHERE id=?', oid),
+      u
+    )
+  );
+}
+
  }
  if(p==='/api/admin/shops'&&method==='GET'){needUser(u,['admin','merchant']);return send(res,200,(u.role==='admin'?all('SELECT * FROM shops ORDER BY name'):all('SELECT * FROM shops WHERE id=?',u.shop_id)).map(shopView))}
  if(p==='/api/admin/shops'&&method==='POST'){
