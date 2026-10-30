@@ -957,15 +957,44 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('googleLoginBtn').addEventListener('click', () => {
     signInWithPopup(auth, provider).then(async (result) => {
       const user = result.user;
+ <!-- ========================================== -->
+<!-- 🌟 ปุ่มและระบบล็อกอินด้วย Google (ครบชุด) 🌟 -->
+<!-- ========================================== -->
+<div style="position: relative; z-index: 9999; display: flex; justify-content: center; margin: 20px auto; width: 100%;">
+  <button id="googleLoginBtn" style="padding: 14px 24px; background: #D46231; color: #fff; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; max-width: 320px; box-shadow: 0 4px 12px rgba(212, 98, 49, 0.3); font-family: 'Kanit', sans-serif; font-size: 16px;">
+    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="22" height="22" style="background:#fff; padding:2px; border-radius:50%;"> 
+    เข้าสู่ระบบด้วย Google
+  </button>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyChVHvlAidaeXKqhOk9ekJwLutjbWcCCbs",
+    authDomain: "kranuan-app.firebaseapp.com",
+    databaseURL: "https://kranuan-app-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "kranuan-app",
+    storageBucket: "kranuan-app.firebasestorage.app",
+    messagingSenderId: "719095302980",
+    appId: "1:719095302980:web:0e4adabe60db4a98446511",
+    measurementId: "G-XGFZLXQ3WG"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+
+  document.getElementById('googleLoginBtn').addEventListener('click', () => {
+    signInWithPopup(auth, provider).then(async (result) => {
+      const user = result.user;
       
       try {
         const response = await fetch('/api/auth/google', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            email: user.email, 
-            name: user.displayName 
-          })
+          body: JSON.stringify({ email: user.email, name: user.displayName })
         });
         
         if(response.ok) {
@@ -980,12 +1009,11 @@ window.addEventListener('DOMContentLoaded', () => {
       
     }).catch((error) => {
       console.error("Google Login Error:", error);
-      alert('ยกเลิกการล็อกอิน หรือเกิดข้อผิดพลาด: ' + error.message);
+      alert('ยกเลิกการล็อกอิน: ' + error.message);
     });
   });
 </script>
-<!-- ========================================== -->
-
+<!-- ========================================== -->    
 </body>
 </html>
 
