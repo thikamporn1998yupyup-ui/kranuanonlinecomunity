@@ -13,6 +13,56 @@
     ['hero_title', 'หัวข้อแบนเนอร์'],
     ['hero_desc', 'คำอธิบายแบนเนอร์']
   ];
+  // อัปโหลดรูป CMS ผ่าน API ที่ตรวจสิทธิ์แอดมิน
+  async function uploadCmsImage(file) {
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+      throw Error('รองรับเฉพาะ JPG, PNG และ WebP');
+    }
+    if (file.size > 15000000) {
+      throw Error('รูปต้องไม่เกิน 15 MB');
+    }
+
+    const image = await new Promise((resolve, reject) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const scale = Math.min(1, 1200 / Math.max(img.width, img.height));
+          canvas.width = Math.max(1, Math.round(img.width * scale));
+          canvas.height = Math.max(1, Math.round(img.height * scale));
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          let encoded = '';
+          for (const quality of [0.85, 0.7, 0.55, 0.4, 0.25]) {
+            encoded = canvas.toDataURL('image/jpeg', quality);
+            if (encoded.length < 600000) break;
+          }
+          if (encoded.length >= 600000) {
+            throw Error('รูปใหญ่เกินไป กรุณาใช้ภาพขนาดเล็กลง');
+          }
+          resolve(encoded);
+        } catch (e) {
+          reject(e);
+        } finally {
+          URL.revokeObjectURL(objectUrl);
+        }
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(Error('เปิดไฟล์รูปไม่สำเร็จ'));
+      };
+      img.src = objectUrl;
+    });
+
+    const response = await K.request('/admin/site-cms/upload', {
+      method: 'POST',
+      body: JSON.stringify({ image })
+    });
+    return response.url;
+  }
+
 
   let settings = {};
   let loading = false;
@@ -77,6 +127,55 @@
       '</form>';
 
     const form = document.getElementById('cmsForm');
+    for (const fieldName of ['logo', 'hero_image']) {
+      const input = form.elements.namedItem(fieldName);
+      if (!input) continue;
+
+      const picker = document.createElement('input');
+      picker.type = 'file';
+      picker.accept = 'image/jpeg,image/png,image/webp';
+      picker.style.marginTop = '8px';
+
+      const preview = document.createElement('img');
+      preview.alt = 'ตัวอย่างภาพ';
+      preview.style.cssText =
+        'display:none;width:100%;max-width:320px;max-height:190px;object-fit:contain;margin-top:10px;border-radius:12px';
+
+      const updatePreview = () => {
+        const value = input.value.trim();
+        if (!value || !/^(https:\/\/|\/api\/site-cms\/image\/)/.test(value)) {
+          preview.style.display = 'none';
+          preview.removeAttribute('src');
+          return;
+        }
+        preview.src = value;
+        preview.style.display = 'block';
+      };
+
+      input.after(picker, preview);
+      input.addEventListener('input', updatePreview);
+      updatePreview();
+
+      picker.addEventListener('change', async () => {
+        const file = picker.files?.[0];
+        if (!file) return;
+
+        picker.disabled = true;
+        msg.textContent = 'กำลังอัปโหลดภาพ...';
+
+        try {
+          input.value = await uploadCmsImage(file);
+          updatePreview();
+          msg.textContent = 'อัปโหลดสำเร็จ กรุณากดบันทึกฉบับร่าง';
+        } catch (err) {
+          msg.textContent = 'อัปโหลดไม่สำเร็จ: ' + err.message;
+        } finally {
+          picker.disabled = false;
+          picker.value = '';
+        }
+      });
+    }
+
     const msg = document.getElementById('cmsMessage');
 
     form.onsubmit = async event => {
