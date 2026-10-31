@@ -558,6 +558,153 @@ window.KranuanOpenOrderChat = function(orderId) {
     };
 
 
+  // FOOD V4: ฉลองเฉพาะหลังไรเดอร์ยืนยันรับเงินครบจริง
+  const krCelebratedOrders = new Set();
+
+  function krCelebrateDelivery() {
+    const old = document.getElementById('krDeliveryCelebration');
+    if (old) old.remove();
+
+    const layer = document.createElement('div');
+    layer.id = 'krDeliveryCelebration';
+    layer.style.cssText = `
+      position:fixed;
+      inset:0;
+      z-index:999999;
+      pointer-events:none;
+      overflow:hidden;
+      display:grid;
+      place-items:center;
+    `;
+
+    const colors = [
+      '#ffcf54', '#ff674f', '#55d6ff',
+      '#a78bfa', '#5be6a1', '#ffffff'
+    ];
+
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes krFirework {
+        0% { transform:translate(0,0) scale(.2); opacity:0; }
+        15% { opacity:1; }
+        100% {
+          transform:translate(var(--x),var(--y)) rotate(540deg);
+          opacity:0;
+        }
+      }
+      @keyframes krWinPop {
+        0% { transform:scale(.5); opacity:0; }
+        35% { transform:scale(1.08); opacity:1; }
+        55% { transform:scale(.98); }
+        100% { transform:scale(1); opacity:1; }
+      }
+    `;
+
+    layer.appendChild(style);
+
+    const reducedMotion = window.matchMedia?.(
+      '(prefers-reduced-motion: reduce)'
+    ).matches;
+
+    if (!reducedMotion) {
+      for (let i = 0; i < 90; i++) {
+        const piece = document.createElement('span');
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 90 + Math.random() * 420;
+
+        piece.style.cssText = `
+          position:absolute;
+          left:${20 + Math.random() * 60}%;
+          top:${20 + Math.random() * 50}%;
+          width:${5 + Math.random() * 7}px;
+          height:${8 + Math.random() * 12}px;
+          border-radius:2px;
+          background:${colors[i % colors.length]};
+          --x:${Math.cos(angle) * distance}px;
+          --y:${Math.sin(angle) * distance}px;
+          animation:krFirework
+            ${1.2 + Math.random() * 1.5}s
+            ${Math.random() * .5}s ease-out forwards;
+        `;
+        layer.appendChild(piece);
+      }
+    }
+
+    const message = document.createElement('div');
+    message.style.cssText = `
+      padding:24px 32px;
+      border-radius:24px;
+      background:#171b27;
+      color:white;
+      border:1px solid #e2bd6c;
+      box-shadow:0 20px 70px #0008;
+      text-align:center;
+      animation:krWinPop .5s ease-out both;
+    `;
+    message.innerHTML = `
+      <div style="font-size:48px">🎉</div>
+      <div style="font-size:23px;font-weight:800">
+        ส่งงานสำเร็จ!
+      </div>
+      <div style="font-size:15px;color:#e7cf94;margin-top:8px">
+        ยืนยันรับเงินครบเรียบร้อยแล้ว
+      </div>
+    `;
+    layer.appendChild(message);
+    document.body.appendChild(layer);
+
+    setTimeout(() => layer.remove(), reducedMotion ? 1800 : 3400);
+  }
+
+  document.addEventListener('click', event => {
+    const button = event.target.closest?.(
+      '[data-confirm-payment]'
+    );
+
+    if (!button || S.user?.role !== 'rider') return;
+
+    const orderId = S.room;
+    if (!orderId || !S.bill || Number(S.bill.due) <= 0) {
+      return;
+    }
+
+    if (krCelebratedOrders.has(orderId)) return;
+
+    // รอผลยืนยันจากเซิร์ฟเวอร์ ไม่ฉลองตอนเพิ่งกดปุ่ม
+    (async () => {
+      for (let attempt = 0; attempt < 8; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 1200));
+
+        try {
+          const bill = await req(
+            '/dispatch/orders/' +
+            encodeURIComponent(orderId) +
+            '/settlement'
+          );
+
+          if (
+            Number(bill.due) === 0 &&
+            bill.food_receipt?.state !== 'reported'
+          ) {
+            if (krCelebratedOrders.has(orderId)) return;
+
+            krCelebratedOrders.add(orderId);
+            S.bill = bill;
+
+            if (S.pay?.open) S.pay.close();
+            if (S.dialog?.open) S.dialog.close();
+
+            krCelebrateDelivery();
+            return;
+          }
+        } catch (error) {
+          console.warn('ตรวจยอดหลังรับเงิน:', error.message);
+        }
+      }
+    })();
+  }, true);
+
+
 /* END KRANUAN — FAST ORDER CHAT */
 })();
 
