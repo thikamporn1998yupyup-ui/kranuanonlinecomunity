@@ -448,90 +448,276 @@
       order.service_label ||
       service;
 
-    root.innerHTML = `
-      <section class="kof-card kof-hero">
-        <div class="kof-symbol">
-          ${iconFor(order.status)}
-        </div>
 
-        <div class="kof-number">
-          ออเดอร์ #${escapeHTML(number)}
-        </div>
-
-        <h2>${escapeHTML(status[0])}</h2>
-
-        <p class="kof-sub">
-          ${order.status === 'waiting'
-            ? 'กำลังรอร้านค้าหรือผู้ขายตอบรับ'
-            : order.status === 'ready'
-              ? 'ระบบกำลังรอไรเดอร์ที่พร้อมรับงาน'
-              : order.status === 'assigned'
-                ? 'ไรเดอร์รับงานแล้ว กำลังดำเนินการ'
-                : order.status === 'picked'
-                  ? 'ไรเดอร์อยู่ระหว่างเดินทาง'
-                  : order.status === 'done'
-                    ? 'งานนี้ดำเนินการเรียบร้อยแล้ว'
-                    : order.status === 'cancelled'
-                      ? 'ออเดอร์นี้ถูกยกเลิกแล้ว'
-                      : 'ระบบกำลังตรวจสอบสถานะล่าสุด'}
-        </p>
-      </section>
-
-      <section class="kof-card">
-        <h3>📋 ข้อมูลออเดอร์ของคุณ</h3>
-
-        <div class="kof-row">
-          <span>ประเภท</span>
-          <strong>${escapeHTML(service)}</strong>
-        </div>
-
-        <div class="kof-row">
-          <span>รายการ</span>
-          <strong>${escapeHTML(details)}</strong>
-        </div>
-
-        <div class="kof-row">
-          <span>จุดรับ</span>
-          <strong>${escapeHTML(order.pickup || '—')}</strong>
-        </div>
-
-        <div class="kof-row">
-          <span>จุดส่ง</span>
-          <strong>${escapeHTML(order.dropoff || '—')}</strong>
-        </div>
-
-        <div class="kof-row">
-          <span>ชื่อผู้รับ</span>
-          <strong>${escapeHTML(order.customer_name || '—')}</strong>
-        </div>
-
-        <div class="kof-row">
-          <span>ยอดรวม</span>
-          <strong>${money(order.total ?? order.fee)}</strong>
-        </div>
-      </section>
-
-      <section class="kof-card">
-        <h3>🛵 ข้อมูลไรเดอร์ของคุณ</h3>
-        ${riderHTML(order)}
-      </section>
-
-      <section class="kof-card">
-        <h3>📍 ตำแหน่งไรเดอร์</h3>
-        <div id="kofLocation" class="kof-gps-box">
-          ${order.rider_id
-            ? 'กำลังตรวจสอบตำแหน่ง GPS ของไรเดอร์...'
-            : 'รอไรเดอร์รับงานก่อนแสดงตำแหน่ง'}
-        </div>
-      </section>
-
-      <section class="kof-card">
-        <p class="kof-sub">
-          ระบบจะตรวจสอบสถานะออเดอร์ให้อัตโนมัติ
-          คุณสามารถอยู่หน้านี้ระหว่างรอรับงานได้
-        </p>
-      </section>
+  // KRANUAN Premium Receipt Design
+  if (!document.getElementById('kofReceiptStyle')) {
+    const style = document.createElement('style');
+    style.id = 'kofReceiptStyle';
+    style.textContent = `
+      #kofMain {
+        background: #f5f3ee;
+        padding: 18px 14px 36px;
+        font-family: system-ui, Tahoma, sans-serif;
+      }
+      #kofMain .kr-receipt {
+        background: #fffefa;
+        border-radius: 24px;
+        box-shadow: 0 12px 40px rgba(60,40,20,.07);
+        overflow: hidden;
+        border: 1px solid #f1e9dc;
+      }
+      #kofMain .kr-receipt-head {
+        padding: 32px 24px 22px;
+        text-align: center;
+      }
+      #kofMain .kr-receipt-brand {
+        letter-spacing: 3px;
+        font-size: 12px;
+        font-weight: 800;
+        color: #c56e3c;
+      }
+      #kofMain .kr-receipt-caption {
+        color: #a59b8d;
+        font-size: 11px;
+        margin: 7px 0 0;
+      }
+      #kofMain .kr-receipt-shop {
+        font-size: 24px;
+        font-weight: 800;
+        color: #302c29;
+        line-height: 1.4;
+        margin: 18px 0 12px;
+      }
+      #kofMain .kr-receipt-state {
+        display: inline-flex;
+        padding: 7px 16px;
+        border-radius: 99px;
+        background: #fdf0e3;
+        color: #b96536;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      #kofMain .kr-receipt-state.done {
+        background: #e9f6ed;
+        color: #298251;
+      }
+      #kofMain .kr-receipt-state.cancelled {
+        background: #faeded;
+        color: #bc5555;
+      }
+      #kofMain .kr-receipt-divider {
+        height: 1px;
+        margin: 0 22px;
+        border-top: 1px dashed #dfd5c5;
+      }
+      #kofMain .kr-receipt-body {
+        padding: 24px;
+      }
+      #kofMain .kr-receipt-label {
+        font-size: 11px;
+        color: #9a8e80;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-bottom: 14px;
+      }
+      #kofMain .kr-receipt-items .kof-row {
+        padding: 11px 0;
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        border-bottom: 1px solid #f2eee7;
+        color: #46413c;
+        font-size: 14px;
+      }
+      #kofMain .kr-receipt-items .kof-row strong {
+        white-space: nowrap;
+      }
+      #kofMain .kr-receipt-total {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-top: 22px;
+        padding: 20px 0 4px;
+        border-top: 1px dashed #dfd5c5;
+      }
+      #kofMain .kr-receipt-total span {
+        font-size: 14px;
+        color: #756a60;
+        font-weight: 600;
+      }
+      #kofMain .kr-receipt-total strong {
+        color: #d36e35;
+        font-size: 26px;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+      }
+      #kofMain .kr-receipt-foot {
+        text-align: center;
+        background: #faf6ef;
+        padding: 18px 20px;
+        color: #a3988b;
+        font-size: 11px;
+        letter-spacing: 1px;
+      }
+      #kofMain .kr-rider-card {
+        background: white;
+        border: 1px solid #f0e7dc;
+        border-radius: 22px;
+        margin-top: 16px;
+        padding: 22px;
+        box-shadow: 0 8px 24px rgba(60,40,20,.04);
+      }
+      #kofMain .kr-rider-title {
+        font-size: 15px;
+        font-weight: 800;
+        color: #342e29;
+        margin: 0 0 16px;
+      }
+      #kofMain .kr-rider-card .kof-rider {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin: 0 0 18px;
+      }
+      #kofMain .kr-rider-card .kof-avatar {
+        width: 58px;
+        height: 58px;
+        min-width: 58px;
+        border-radius: 50%;
+        background: #f5eadc;
+        display: grid;
+        place-items: center;
+        color: #b36a41;
+        font-size: 22px;
+        overflow: hidden;
+      }
+      #kofMain .kr-rider-card .kof-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      #kofMain .kr-rider-card .kof-rider-info strong {
+        font-size: 15px;
+        color: #342e29;
+      }
+      #kofMain .kr-rider-card .kof-sub {
+        color: #8c948d;
+        font-size: 11px;
+        margin: 5px 0 0;
+      }
+      #kofMain #kofRiderChat {
+        display: block;
+        width: 100%;
+        border: 0;
+        border-radius: 14px;
+        padding: 15px;
+        background: #d77843;
+        color: white;
+        font-size: 14px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+      #kofMain #kofRiderChat:active {
+        transform: scale(.99);
+      }
     `;
+    document.head.appendChild(style);
+  }
+
+  const orderCode = escapeHTML(
+    String(order.id).slice(-6).toUpperCase()
+  );
+
+  const receiptStateClass =
+    order.status === 'done' ? 'done' :
+    order.status === 'cancelled' ? 'cancelled' : '';
+
+  root.innerHTML = `
+    <section class="kr-receipt">
+      <div class="kr-receipt-head">
+        <div class="kr-receipt-brand">
+          KRANUAN ONLINE
+        </div>
+        <p class="kr-receipt-caption">
+          ORDER RECEIPT
+        </p>
+
+        <div class="kr-receipt-shop">
+          ${escapeHTML(order.shop || 'รายการสั่งซื้อ')}
+        </div>
+
+        <span class="kr-receipt-state ${receiptStateClass}">
+          ${escapeHTML(state)}
+        </span>
+      </div>
+
+      <div class="kr-receipt-divider"></div>
+
+      <div class="kr-receipt-body">
+        <div class="kr-receipt-label">
+          ORDER NO. #${orderCode}
+        </div>
+
+        <div class="kr-receipt-label">
+          รายการที่สั่งซื้อ
+        </div>
+
+        <div class="kr-receipt-items">
+          ${items}
+        </div>
+
+        <div class="kr-receipt-total">
+          <span>ยอดรวมสุทธิ</span>
+          <strong>${money(order.total)}</strong>
+        </div>
+      </div>
+
+      <div class="kr-receipt-foot">
+        THANK YOU FOR YOUR ORDER
+      </div>
+    </section>
+
+    <section class="kr-rider-card">
+      <h3 class="kr-rider-title">
+        ข้อมูลผู้จัดส่ง
+      </h3>
+
+      <div class="kof-rider">
+        <div class="kof-avatar">
+          ${safePhoto
+            ? `<img src="${escapeHTML(safePhoto)}"
+                 alt="รูปไรเดอร์"
+                 loading="lazy"
+                 decoding="async">`
+            : `<span>${escapeHTML(
+                Array.from(name)[0] || 'R'
+              )}</span>`}
+        </div>
+
+        <div class="kof-rider-info">
+          <strong>${escapeHTML(name)}</strong>
+          <p class="kof-sub">
+            ${rider?.verified
+              ? 'โปรไฟล์ผ่านการตรวจสอบ'
+              : 'ข้อมูลผู้จัดส่ง'}
+          </p>
+        </div>
+      </div>
+
+      ${order.rider_id &&
+        ['assigned','picked','done'].includes(order.status)
+        ? `<button type="button"
+             id="kofRiderChat">
+             แชทกับไรเดอร์
+           </button>`
+        : `<p class="kof-sub">
+             สามารถติดต่อไรเดอร์ได้เมื่อมีผู้รับงาน
+           </p>`}
+    </section>
+  `;
+
 
     refreshLocation();
   }
