@@ -71,3 +71,92 @@ window.addEventListener('kranuan:delivery-completed',e=>{const id=e.detail?.orde
 
 const css=document.createElement('link');css.rel='stylesheet';css.href='/dispatch-center/integration.css?v=20261030-collection';document.head.append(css);let scheduled=false;new MutationObserver(()=>{if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;decorate()})}).observe(document.body,{subtree:true,childList:true});decorate();poll();setInterval(poll,5000);window.addEventListener('pagehide',()=>S.eventsSource?.close());window.addEventListener('pageshow',()=>{if(S.eventsSource?.readyState===2)S.eventsSource=null;poll()});
 })();
+
+
+/* KRANUAN COMMUNITY CHAT BUTTON FIX */
+(() => {
+  'use strict';
+
+  if (window.__krCommunityButtonFix) return;
+  window.__krCommunityButtonFix = true;
+
+  let loading = null;
+
+  function loadCommunity() {
+    if (typeof window.openKranuanCommunity === 'function') {
+      return Promise.resolve();
+    }
+
+    if (!loading) {
+      loading = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+
+        script.src =
+          '/dispatch-center/community.js?v=20261031-fix2';
+
+        script.onload = () => {
+          if (typeof window.openKranuanCommunity === 'function') {
+            resolve();
+          } else {
+            reject(new Error('ไม่พบระบบแชทอำเภอ'));
+          }
+        };
+
+        script.onerror = () => {
+          reject(new Error('โหลดไฟล์แชทอำเภอไม่ได้'));
+        };
+
+        document.head.appendChild(script);
+      }).catch(error => {
+        loading = null;
+        throw error;
+      });
+    }
+
+    return loading;
+  }
+
+  document.addEventListener('click', async event => {
+    const button = event.target.closest?.(
+      '#dispatchChatDialog [data-inbox-tab="history"]'
+    );
+
+    if (!button) return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    if (button.dataset.loading === '1') return;
+
+    button.dataset.loading = '1';
+    button.disabled = true;
+
+    const oldText = button.textContent;
+    button.textContent = 'กำลังเปิดแชทอำเภอ...';
+
+    try {
+      // โหลดระบบใหม่ให้พร้อมก่อน
+      await loadCommunity();
+
+      // ปิดหน้าต่างเดิมเมื่อระบบใหม่พร้อมแล้ว
+      const oldDialog =
+        document.getElementById('dispatchChatDialog');
+
+      oldDialog?.close();
+
+      // เปิดแชทอำเภอกระนวน
+      await window.openKranuanCommunity();
+
+    } catch (error) {
+      button.disabled = false;
+      button.textContent = oldText;
+      delete button.dataset.loading;
+
+      alert(
+        'เปิดแชทอำเภอไม่สำเร็จ: ' +
+        (error.message || 'กรุณาลองใหม่')
+      );
+    }
+  }, true);
+})();
+
