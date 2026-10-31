@@ -508,19 +508,55 @@ window.KranuanOpenOrderChat = function(orderId) {
   open(String(orderId), 'chat');
 };
       
-// เปิดหน้าชำระเงินตามออเดอร์โดยตรง
-window.KranuanOpenOrderPayment =
-  async function(orderId) {
-    if (!orderId) return;
 
-    const focus = document.getElementById('krOrderFocus');
+  // เปิดหน้าชำระเงินโดยไม่แสดงหน้าแชท
+  window.KranuanOpenOrderPayment =
+    async function(orderId) {
+      if (!orderId) return;
 
-    if (focus?.open) {
+      const id = String(orderId);
+
+      // ปิดหน้าติดตามเดิม
       window.KranuanOrderFocus?.close();
-    }
 
-    await open(String(orderId), 'payment');
-  };
+      const chatDialog = dialog();
+
+      // ซ่อนหน้าแชทก่อนเปิดหน้าชำระเงิน
+      chatDialog.style.visibility = 'hidden';
+      chatDialog.style.pointerEvents = 'none';
+
+      const cleanup = () => {
+        chatDialog.style.visibility = '';
+        chatDialog.style.pointerEvents = '';
+
+        if (chatDialog.open) {
+          chatDialog.close();
+        }
+      };
+
+      try {
+        await open(id, 'payment');
+
+        const payDialog = S.pay;
+
+        if (!payDialog?.open) {
+          cleanup();
+          return;
+        }
+
+        // ปิดหน้าชำระแล้วไม่ย้อนกลับไปหน้าแชท
+        payDialog.addEventListener(
+          'close',
+          cleanup,
+          { once: true }
+        );
+
+      } catch (error) {
+        cleanup();
+        console.error('Open payment failed:', error);
+      }
+    };
+
 
 /* END KRANUAN — FAST ORDER CHAT */
 })();
