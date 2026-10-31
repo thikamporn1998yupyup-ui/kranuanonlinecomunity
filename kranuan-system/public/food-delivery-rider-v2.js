@@ -244,15 +244,20 @@
       }
     };
 
+    
     confirm.onclick = async () => {
-      if (!photoData) return;
+      if (!photoData || confirm.disabled) return;
 
       confirm.disabled = true;
-      message.textContent = 'กำลังบันทึกภาพและสถานะ...';
+      message.textContent = 'กำลังบันทึกรูปและสถานะ...';
+
+      const loading = window.KranuanRiderLoading?.start(
+        'กำลังยืนยันรับสินค้า...',
+        'กำลังบันทึกรูปหลักฐานและสถานะออเดอร์'
+      );
 
       try {
-        // API ฝั่งเซิร์ฟเวอร์จะตรวจว่าภาพถูกบันทึก
-        // ก่อนเปลี่ยนสถานะเป็น picked
+        // ยืนยันกับระบบกลางก่อน จึงถือว่ารับสินค้าแล้ว
         await K.request(
           '/orders/' + encodeURIComponent(orderId) + '/status',
           {
@@ -264,19 +269,37 @@
           }
         );
 
+        loading?.update(
+          'กำลังเตรียมรายละเอียดงาน...',
+          'กำลังโหลดข้อมูลจุดรับ-ส่งล่าสุด'
+        );
+
         dialog.close();
 
-        toast('รับอาหารแล้ว กำลังจัดส่งให้ลูกค้า');
+        toast(job.type === 'parcel'
+          ? 'รับพัสดุแล้ว กำลังจัดส่ง'
+          : 'รับอาหารแล้ว กำลังจัดส่ง'
+        );
 
         if (typeof riderSync === 'function') {
-          await riderSync();
+          try {
+            await riderSync();
+          } catch (syncError) {
+            toast('รับสินค้าแล้ว แต่โหลดรายการใหม่ไม่สำเร็จ');
+          }
         }
+
       } catch (error) {
         message.textContent =
           'บันทึกไม่สำเร็จ: ' + error.message;
+
         confirm.disabled = false;
+
+      } finally {
+        loading?.close();
       }
     };
+
 
     dialog.showModal();
   };
