@@ -23,7 +23,62 @@ async function openRoom(id,payment=false){S.inboxTab='active';S.room=id;S.detail
 function roomError(e){const box=document.getElementById('krRoomError');if(box){box.hidden=false;box.textContent=e.message||String(e)}}
 async function send(e){e.preventDefault();if(!S.room||!S.chat?.open)return;const input=document.getElementById('kranuanChatInput'),message=input.value.trim();if(!message)return;const id=S.room,btn=e.submitter||document.getElementById('kranuanSendBtn');btn.disabled=true;if(!S.sendKey||S.sendKey.order!==id||S.sendKey.message!==message)S.sendKey={order:id,message,key:crypto.randomUUID()};try{await post('/dispatch/orders/'+encodeURIComponent(id)+'/chat',{message,client_key:S.sendKey.key});if(S.room===id){if(input.value.trim()===message)input.value='';S.sendKey=null;await loadRoom(true)}}catch(err){roomError(err)}finally{if(btn.isConnected)btn.disabled=!S.chat?.open}}
 async function markRoomRead(id){const unread=S.notices.filter(n=>n.order_id===id&&n.kind==='chat'&&!n.read_at);if(!unread.length)return;await post('/dispatch/notices/read',{ids:unread.map(n=>n.id)});S.notices=S.notices.map(n=>unread.some(x=>x.id===n.id)?{...n,read_at:new Date().toISOString()}:n);badge()}
-function roomSummary(){const o=S.detail,b=S.bill;if(!o||!b)return;const role=o.customer_id===S.user.id?'customer':'rider',name=role==='customer'?(S.orders.find(x=>x.id===o.id)?.rider_name||'ไรเดอร์'):(o.customer_name||'ลูกค้า');document.getElementById('kranuanRoomName').textContent=name;document.getElementById('kranuanRoomBadge').textContent=role==='customer'?'ไรเดอร์':'ลูกค้า';document.getElementById('kranuanRoomBadge').className='kranuan-badge '+(role==='customer'?'rider':'customer');document.getElementById('kranuanRoomAvatar').innerHTML=role==='customer'?avatar(S.orders.find(x=>x.id===o.id)?.rider_avatar):avatar(S.orders.find(x=>x.id===o.id)?.customer_avatar,'customer');const step=o.status==='done'?2:o.status==='picked'?1:0;const target=document.getElementById('kranuanTracking');target.innerHTML='<div class="kranuan-summary"><div><small>คำสั่งซื้อ #'+E(o.id.slice(-6).toUpperCase())+'</small><h4>'+E(o.item||o.shop||'รายการจัดส่ง')+'</h4><p>สินค้า '+money(b.goods)+' · ค่าส่ง '+money(b.fee)+'</p></div><strong>'+money(b.due)+'</strong></div><div class="kranuan-map" aria-label="ภาพประกอบสถานะการส่ง"><span class="kranuan-store">'+icon('shop')+'</span><span class="kranuan-road"></span><span class="kranuan-rider rider-step-'+step+'">'+icon('rider')+'</span><span class="kranuan-dest">'+icon('home')+'</span></div><small class="kranuan-map-caption">ภาพประกอบสถานะงาน • '+E(o.pickup||'จุดรับ')+' → '+E(o.dropoff||'จุดส่ง')+'</small><div class="kranuan-timeline">'+['รับออเดอร์','กำลังไปส่ง','ส่งสำเร็จ'].map((v,i)=>'<div class="kranuan-step '+(i===step?(i===2?'success':'active'):i<step?'completed':'')+'"><span class="kranuan-dot"></span><span>'+v+'</span></div>').join('')+'</div>'+(o.status==='cancelled'?'<p class="kranuan-pay-note">งานนี้ถูกยกเลิกแล้ว</p>':'<button type="button" class="kranuan-collect" data-payment>'+(role==='customer'?(b.due>0?'ชำระยอดคงเหลือ '+money(b.due):'ดูรายการชำระเงิน'):'ตรวจการชำระเงิน')+'</button>');target.querySelector('[data-payment]')?.addEventListener('click',()=>openPayment())}
+
+function roomSummary() {
+  const o = S.detail;
+  if (!o || !S.user) return;
+
+  const customer = o.customer_id === S.user.id;
+  const info = S.orders.find(x => x.id === o.id) || {};
+  const name = customer
+    ? (info.rider_name || 'ไรเดอร์')
+    : (o.customer_name || 'ลูกค้า');
+
+  const title = document.getElementById('kranuanRoomName');
+  const badge = document.getElementById('kranuanRoomBadge');
+  const avatarBox = document.getElementById('kranuanRoomAvatar');
+  const target = document.getElementById('kranuanTracking');
+
+  if (title) title.textContent = name;
+
+  if (badge) {
+    badge.textContent = customer ? 'ไรเดอร์' : 'ลูกค้า';
+    badge.className = 'kranuan-badge ' +
+      (customer ? 'rider' : 'customer');
+  }
+
+  if (avatarBox) {
+    avatarBox.innerHTML = customer
+      ? avatar(info.rider_avatar)
+      : avatar(info.customer_avatar, 'customer');
+  }
+
+  if (target) {
+    const status = label(o.status);
+
+    target.innerHTML = `
+      <div style="
+        display:flex;
+        align-items:center;
+        gap:8px;
+        padding:8px 14px;
+        border-bottom:1px solid #ececec;
+        background:#fff;
+        font-size:12px;
+      ">
+        <span style="
+          width:7px;height:7px;
+          border-radius:50%;
+          background:#e97941;
+          flex:none;
+        "></span>
+        <span style="color:#746f69">
+          ${E(status)}
+        </span>
+      </div>
+    `;
+  }
+}
 async function loadRoom(force=false){if(!S.room)return;const id=S.room,oldStatus=S.detail?.status;try{const [detail,chat,bill,events]=await Promise.all([req('/orders/'+encodeURIComponent(id)),req('/dispatch/orders/'+encodeURIComponent(id)+'/chat'),req('/dispatch/orders/'+encodeURIComponent(id)+'/settlement'),req('/orders/'+encodeURIComponent(id)+'/events')]);if(S.room!==id||!S.dialog?.open)return;S.detail=detail;S.chat=chat;S.bill=bill;S.tipPayments=await req('/dispatch/orders/'+encodeURIComponent(id)+'/payments');S.events=events;releaseCollection();roomSummary();const input=document.getElementById('kranuanChatInput'),finished=detail.status==='done'&&bill.due===0&&bill.received>0;input.disabled=!chat.open||finished;input.placeholder=finished?'รายการนี้เสร็จสิ้นแล้ว':!chat.open?'ห้องแชทปิดแล้ว':'พิมพ์ข้อความ…';document.getElementById('kranuanSendBtn').disabled=input.disabled;const finger=JSON.stringify([chat.messages,events,chat.open,finished]);if(S.messageFinger!==finger||force){S.messageFinger=finger;const area=document.getElementById('kranuanMessageArea'),near=area.scrollHeight-area.scrollTop-area.clientHeight<90;const systems=(events||[]).filter(x=>['assigned','picked','done','cancelled'].includes(x.status)).map(x=>'<div class="kranuan-sys-msg">'+E(label(x.status))+' · '+E(time(x.created_at))+'</div>').join('');area.innerHTML=systems+(chat.messages||[]).map(m=>'<div class="kranuan-bubble-wrap '+(m.sender_id===S.user.id?'me':'them')+'"><div class="kranuan-bubble">'+E(m.body)+'</div><time>'+E(time(m.created_at))+'</time></div>').join('')+(!chat.open?'<div class="kranuan-sys-msg">แชทปิดแล้วตามระยะเวลาของงาน</div>':'');if(force||near)area.scrollTop=area.scrollHeight}await markRoomRead(id);if(oldStatus&&oldStatus!=='done'&&detail.status==='done'&&detail.customer_id===S.user.id&&bill.due>0&&!S.auto.has(id)){S.auto.add(id);openPayment()}if(S.pay?.open&&!S.uploading&&!(S.pay.contains(document.activeElement)&&document.activeElement.matches('input,textarea,select')))renderPayment();if(detail.status==='done'&&bill.due===0&&bill.received>0&&detail.customer_id===S.user.id)review(id,true).catch(()=>{})}catch(e){if(e.status===403||e.status===404){closeRoom();notice(e.message)}else roomError(e)}}
 function paymentDialog(){if(S.pay)return S.pay;const d=document.createElement('dialog');d.id='dispatchPaymentDialog';d.className='kranuan-pay-box';d.setAttribute('aria-label','ชำระเงินตามออเดอร์');document.body.append(d);d.addEventListener('cancel',e=>{if(collectionLocked()){e.preventDefault();notice('กรุณาดำเนินการรับชำระให้ครบก่อนปิดหน้าต่าง',true)}});d.addEventListener('close',()=>{if(collectionLocked())setTimeout(()=>ensureCollection(S.room).catch(()=>{}),0);S.upload='';S.uploading=false;S.uploadToken++;S.payFinger=''});S.pay=d;return d}
 function openPayment(){if(!S.bill||!S.room)return;const d=paymentDialog();S.mode='cash';S.upload='';S.payFinger='';renderPayment(true);if(!d.open)d.showModal()}
