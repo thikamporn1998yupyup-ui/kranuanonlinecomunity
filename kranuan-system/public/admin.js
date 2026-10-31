@@ -23,7 +23,43 @@ async function unverifyShop(id){try{await K.request('/admin/shops/'+id+'/verify'
 async function toggleShop(id,b){b.disabled=true;try{const shop=adminShops.find(s=>s.id===id);await K.request('/admin/shops/'+id+'/availability',{method:'POST',body:JSON.stringify({accepting:!shop.accepting})});await staffLoad()}catch(e){message(e.message);b.disabled=false}}
 async function menuEditor(id){try{const menus=await K.request('/menus?shop='+id);const s=adminShops.find(s=>s.id===id);const line=m=>'<form onsubmit="saveMenu(event,\''+id+'\',\''+(m.id||'')+'\')"><label>ชื่อเมนู<input name="name" required value="'+E(m.name||'')+'"></label><label>ราคา บาท<input name="price" type="number" min="0" max="10000" step=".01" required value="'+E(m.price??'')+'"></label><label>รูปสินค้า HTTPS<input name="image_url" type="url" value="'+E(m.image_url||'')+'"></label><label><input name="available" type="checkbox" '+(m.available!==false?'checked':'')+'> พร้อมขาย</label><button class="kbutton primary">'+(m.id?'บันทึกเมนู':'เพิ่มเมนู')+'</button></form>';staffDialog('<h2>เมนู: '+E(s.name)+'</h2><h3>เพิ่มรายการ</h3>'+line({})+'<h3>รายการที่มีอยู่</h3>'+menus.map(line).join(''))}catch(e){message(e.message)}}
 async function saveMenu(e,sid,id){e.preventDefault();e.submitter.disabled=true;try{const data=Object.fromEntries(new FormData(e.target));await K.request('/admin/menus',{method:'POST',body:JSON.stringify({...data,shop_id:sid,id,available:e.target.available.checked})});await menuEditor(sid);await staffLoad(false)}catch(err){document.getElementById('staffDialogError').textContent=err.message;e.submitter.disabled=false}}
-async function staffStatus(id,status,b){if(status==='cancelled'&&!confirm('ยกเลิกออเดอร์นี้?'))return;b.disabled=true;try{await K.request('/orders/'+id+'/status',{method:'POST',body:JSON.stringify({status})});await staffLoad()}catch(e){message(e.message);b.disabled=false}}
+
+async function staffStatus(id, status, b) {
+  if (
+    status === 'cancelled' &&
+    !confirm('ยกเลิกออเดอร์นี้?')
+  ) return;
+
+  b.disabled = true;
+
+  try {
+    // รอให้เซิร์ฟเวอร์ยืนยันการเปลี่ยนสถานะก่อน
+    const updated = await K.request(
+      '/orders/' + encodeURIComponent(id) + '/status',
+      {
+        method: 'POST',
+        body: JSON.stringify({ status })
+      }
+    );
+
+    if (updated && updated.id === id) {
+      // เปลี่ยนสถานะบนหน้าจอจากข้อมูลที่เซิร์ฟเวอร์ยืนยัน
+      staffOrders = staffOrders.map(order =>
+        order.id === id ? updated : order
+      );
+
+      staffRender();
+
+      // โหลดข้อมูลทั้งหมดตามหลัง ไม่ต้องให้ผู้ใช้รอ
+      void staffLoad();
+    } else {
+      await staffLoad();
+    }
+  } catch (error) {
+    message(error.message);
+    if (b.isConnected) b.disabled = false;
+  }
+}
 async function createStaff(e){e.preventDefault();e.submitter.disabled=true;try{await K.request('/admin/users',{method:'POST',body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});await staffLoad();message('สร้างบัญชีแล้ว ส่งชื่อบัญชีและรหัสผ่านให้เจ้าของบัญชีโดยตรง')}catch(err){message(err.message);e.submitter.disabled=false}}
 async function importOsm(b){b.disabled=true;message('กำลังค้นหาข้อมูลร้านในอำเภอกระนวน...');try{const r=await K.request('/admin/import',{method:'POST',body:JSON.stringify({osm:true})});message('นำเข้า '+r.added+' ร้าน ข้าม '+r.skipped+' รายการ · '+r.note);await staffLoad(false)}catch(e){message(e.message)}finally{b.disabled=false}}
 async function importFile(b){b.disabled=true;try{const f=document.getElementById('shopImport').files[0];if(!f)throw Error('เลือกไฟล์ JSON ก่อน');if(f.size>3000000)throw Error('ไฟล์ต้องเล็กกว่า 3 MB');const data=JSON.parse(await f.text());const r=await K.request('/admin/import',{method:'POST',body:JSON.stringify(data)});message('นำเข้า '+r.added+' ร้าน ข้าม '+r.skipped+' รายการ');await staffLoad(false)}catch(e){message(e.message)}finally{b.disabled=false}}
