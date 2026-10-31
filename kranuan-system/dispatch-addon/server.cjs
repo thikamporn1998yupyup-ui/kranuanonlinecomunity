@@ -44,6 +44,7 @@ async function handle(req,res,url){
   /* KRANUAN — SECURE CHAT MEMBERSHIP */
   const communityRoute =
     p === '/api/dispatch/community' ||
+   p === '/api/dispatch/community/clear' ||
     /^\/api\/dispatch\/community\/[^/]+\/(pin|delete)$/.test(p);
 
   const orderChatRoute =
@@ -238,6 +239,28 @@ const avatarMatch=p.match(/^\/api\/dispatch\/orders\/([^/]+)\/(rider|customer)-a
  else if(p==='/api/dispatch/notices'&&method==='GET'){feedbackNotices(u);result=all('SELECT * FROM dispatch_notices WHERE user_id=? ORDER BY created_at DESC LIMIT 100',u.id)}
  else if(p==='/api/dispatch/notices/read'&&method==='POST'){if(Array.isArray(b.ids)){if(b.ids.length>100||b.ids.some(x=>typeof x!=='string'||x.length>100))fail(400,'รายการแจ้งเตือนไม่ถูกต้อง');if(b.ids.length)write('UPDATE dispatch_notices SET read_at=? WHERE user_id=? AND id IN ('+b.ids.map(()=>'?').join(',')+')',now(),u.id,...b.ids)}else if(b.id)write('UPDATE dispatch_notices SET read_at=? WHERE id=? AND user_id=?',now(),text(b.id,100),u.id);else write('UPDATE dispatch_notices SET read_at=? WHERE user_id=? AND read_at IS NULL',now(),u.id);result={ok:true}}
  
+else if (
+  p === '/api/dispatch/community/clear' &&
+  method === 'POST'
+) {
+  if (u.role !== 'admin') {
+    fail(403, 'เฉพาะผู้ดูแลระบบเท่านั้น');
+  }
+
+  if (b.confirm !== 'CLEAR_ALL_COMMUNITY_MESSAGES') {
+    fail(400, 'กรุณายืนยันการล้างแชท');
+  }
+
+  const count = get(
+    'SELECT COUNT(*) AS total FROM dispatch_community_messages'
+  )?.total || 0;
+
+  write('DELETE FROM dispatch_community_messages');
+
+  result = { ok: true, deleted: count };
+  notify();
+}
+
 else if(p==='/api/dispatch/community'&&method==='GET'){
   const messages=all(
     "SELECT m.id,m.sender_id,m.body,m.pinned,m.created_at,u.name,u.role FROM dispatch_community_messages m JOIN users u ON u.id=m.sender_id WHERE m.hidden=0 ORDER BY m.created_at DESC,m.rowid DESC LIMIT 100"
