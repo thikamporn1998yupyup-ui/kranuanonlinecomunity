@@ -519,4 +519,319 @@ const css=document.createElement('link');css.rel='stylesheet';css.href='/dispatc
   setTimeout(check, 600);
 })();
 
+/* KRANUAN — COMPACT BELL CHAT PREVIEWS */
+(() => {
+  'use strict';
+
+  if (window.__krBellCompactLabels) return;
+  window.__krBellCompactLabels = true;
+
+  const css = document.createElement('style');
+
+  css.textContent = `
+    #dispatchDock .kr-bell-toast {
+      box-sizing: border-box !important;
+      width: 225px !important;
+      min-width: 0 !important;
+      max-width: calc(100vw - 24px) !important;
+      padding: 9px 10px !important;
+      gap: 7px !important;
+      border-radius: 14px 14px 5px 14px !important;
+      font-size: 12px !important;
+    }
+
+    #dispatchDock .kr-bell-face {
+      width: 27px !important;
+      height: 27px !important;
+      font-size: 12px !important;
+    }
+
+    #dispatchDock .kr-bell-words {
+      flex: 1 !important;
+      min-width: 0 !important;
+      width: 0 !important;
+      gap: 2px !important;
+    }
+
+    #dispatchDock .kr-bell-source {
+      display: block;
+      max-width: 100%;
+      width: max-content;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: #fff0e4;
+      color: #a9542b;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    #dispatchDock .kr-bell-name {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-size: 11px !important;
+    }
+
+    #dispatchDock .kr-bell-message {
+      display: block !important;
+      max-width: 100% !important;
+      overflow: hidden !important;
+      white-space: nowrap !important;
+      text-overflow: ellipsis !important;
+      -webkit-line-clamp: unset !important;
+      font-size: 12px !important;
+      font-weight: 500 !important;
+    }
+  `;
+
+  document.head.append(css);
+
+  // Add source label and shorten preview text
+  function decorate(bubble) {
+    if (!bubble || bubble.dataset.compactReady) return;
+
+    const words = bubble.querySelector('.kr-bell-words');
+    if (!words) return;
+
+    bubble.dataset.compactReady = '1';
+
+    const label = document.createElement('span');
+    label.className = 'kr-bell-source';
+    label.textContent =
+      bubble.dataset.chatSource || 'แชทกลุ่มคนกระนวน';
+
+    words.prepend(label);
+
+    const body = words.querySelector('.kr-bell-message');
+
+    if (body) {
+      const value = String(body.textContent || '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      const parts = Array.from(value);
+
+      body.textContent = parts.length > 38
+        ? parts.slice(0, 38).join('') + '…'
+        : value;
+    }
+  }
+
+  // Apply to every new bubble above the bell
+  const dock = document.getElementById('dispatchDock');
+
+  if (dock) {
+    new MutationObserver(changes => {
+      for (const change of changes) {
+        for (const node of change.addedNodes) {
+          if (
+            node.nodeType === 1 &&
+            node.matches('.kr-bell-toast')
+          ) {
+            decorate(node);
+          }
+        }
+      }
+    }).observe(dock, { childList: true });
+
+    dock.querySelectorAll('.kr-bell-toast')
+      .forEach(decorate);
+  }
+
+  // Display private order-chat notification
+  function orderBubble(orderId, message, sender) {
+    const dock = document.getElementById('dispatchDock');
+
+    if (
+      !dock ||
+      document.hidden ||
+      document.querySelector(
+        '#dispatchChatDialog[open],#krCommunityDialog[open]'
+      )
+    ) return;
+
+    dock.querySelector('.kr-bell-toast')?.remove();
+
+    const bubble = document.createElement('div');
+    bubble.className = 'kr-bell-toast';
+
+    bubble.dataset.chatSource =
+      'แชทออเดอร์ #' +
+      String(orderId).slice(-6).toUpperCase();
+
+    const face = document.createElement('span');
+    face.className = 'kr-bell-face';
+    face.textContent = Array.from(sender)[0] || 'ข';
+
+    const words = document.createElement('span');
+    words.className = 'kr-bell-words';
+
+    const name = document.createElement('span');
+    name.className = 'kr-bell-name';
+    name.textContent = sender;
+
+    const body = document.createElement('span');
+    body.className = 'kr-bell-message';
+    body.textContent = message;
+
+    words.append(name, body);
+    bubble.append(face, words);
+    dock.append(bubble);
+
+    decorate(bubble);
+
+    setTimeout(() => bubble.remove(), 4200);
+  }
+
+  let currentUser = '';
+  let known = null;
+  let checking = false;
+
+  async function checkOrders() {
+    if (checking || document.hidden) return;
+
+    checking = true;
+
+    try {
+      let user = window.K?.user;
+
+      if (!user?.id) {
+        const response = await fetch(
+          '/api/dispatch/session',
+          { credentials: 'same-origin' }
+        );
+
+        if (!response.ok) return;
+
+        user = (await response.json()).user;
+      }
+
+      if (!user?.id) return;
+
+      if (currentUser !== user.id) {
+        currentUser = user.id;
+        known = null;
+      }
+
+      const response = await fetch(
+        '/api/dispatch/notices',
+        {
+          credentials: 'same-origin',
+          cache: 'no-store'
+        }
+      );
+
+      if (!response.ok) return;
+
+      const items = await response.json();
+      if (!Array.isArray(items)) return;
+
+      const chatItems = items.filter(
+        n => n.kind === 'chat'
+      );
+
+      const next = new Set(
+        chatItems.map(n => n.id)
+      );
+
+      if (known) {
+        const fresh = chatItems
+          .filter(n =>
+            !n.read_at &&
+            !known.has(n.id)
+          )
+          .sort((a, b) =>
+            String(b.created_at).localeCompare(
+              String(a.created_at)
+            )
+          )[0];
+
+        if (fresh?.order_id) {
+          let body = fresh.body || 'มีข้อความใหม่';
+
+          // Read the latest private chat message
+          try {
+            const chatResponse = await fetch(
+              '/api/dispatch/orders/' +
+              encodeURIComponent(fresh.order_id) +
+              '/chat',
+              { credentials: 'same-origin' }
+            );
+
+            if (chatResponse.ok) {
+              const data = await chatResponse.json();
+
+              body =
+                data.messages?.at(-1)?.body || body;
+            }
+          } catch {}
+
+          const sender = user.role === 'rider'
+            ? 'ลูกค้า'
+            : 'ไรเดอร์';
+
+          orderBubble(
+            fresh.order_id,
+            body,
+            sender
+          );
+        }
+      }
+
+      known = next;
+
+    } catch (error) {
+      console.warn(
+        'Order chat preview:',
+        error
+      );
+    } finally {
+      checking = false;
+    }
+  }
+
+  // Real-time updates for order messages
+  if (window.EventSource) {
+    const stream = new EventSource(
+      '/api/dispatch/events'
+    );
+
+    stream.addEventListener(
+      'refresh',
+      checkOrders
+    );
+
+    window.addEventListener(
+      'pagehide',
+      () => stream.close(),
+      { once: true }
+    );
+  }
+
+  // Backup refresh
+  setInterval(checkOrders, 15000);
+
+  window.addEventListener(
+    'kranuan:member-changed',
+    () => {
+      currentUser = '';
+      known = null;
+      setTimeout(checkOrders, 300);
+    }
+  );
+
+  document.addEventListener(
+    'visibilitychange',
+    () => {
+      if (!document.hidden) checkOrders();
+    }
+  );
+
+  setTimeout(checkOrders, 500);
+})();
+
 
