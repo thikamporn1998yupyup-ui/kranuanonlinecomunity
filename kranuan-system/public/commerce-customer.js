@@ -19,6 +19,121 @@ function syncDeliveryFrame(frame){const order=liveOrders.find(o=>o.id===frame.da
 window.addEventListener('message',e=>{if(e.origin!==location.origin)return;const frame=[...document.querySelectorAll('.c-delivery-frame')].find(f=>f.contentWindow===e.source);if(!frame)return;if(e.data?.type==='delivery:resize'&&Number.isFinite(e.data.height))frame.style.height=Math.max(170,Math.min(1600,e.data.height))+'px';if(e.data?.type==='delivery:ready')syncDeliveryFrame(frame)});
 orders=function(){return liveOrders.map(o=>{const st=cStatusInfo[o.status]||cStatusInfo.waiting;return '<article class="c-tracking-card" data-tracking-id="'+C.esc(o.id)+'" style="--state-color:'+st[2]+'"><div class="c-tracking-head"><div><p class="c-eyebrow">ออเดอร์ '+C.esc(o.id.slice(-6).toUpperCase())+'</p><h3>'+C.esc(o.shop)+'</h3></div><span class="c-state-pill">'+C.esc(st[0])+'</span></div><div class="c-comic-tracking">'+cDeliveryScene(o.status,o.id)+'</div><div class="c-tracking-details"><p>'+C.esc(o.item)+'</p><p>รับ: '+C.esc(o.pickup||'')+'</p><p>'+C.icon('pin')+'ส่ง: '+C.esc(o.dropoff)+'</p><div><strong>รวม '+C.money(o.total)+'</strong><small data-update-time>อัปเดต '+new Date(o.updated_at||o.created_at).toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'})+'</small></div></div><div class="c-card-actions"><button class="c-btn c-secondary" onclick="centralHistory(\''+o.id+'\')">ประวัติสถานะ</button><button data-cancel-order class="c-btn c-quiet" '+(!['waiting','ready'].includes(o.status)?'hidden':'')+' onclick="cancelCentralOrder(\''+o.id+'\',this)">ยกเลิกออเดอร์</button></div></article>'}).join('')||'<div class="c-empty">'+C.icon('bag')+'<h3>ยังไม่มีออเดอร์</h3><p>สั่งอาหารหรือเรียกไรเดอร์ แล้วติดตามการจัดส่งได้ที่นี่</p></div>'};
 const deliveryOldLoad=centralLoad;centralLoad=async function(){if(centralLoading)return;centralLoading=true;try{const [shops,rows]=await Promise.all([K.request('/shops'),K.request('/orders')]);liveShops=shops;liveOrders=rows;centralReady=true;if(view==='ร้านค้า')results();else if(view==='ออเดอร์ของฉัน'){const cards=[...document.querySelectorAll('[data-tracking-id]')],same=cards.length===rows.length&&cards.every(c=>rows.some(o=>o.id===c.dataset.trackingId));if(same&&cards.length){for(const card of cards){const o=rows.find(x=>x.id===card.dataset.trackingId),st=cStatusInfo[o.status]||cStatusInfo.waiting;card.style.setProperty('--state-color',st[2]);card.querySelector('.c-state-pill').textContent=st[0];card.querySelector('[data-cancel-order]').hidden=!['waiting','ready'].includes(o.status);card.querySelector('[data-update-time]').textContent='อัปเดต '+new Date(o.updated_at||o.created_at).toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'});const frame=card.querySelector('.c-delivery-frame');if(frame.dataset.status!==o.status)syncDeliveryFrame(frame)}}else document.getElementById('app').innerHTML=categoryBar()+'<h2>ออเดอร์ของฉัน</h2>'+orders()}const connection=document.getElementById('centralConnection');if(connection)connection.textContent='เชื่อมฐานข้อมูลกลางแล้ว'}catch(e){centralNotice('เชื่อมต่อไม่ได้: '+e.message)}finally{centralLoading=false}};K.listeners.delete(deliveryOldLoad);K.on(centralLoad);
+
+/* KRANUAN — FAST STOREFRONT */
+(() => {
+  const oldShopLoader = centralLoad;
+  const oldShopResults = results;
+
+  K.listeners.delete(oldShopLoader);
+
+  let shopSignature = '';
+  let lastShopFetch = 0;
+
+  // โหลดภาพร้านที่อยู่นอกหน้าจอเมื่อจำเป็น
+  results = function(...args) {
+    const el = document.getElementById('results');
+    if (!el) return;
+
+    const originalImage = C.image;
+
+    C.image = function(...params) {
+      const html = originalImage.apply(this, params);
+
+      return typeof html === 'string'
+        ? html.replace(
+            /<img\b(?![^>]*\bloading\s*=)/i,
+            '<img loading="lazy" decoding="async" '
+          )
+        : html;
+    };
+
+    try {
+      oldShopResults.apply(this, args);
+      el.dataset.krShopSignature = shopSignature;
+    } finally {
+      C.image = originalImage;
+    }
+  };
+
+  centralLoad = async function() {
+    if (view !== 'ร้านค้า') {
+      return oldShopLoader();
+    }
+
+    if (centralLoading) return;
+
+    const el = document.getElementById('results');
+
+    if (
+      centralReady &&
+      el &&
+      el.dataset.krShopSignature === shopSignature &&
+      Date.now() - lastShopFetch < 12000
+    ) return;
+
+    centralLoading = true;
+
+    try {
+      // หน้าร้านไม่ต้องรอโหลดออเดอร์
+      const shops = await K.request('/shops');
+
+      if (!Array.isArray(shops)) {
+        throw Error('ข้อมูลร้านค้าไม่ถูกต้อง');
+      }
+
+      liveShops = shops;
+      centralReady = true;
+      lastShopFetch = Date.now();
+
+      const nextSignature = JSON.stringify(
+        shops.map(s => [
+          s.id,
+          s.name,
+          s.category,
+          s.address,
+          s.accepting,
+          s.verification,
+          s.updated_at,
+          s.image_url?.length,
+          s.image_url?.slice(0, 40),
+          s.image_url?.slice(-24)
+        ])
+      );
+
+      const root = document.getElementById('results');
+
+      // ข้อมูลเดิม ไม่ต้องสร้างการ์ดร้านใหม่
+      if (
+        view === 'ร้านค้า' &&
+        root &&
+        root.dataset.krShopSignature !== nextSignature
+      ) {
+        shopSignature = nextSignature;
+        results();
+      } else {
+        shopSignature = nextSignature;
+      }
+
+      const connection = document.getElementById(
+        'centralConnection'
+      );
+
+      if (connection) {
+        connection.textContent = 'เชื่อมฐานข้อมูลกลางแล้ว';
+      }
+
+    } catch (error) {
+      centralNotice(
+        'โหลดร้านค้าไม่สำเร็จ: ' + error.message
+      );
+    } finally {
+      centralLoading = false;
+    }
+  };
+
+  K.on(centralLoad);
+})();
 categoryBar=function(){const items=[['ทั้งหมด','grid'],['อาหาร','food'],['เครื่องดื่ม','drink'],['บริการ','service'],['ร้านค้า','shop'],['ตลาด','market'],['เรียกไรเดอร์','bike']];return '<nav class="c-category-nav" aria-label="หมวดหมู่">'+items.map(([label,key])=>{const active=label==='ตลาด'?view==='ตลาด':label==='เรียกไรเดอร์'?view==='ส่งของ':view==='ร้านค้า'&&category===label;return '<button class="c-category '+(active?'active':'')+'" aria-pressed="'+active+'" onclick="setCategory(\''+label+'\')"><span>'+C.icon(key)+'</span><b>'+label+'</b></button>'}).join('')+'</nav>'};
 
 
