@@ -876,7 +876,134 @@ async function refreshOrder() {
     if (saved) open(saved);
   }, 1400);
 
-  window.KranuanOrderFocus = {
+  
+/* KRANUAN — SIMPLE MY ORDER VIEW */
+
+// ใช้หน้ารายละเอียดแบบเบา
+renderOrder = function(order) {
+  const root = document.getElementById('kofMain');
+  if (!root) return;
+
+  const key = JSON.stringify([
+    order.id,
+    order.status,
+    order.item,
+    order.total,
+    order.rider_id,
+    order.rider?.name,
+    order.rider?.avatar_url
+  ]);
+
+  if (key === lastRender) return;
+  lastRender = key;
+
+  const rider = order.rider;
+  const name = rider?.name || 'ยังไม่มีไรเดอร์รับงาน';
+  const photo = rider?.avatar_url || '';
+  const safePhoto = photo.startsWith('/api/riders/')
+    ? photo : '';
+
+  const state = {
+    waiting: 'รอร้านยืนยัน',
+    ready: 'กำลังหาไรเดอร์',
+    assigned: 'ไรเดอร์รับงานแล้ว',
+    picked: 'กำลังจัดส่ง',
+    done: 'จัดส่งสำเร็จ',
+    cancelled: 'ยกเลิกแล้ว'
+  }[order.status] || 'กำลังดำเนินการ';
+
+  const items = Array.isArray(order.items) &&
+    order.items.length
+    ? order.items.map(item =>
+        '<div class="kof-row"><span>' +
+        escapeHTML(item.name) +
+        '</span><strong>× ' +
+        Number(item.quantity || 1) +
+        '</strong></div>'
+      ).join('')
+    : '<p>' + escapeHTML(
+        order.item || 'รายการที่สั่งซื้อ'
+      ) + '</p>';
+
+  root.innerHTML = `
+    <section class="kof-card">
+      <p class="kof-sub">
+        ออเดอร์ #${escapeHTML(
+          String(order.id).slice(-6).toUpperCase()
+        )}
+      </p>
+      <h2>${escapeHTML(order.shop || 'รายการของฉัน')}</h2>
+      <p>${escapeHTML(state)}</p>
+    </section>
+
+    <section class="kof-card">
+      <h3>🛍️ รายการที่สั่งซื้อ</h3>
+      ${items}
+      <div class="kof-row">
+        <span>ยอดรวม</span>
+        <strong>${money(order.total)}</strong>
+      </div>
+    </section>
+
+    <section class="kof-card">
+      <h3>🛵 ไรเดอร์ที่มาส่ง</h3>
+      <div class="kof-rider">
+        <div class="kof-avatar">
+          ${safePhoto
+            ? `<img src="${escapeHTML(safePhoto)}"
+                 alt="รูปไรเดอร์"
+                 loading="lazy"
+                 decoding="async">`
+            : '🛵'}
+        </div>
+        <div class="kof-rider-info">
+          <strong>${escapeHTML(name)}</strong>
+          <p class="kof-sub">
+            ${rider?.verified
+              ? '✓ โปรไฟล์ผ่านการตรวจสอบ'
+              : 'ข้อมูลผู้จัดส่ง'}
+          </p>
+        </div>
+      </div>
+
+      ${order.rider_id &&
+        ['assigned','picked','done'].includes(order.status)
+        ? `<button type="button"
+             class="kof-btn"
+             id="kofRiderChat">
+             💬 แชทหาไรเดอร์
+           </button>`
+        : '<p class="kof-sub">ปุ่มแชทจะปรากฏเมื่อไรเดอร์รับงาน</p>'}
+    </section>
+  `;
+
+  const chat = root.querySelector('#kofRiderChat');
+
+  if (chat) {
+    chat.onclick = () => {
+      if (typeof window.KranuanOpenOrderChat !== 'function') {
+        alert('ระบบแชทยังไม่พร้อม กรุณารีเฟรชหน้า');
+        return;
+      }
+
+      window.KranuanOpenOrderChat(order.id);
+    };
+  }
+};
+
+// ซ่อนแชทอำเภอในหน้ารายละเอียดออเดอร์
+const simpleDialog = ensureDialog();
+const communityArea =
+  simpleDialog.querySelector('#kofChats')?.closest('section');
+
+if (communityArea) communityArea.remove();
+
+// ไม่ต้องเรียก GPS และแชทอำเภอจากหน้านี้
+refreshLocation = function() {};
+refreshChats = function() {};
+
+/* END SIMPLE MY ORDER VIEW */
+window.KranuanOrderFocus = {
     open,
     close: leave,
     refresh: refreshOrder
