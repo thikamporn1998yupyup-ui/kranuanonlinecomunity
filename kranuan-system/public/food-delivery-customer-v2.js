@@ -203,8 +203,29 @@
       return;
     }
 
-    const o = orders.find(x => x.id === activeId);
+
+    let o = orders.find(x => x.id === activeId);
     if (!o) return;
+
+    // โหลดรายละเอียดเต็มเฉพาะเมื่อลูกค้าเปิดดูออเดอร์
+    const requestedId = activeId;
+
+    try {
+      const fullOrder = await K.request(
+        '/orders/' + encodeURIComponent(requestedId)
+      );
+
+      // ป้องกันผลโหลดเก่าทับออเดอร์ที่เพิ่งเปลี่ยนไป
+      if (activeId !== requestedId) return;
+
+      o = fullOrder;
+    } catch (error) {
+      console.warn(
+        'โหลดรายละเอียดออเดอร์ไม่สำเร็จ:',
+        error.message
+      );
+    }
+
 
     const d = dialog(
       '<h2>ออเดอร์ #' +
@@ -306,8 +327,10 @@
     loading = true;
 
     try {
-      const list = (await K.request('/orders'))
+
+      const list = (await K.request('/orders?lite=1'))
         .filter(o => o.type === 'food');
+
 
       orders = list;
 
