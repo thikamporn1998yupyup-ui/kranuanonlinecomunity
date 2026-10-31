@@ -79,6 +79,21 @@ function roomSummary() {
     `;
   }
 }
+
+if (!document.getElementById('krSimpleChatStyle')) {
+  const style = document.createElement('style');
+  style.id = 'krSimpleChatStyle';
+  style.textContent = `
+    #kranuanRoomView .kranuan-sys-msg {
+      display: none !important;
+    }
+    #kranuanRoomView .kranuan-tracking {
+      flex: none;
+      min-height: 0;
+    }
+  `;
+  document.head.appendChild(style);
+}
 async function loadRoom(force=false){if(!S.room)return;const id=S.room,oldStatus=S.detail?.status;try{const [detail,chat,bill,events]=await Promise.all([req('/orders/'+encodeURIComponent(id)),req('/dispatch/orders/'+encodeURIComponent(id)+'/chat'),req('/dispatch/orders/'+encodeURIComponent(id)+'/settlement'),req('/orders/'+encodeURIComponent(id)+'/events')]);if(S.room!==id||!S.dialog?.open)return;S.detail=detail;S.chat=chat;S.bill=bill;S.tipPayments=await req('/dispatch/orders/'+encodeURIComponent(id)+'/payments');S.events=events;releaseCollection();roomSummary();const input=document.getElementById('kranuanChatInput'),finished=detail.status==='done'&&bill.due===0&&bill.received>0;input.disabled=!chat.open||finished;input.placeholder=finished?'รายการนี้เสร็จสิ้นแล้ว':!chat.open?'ห้องแชทปิดแล้ว':'พิมพ์ข้อความ…';document.getElementById('kranuanSendBtn').disabled=input.disabled;const finger=JSON.stringify([chat.messages,events,chat.open,finished]);if(S.messageFinger!==finger||force){S.messageFinger=finger;const area=document.getElementById('kranuanMessageArea'),near=area.scrollHeight-area.scrollTop-area.clientHeight<90;const systems=(events||[]).filter(x=>['assigned','picked','done','cancelled'].includes(x.status)).map(x=>'<div class="kranuan-sys-msg">'+E(label(x.status))+' · '+E(time(x.created_at))+'</div>').join('');area.innerHTML=systems+(chat.messages||[]).map(m=>'<div class="kranuan-bubble-wrap '+(m.sender_id===S.user.id?'me':'them')+'"><div class="kranuan-bubble">'+E(m.body)+'</div><time>'+E(time(m.created_at))+'</time></div>').join('')+(!chat.open?'<div class="kranuan-sys-msg">แชทปิดแล้วตามระยะเวลาของงาน</div>':'');if(force||near)area.scrollTop=area.scrollHeight}await markRoomRead(id);if(oldStatus&&oldStatus!=='done'&&detail.status==='done'&&detail.customer_id===S.user.id&&bill.due>0&&!S.auto.has(id)){S.auto.add(id);openPayment()}if(S.pay?.open&&!S.uploading&&!(S.pay.contains(document.activeElement)&&document.activeElement.matches('input,textarea,select')))renderPayment();if(detail.status==='done'&&bill.due===0&&bill.received>0&&detail.customer_id===S.user.id)review(id,true).catch(()=>{})}catch(e){if(e.status===403||e.status===404){closeRoom();notice(e.message)}else roomError(e)}}
 function paymentDialog(){if(S.pay)return S.pay;const d=document.createElement('dialog');d.id='dispatchPaymentDialog';d.className='kranuan-pay-box';d.setAttribute('aria-label','ชำระเงินตามออเดอร์');document.body.append(d);d.addEventListener('cancel',e=>{if(collectionLocked()){e.preventDefault();notice('กรุณาดำเนินการรับชำระให้ครบก่อนปิดหน้าต่าง',true)}});d.addEventListener('close',()=>{if(collectionLocked())setTimeout(()=>ensureCollection(S.room).catch(()=>{}),0);S.upload='';S.uploading=false;S.uploadToken++;S.payFinger=''});S.pay=d;return d}
 function openPayment(){if(!S.bill||!S.room)return;const d=paymentDialog();S.mode='cash';S.upload='';S.payFinger='';renderPayment(true);if(!d.open)d.showModal()}
