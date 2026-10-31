@@ -720,13 +720,29 @@ function watchGps(){
   },()=>{st.textContent='กรุณาเปิดสิทธิ์ GPS';st.style.color='#ff5252'},{enableHighAccuracy:true,timeout:20000});
 }
 
-window.addEventListener('DOMContentLoaded',async()=>{
-  applyTheme();initMap();watchGps();
-  if(!isLocal()){try{await loadProfile()}catch(e){}}
-  jobs=await DB.jobs();
+
+window.addEventListener('DOMContentLoaded', async () => {
+  // ระบบกลางเป็นผู้รับผิดชอบการโหลดงานเพียงทางเดียว
+  if (typeof riderSync === 'function') {
+    return;
+  }
+
+  // เก็บระบบเดิมไว้ใช้เฉพาะเมื่อไม่มีระบบกลาง
+  applyTheme();
+  initMap();
+  watchGps();
+
+  if (!isLocal()) {
+    try {
+      await loadProfile();
+    } catch (e) {}
+  }
+
+  jobs = await DB.jobs();
   render();
-  setInterval(refresh,5000);
+  setInterval(refresh, 5000);
 });
+
 </script>
 <script src="/api.js"></script><script src="/rider-bridge.js"></script><script src="/staff-rider.js?v=20261027-gallery"></script><script src="/app-zoom-lock.js?v=20261027-2"></script><script src="/rider-modern.js?v=20261029"></script><script src="/rider-map-cost.js?v=20261029-1"></script>
 <!-- ปรับหน้าตาหน้าไรเดอร์: แถบล่างบาง / แผนที่เต็มพื้นที่ / เงาตัวเลขรายได้ (ลบทั้งก้อนนี้เพื่อย้อนกลับ) -->
