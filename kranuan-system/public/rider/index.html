@@ -509,13 +509,140 @@ const actions={
     const u='https://www.google.com/maps/search/?api=1&query='+pos.lat+','+pos.lng,t='ตำแหน่งของฉัน (ไรเดอร์กระนวน)';
     try{if(navigator.share)await navigator.share({title:t,text:t,url:u});else{await navigator.clipboard.writeText(u);sh.msg='คัดลอกลิงก์ตำแหน่งแล้ว'}}catch(e){}},
   async unblock(id){prof.blocked=prof.blocked.filter(b=>b.id!==id);await DB.saveProfile(prof)},
-  async takeAlert(){
-    const j=cur;if(!j||alertBusy)return;
-    if(j.id==='TEST'){nextAlert();return toast('นี่คือการทดสอบ ระบบแจ้งเตือนทำงานปกติ')}
-    alertBusy=true;clearInterval(alertTimer);setAlertButtons(true);
-    try{const ok=await actions.accept(j.id);if(ok){queue=[];nextAlert()}else{jobs=await DB.jobs();if(!pending().some(x=>x.id===j.id))nextAlert()}}
-    finally{alertBusy=false;setAlertButtons(false);if(cur)startAlertClock()}
+
+  async takeAlert() {
+    const order = cur;
+    if (!order || alertBusy) return;
+
+    if (order.id === 'TEST') {
+      nextAlert();
+      toast('ระบบทดสอบแจ้งเตือนทำงานปกติ');
+      return;
+    }
+
+    if (!online || active()) {
+      toast('กรุณาเปิดออนไลน์และส่งงานปัจจุบันให้เสร็จก่อน');
+      return;
+    }
+
+    alertBusy = true;
+    clearInterval(alertTimer);
+    queue.length = 0;
+
+    // พับหน้าต่างทันที ก่อนรอเซิร์ฟเวอร์
+    const card = $('#alert .alertcard');
+
+    if (card?.animate) {
+      card.animate([
+        { opacity: 1, transform: 'translateY(0) scale(1)' },
+        { opacity: 0, transform: 'translateY(90px) scale(.8)' }
+      ], {
+        duration: 220,
+        easing: 'cubic-bezier(.4,0,1,1)',
+        fill: 'forwards'
+      });
+    }
+
+    const folded = new Promise(resolve => {
+      setTimeout(() => {
+        if (cur?.id === order.id) nextAlert();
+        resolve();
+      }, 220);
+    });
+
+    let claimed = false;
+
+    try {
+      // ให้เซิร์ฟเวอร์ยืนยันก่อน
+      const accepted = await DB.claim(order.id);
+
+      if (!accepted) {
+        throw Error('งานนี้ถูกไรเดอร์คนอื่นรับไปแล้ว');
+      }
+
+      claimed = true;
+
+      // โหลดรายละเอียดล่าสุดในเบื้องหลัง
+      const latest = await DB.jobs();
+
+      const job = latest.find(j =>
+        j.id === order.id &&
+        j.rider_id === cfg.riderId &&
+        ['accepted', 'picked'].includes(j.status)
+      );
+
+      if (!job) {
+        throw Error('ยังโหลดรายละเอียดงานไม่สำเร็จ');
+      }
+
+      jobs = latest;
+      tab = 'home';
+
+      detect();
+      render();
+      await folded;
+
+      // เด้งหน้ารายละเอียดหลังโหลดเสร็จ
+      if (typeof showRiderDetails === 'function') {
+        const old = document.getElementById('riderOrderDetails');
+        if (old?.open) old.close();
+
+        showRiderDetails(order.id);
+
+        const popup = document.getElementById('riderOrderDetails');
+
+        if (popup) {
+          popup.style.borderRadius = '28px';
+          popup.style.maxWidth = 'min(92vw,460px)';
+          popup.style.boxShadow =
+            '0 24px 80px rgba(0,0,0,.45)';
+
+          const header = document.createElement('div');
+          header.style.cssText =
+            'text-align:center;padding:18px 8px;' +
+            'color:#38b878';
+
+          header.innerHTML =
+            '<div style="font-size:48px">✓</div>' +
+            '<strong style="font-size:24px">รับงานสำเร็จ!</strong>';
+
+          popup.prepend(header);
+
+          popup.animate?.([
+            {
+              opacity: 0,
+              transform: 'translateY(85px) scale(.82)'
+            },
+            {
+              opacity: 1,
+              transform: 'translateY(0) scale(1)'
+            }
+          ], {
+            duration: 450,
+            easing: 'cubic-bezier(.16,1,.3,1)'
+          });
+        }
+      } else {
+        toast('รับงานสำเร็จแล้ว');
+      }
+
+    } catch (error) {
+      await folded;
+
+      toast(claimed
+        ? 'รับงานแล้ว แต่โหลดรายละเอียดไม่สำเร็จ กรุณารีเฟรช'
+        : 'รับงานไม่สำเร็จ: ' + error.message
+      );
+
+      if (claimed && typeof riderSync === 'function') {
+        riderSync().catch(() => {});
+      }
+
+    } finally {
+      alertBusy = false;
+    }
   }
+
 };
 
 document.addEventListener('click',async e=>{
@@ -524,7 +651,16 @@ document.addEventListener('click',async e=>{
   b.disabled=true;
   try{await actions[b.dataset.act](b.dataset.id)}catch(err){toast('เกิดข้อผิดพลาด: '+err.message);if(sh)sh.msg='เกิดข้อผิดพลาด: '+err.message}
   b.disabled=false;
-  if(['sheet','sfset','closeSheet','dismiss'].includes(b.dataset.act))render();else await refresh();
+  
+  if (
+    ['sheet', 'sfset', 'closeSheet', 'dismiss', 'takeAlert']
+      .includes(b.dataset.act)
+  ) {
+    render();
+  } else {
+    await refresh();
+  }
+
 });
 
 let queue=[],cur=null,alertTimer,ac,alertDeadline=0,alertBusy=false,alertFocus=null,oldOverflow='',alertLocked=false;
