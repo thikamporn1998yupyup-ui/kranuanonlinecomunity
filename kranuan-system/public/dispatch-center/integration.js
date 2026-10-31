@@ -160,3 +160,363 @@ const css=document.createElement('link');css.rel='stylesheet';css.href='/dispatc
   }, true);
 })();
 
+/* KRANUAN — FLOATING MESSAGES ABOVE BELL */
+(() => {
+  'use strict';
+
+  if (window.__krBellPreviewFix) return;
+  window.__krBellPreviewFix = true;
+
+  const style = document.createElement('style');
+  style.textContent = `
+    /* Hide the old floating effect inside the chat */
+    #krCommunityDialog .floating-chat-layer {
+      display: none !important;
+    }
+
+    /* Show the new bubble ABOVE the bell */
+    #dispatchDock .kr-bell-toast {
+      position: absolute;
+      bottom: calc(100% + 12px);
+      right: 0;
+      z-index: 3;
+      width: max-content;
+      min-width: 180px;
+      max-width: min(270px, calc(100vw - 28px));
+      display: flex;
+      gap: 9px;
+      align-items: flex-start;
+      padding: 11px 13px;
+      border: 1px solid #f1d5c3;
+      border-radius: 18px 18px 5px 18px;
+      background: #fff;
+      color: #273443;
+      box-shadow: 0 9px 28px #15213133;
+      pointer-events: none;
+      animation: krBellRise 4.2s ease-out both;
+      font: 13px/1.4 system-ui, Tahoma, sans-serif;
+    }
+
+    #dispatchDock .kr-bell-toast::after {
+      content: '';
+      position: absolute;
+      right: 15px;
+      bottom: -9px;
+      border-left: 9px solid transparent;
+      border-right: 9px solid transparent;
+      border-top: 9px solid #fff;
+    }
+
+    #dispatchDock .kr-bell-face {
+      flex: none;
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #fae1cf;
+      color: #ad5b31;
+      font-weight: 800;
+    }
+
+    #dispatchDock .kr-bell-words {
+      min-width: 0;
+      display: grid;
+      gap: 3px;
+    }
+
+    #dispatchDock .kr-bell-name {
+      color: #d56a35;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    #dispatchDock .kr-bell-message {
+      overflow: hidden;
+      overflow-wrap: anywhere;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+      font-weight: 600;
+    }
+
+    #krCommunityUnread {
+      position: absolute;
+      top: -7px;
+      left: -7px;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 4px;
+      display: grid;
+      place-items: center;
+      border: 2px solid white;
+      border-radius: 14px;
+      background: #e74c3c;
+      color: white;
+      font: 700 10px Tahoma, sans-serif;
+    }
+
+    #krCommunityUnread[hidden] {
+      display: none;
+    }
+
+    @keyframes krBellRise {
+      0% {
+        opacity: 0;
+        transform: translateY(35px) scale(.86);
+      }
+      15% {
+        opacity: 1;
+        transform: translateY(0) scale(1.04);
+      }
+      25% {
+        opacity: 1;
+        transform: translateY(-8px) scale(1);
+      }
+      65% {
+        opacity: 1;
+        transform: translateY(-23px);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-78px) scale(.95);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #dispatchDock .kr-bell-toast {
+        animation: krBellFade 4.2s ease-out both;
+      }
+
+      @keyframes krBellFade {
+        0%, 100% { opacity: 0; }
+        15%, 70% { opacity: 1; }
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+
+  const state = {
+    userId: '',
+    latestId: '',
+    latestTime: '',
+    ready: false,
+    busy: false,
+    queued: false,
+    stream: null
+  };
+
+  function badge(count) {
+    const button = document.querySelector(
+      '#dispatchDock [data-bell]'
+    );
+
+    if (!button) return;
+
+    let el = document.getElementById(
+      'krCommunityUnread'
+    );
+
+    if (!el) {
+      el = document.createElement('span');
+      el.id = 'krCommunityUnread';
+      button.appendChild(el);
+    }
+
+    el.hidden = count === 0;
+    el.textContent = count > 99
+      ? '99+'
+      : String(count);
+  }
+
+  function preview(message) {
+    const dock = document.getElementById(
+      'dispatchDock'
+    );
+
+    if (
+      !dock ||
+      document.hidden ||
+      document.querySelector(
+        '#krCommunityDialog[open], #dispatchChatDialog[open]'
+      )
+    ) return;
+
+    dock.querySelector('.kr-bell-toast')?.remove();
+
+    const bubble = document.createElement('div');
+    bubble.className = 'kr-bell-toast';
+
+    const face = document.createElement('span');
+    face.className = 'kr-bell-face';
+    face.textContent = Array.from(
+      String(message.name || 'ชุมชน')
+    )[0] || '?';
+
+    const words = document.createElement('span');
+    words.className = 'kr-bell-words';
+
+    const name = document.createElement('span');
+    name.className = 'kr-bell-name';
+    name.textContent = message.name || 'สมาชิก';
+
+    const body = document.createElement('span');
+    body.className = 'kr-bell-message';
+    body.textContent = message.body || '';
+
+    words.append(name, body);
+    bubble.append(face, words);
+    dock.appendChild(bubble);
+
+    // Bubble disappears automatically
+    setTimeout(() => bubble.remove(), 4200);
+  }
+
+  async function getUser() {
+    if (window.K?.user?.id) {
+      return window.K.user;
+    }
+
+    const response = await fetch(
+      '/api/dispatch/session',
+      { credentials: 'same-origin' }
+    );
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    return data.user || null;
+  }
+
+  async function check() {
+    if (state.busy) {
+      state.queued = true;
+      return;
+    }
+
+    state.busy = true;
+
+    try {
+      const user = await getUser();
+
+      if (!user?.id) return;
+
+      if (state.userId !== user.id) {
+        state.userId = user.id;
+        state.latestId = '';
+        state.latestTime = '';
+        state.ready = false;
+        badge(0);
+      }
+
+      const response = await fetch(
+        '/api/dispatch/community',
+        {
+          credentials: 'same-origin',
+          cache: 'no-store'
+        }
+      );
+
+      if (!response.ok) return;
+
+      const result = await response.json();
+      const items = Array.isArray(result.messages)
+        ? result.messages
+        : [];
+
+      const last = items.at(-1);
+      let fresh = [];
+
+      if (state.ready) {
+        const index = items.findIndex(
+          x => x.id === state.latestId
+        );
+
+        fresh = index >= 0
+          ? items.slice(index + 1)
+          : items.filter(
+              x => x.created_at > state.latestTime
+            );
+      }
+
+      if (last) {
+        state.latestId = last.id;
+        state.latestTime = last.created_at;
+      }
+
+      state.ready = true;
+
+      const key =
+        'kranuan.community.read.' + user.id;
+
+      let readAt = localStorage.getItem(key);
+
+      if (!readAt && last) {
+        readAt = last.created_at;
+        localStorage.setItem(key, readAt);
+      }
+
+      const unread = items.filter(x =>
+        x.sender_id !== user.id &&
+        x.created_at > (readAt || '')
+      ).length;
+
+      badge(unread);
+
+      // Show only the newest incoming message
+      const newest = fresh.filter(
+        x => x.sender_id !== user.id
+      ).at(-1);
+
+      if (newest) preview(newest);
+
+    } catch (error) {
+      console.warn(
+        'Community bubble preview:',
+        error
+      );
+    } finally {
+      state.busy = false;
+
+      if (state.queued) {
+        state.queued = false;
+        setTimeout(check, 150);
+      }
+    }
+  }
+
+  // Listen for new community messages
+  if (window.EventSource) {
+    state.stream = new EventSource(
+      '/api/dispatch/events'
+    );
+
+    state.stream.addEventListener(
+      'refresh',
+      check
+    );
+  }
+
+  // Backup check if live updates disconnect
+  setInterval(check, 15000);
+
+  window.addEventListener(
+    'kranuan:member-changed',
+    () => {
+      state.userId = '';
+      setTimeout(check, 450);
+    }
+  );
+
+  document.addEventListener(
+    'visibilitychange',
+    () => {
+      if (!document.hidden) check();
+    }
+  );
+
+  setTimeout(check, 600);
+})();
+
+
