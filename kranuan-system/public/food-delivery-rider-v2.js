@@ -262,71 +262,9 @@
   };
 
 
-  // ส่งงานตามกระบวนการหลัก โดยไม่เปิดหน้าสรุปซ้ำ
-  const originalDelivered = actions.delivered;
-
-  actions.delivered = async function(orderId) {
-    await originalDelivered(orderId);
-  };
-
-
-    dialog.innerHTML = `
-      <h2>✅ ส่งอาหารสำเร็จ</h2>
-
-      <p id="krDeliveredCode"></p>
-
-      <div style="background:#fff1d8;
-        padding:15px;border-radius:12px">
-        <p id="krDeliveredFood"></p>
-        <p id="krDeliveredFee"></p>
-        <h2 id="krDeliveredTotal"></h2>
-      </div>
-
-      <h3>คำแนะนำก่อนรับชำระเงิน</h3>
-
-      <p>
-        1. ให้ลูกค้าตรวจสอบรายการและสภาพอาหาร
-        <br>
-        2. ยืนยันยอดที่ตกลงกับร้านค้าและลูกค้า
-        <br>
-        3. รับเงินสดหรือโอนตรงตามข้อตกลง
-        <br>
-        4. ตรวจสอบยอดเงินจริงในบัญชีของผู้รับเงิน
-      </p>
-
-      <p style="font-size:12px;color:#666">
-        Kranuan Online ไม่ได้รับหรือถือเงินค่าอาหาร
-        และค่าจัดส่งแทนคู่ค้า
-      </p>
-
-      <button id="krDeliveredClose"
-        style="width:100%;border:0;
-        border-radius:12px;padding:14px;
-        background:#e96531;color:white">
-        เสร็จสิ้น
-      </button>
-    `;
-
-    document.body.appendChild(dialog);
-
-    dialog.querySelector('#krDeliveredCode').textContent =
-      'ออเดอร์ #' + shortCode(job);
-
-    dialog.querySelector('#krDeliveredFood').textContent =
-      'ค่าอาหาร ' + money(job.goods_total);
-
-    dialog.querySelector('#krDeliveredFee').textContent =
-      'ค่าจัดส่ง ' + money(job.fee);
-
-    dialog.querySelector('#krDeliveredTotal').textContent =
-      'ยอดรวม ' + money(total);
-
-    dialog.querySelector('#krDeliveredClose').onclick =
-      () => dialog.close();
-
-    dialog.onclose = () => dialog.remove();
-    dialog.showModal();
-  };
+  // ระบบส่งงานสำเร็จใช้ขั้นตอนหลักเพียงชุดเดียว
+  // ไม่เปิดป๊อปอัปสรุปยอดซ้ำ
+  // การรับเงินจัดการผ่าน dispatch-center
 
   console.log('Kranuan Food Delivery Rider V2 loaded');
 })();
