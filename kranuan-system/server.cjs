@@ -578,13 +578,74 @@ const orderMatch=p.match(/^\/api\/orders\/([^/]+)(?:\/(claim|status|events|feedb
  transaction(()=>{if(get("SELECT id FROM orders WHERE rider_id=? AND status IN ('assigned','picked')",u.id))fail(409,'ส่งงานปัจจุบันให้เสร็จก่อน');const r=run("UPDATE orders SET status='assigned',rider_id=?,updated_at=? WHERE id=? AND status='ready' AND rider_id IS NULL",u.id,now(),oid);if(!r.changes)fail(409,'งานถูกยกเลิกหรือไรเดอร์คนอื่นรับแล้ว');addEvent(oid,u,'assigned')});emit();return send(res,200,orderView(get('SELECT * FROM orders WHERE id=?',oid),u));
  }
  
-  // FOOD V3: ร้านต้องรับออเดอร์และเตรียมอาหารก่อนพร้อมส่ง
- 
+  // FOOD V3: ยืนยันออเดอร์แล้วเรียกไรเดอร์ทันที
+  if (
+    action === 'status' &&
+    method === 'POST' &&
+    o.kind === 'food' &&
+    u.role === 'merchant' &&
+    u.shop_id === o.shop_id
+  ) {
+    const nextStage = text(b.status, 20);
+    const foodSnapshot = JSON.parse(o.snapshot);
+    const currentStage = foodSnapshot.food_stage || 'waiting';
+
+    const previousStage = {
+      confirmed: 'waiting',
+      preparing: 'confirmed',
+      food_ready: 'preparing'
+    };
+
+    if (Object.prototype.hasOwnProperty.call(
+      previousStage, nextStage
+    )) {
       if (
-        K.user.role !== 'merchant' ||
-        !['waiting', 'ready', 'assigned'].includes(order.status) ||
-        K.user.shop_id !== order.shop_id
-      ) return;
+        currentStage !== previousStage[nextStage] ||
+        (nextStage === 'confirmed'
+          ? o.status !== 'waiting'
+          : !['ready', 'assigned'].includes(o.status))
+      ) {
+        fail(409, 'สถานะอาหารไม่ถูกต้อง กรุณาโหลดใหม่');
+      }
+
+      foodSnapshot.food_stage =
+        nextStage === 'food_ready' ? 'ready' : nextStage;
+
+      const newStatus =
+        nextStage === 'confirmed' ? 'ready' : o.status;
+
+      transaction(() => {
+        const updated = run(
+          'UPDATE orders SET status=?,snapshot=?,updated_at=? ' +
+          'WHERE id=? AND status=? AND snapshot=?',
+          newStatus,
+          JSON.stringify(foodSnapshot),
+          now(),
+          oid,
+          o.status,
+          o.snapshot
+        );
+
+        if (!updated.changes) {
+          fail(409, 'สถานะออเดอร์เปลี่ยนแล้ว กรุณาโหลดใหม่');
+        }
+
+        addEvent(
+          oid,
+          u,
+          nextStage === 'food_ready' ? 'ready' : nextStage
+        );
+      });
+
+      emit();
+
+      return send(
+        res,
+        200,
+        orderView(get('SELECT * FROM orders WHERE id=?', oid), u)
+      );
+    }
+  }
 
 if (action === 'status' && method === 'POST') {
   const next = text(b.status, 20);
