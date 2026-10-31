@@ -193,6 +193,23 @@
 
     document.body.appendChild(dialog);
 
+    // เปลี่ยนข้อความหน้ากล้องสำหรับงานส่งพัสดุ
+    if (job.type === 'parcel') {
+      dialog.querySelector('h2').textContent =
+        '📦 ยืนยันรับพัสดุจากผู้ส่ง';
+
+      dialog.querySelectorAll('p')[1].textContent =
+        'ตรวจสภาพและจำนวนพัสดุกับผู้ส่ง ' +
+        'จากนั้นถ่ายรูปพัสดุก่อนเริ่มจัดส่ง ' +
+        'หลีกเลี่ยงการถ่ายข้อมูลส่วนตัวที่ไม่จำเป็น';
+
+      dialog.querySelector('label strong').textContent =
+        'ถ่ายภาพพัสดุตอนรับ';
+
+      dialog.querySelector('#krPickupConfirm').textContent =
+        'ยืนยันรับพัสดุและเริ่มจัดส่ง';
+    }
+
     dialog.querySelector('#krPickupCode').textContent =
       'ออเดอร์ #' + shortCode(job);
 
