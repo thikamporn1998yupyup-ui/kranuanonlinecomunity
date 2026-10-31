@@ -2,7 +2,93 @@
 (()=>{'use strict';const markup="<div class=\"phone-mockup\"><button type=\"button\" class=\"transport-close\" aria-label=\"ปิดหน้าเรียกรถ\" onclick=\"TransportUI.close()\"><svg viewBox=\"0 0 24 24\"><path d=\"m6 6 12 12M18 6 6 18\"/></svg></button>\n  <div class=\"map-bg\"></div>\n  <div class=\"toast\" id=\"toast\">แจ้งเตือน</div>\n\n  <!-- 1. หน้าเลือกยานพาหนะ -->\n  <div class=\"vehicle-selection-screen\" id=\"vs-screen\">\n    <div class=\"vs-header\">\n      <h1>เรียกไรเดอร์</h1>\n      <p>เลือกประเภทยานพาหนะที่คุณต้องการ</p>\n    </div>\n\n    <div class=\"vs-cards\">\n      <div class=\"vs-card\" onclick=\"TransportUI.selectVehicle('bike')\">\n        <div class=\"vs-icon-box\">\n          <svg viewBox=\"0 0 24 24\"><path d=\"M19 7h-3V5h3a1 1 0 0 1 1 1v1zm-4 0h-2.5l-2-2H9v2H4v2h2.5l-2 5H4v2h2a2 2 0 0 0 1.7-1l1.8-4.5h1.5l4.3 3.4A2 2 0 0 0 16.5 14H18a3 3 0 1 0 0-6h-2.5V7zM9 9h3.5l2 3H11L9 9zm8 4a1 1 0 1 1 0-2 1 1 0 0 1 0 2z\"/><circle cx=\"6\" cy=\"17\" r=\"3\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"/><circle cx=\"18\" cy=\"17\" r=\"3\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"/></svg>\n        </div>\n        <div class=\"vs-info\">\n          <h3>รถจักรยานยนต์</h3>\n          <p>ส่งไว เหมาะกับของชิ้นเล็ก</p>\n        </div>\n      </div>\n\n      <div class=\"vs-card\" onclick=\"TransportUI.selectVehicle('car')\">\n        <div class=\"vs-icon-box\">\n          <svg viewBox=\"0 0 24 24\"><path d=\"M18.9 6.1l-1.2-3.5C17.4 1.6 16.5 1 15.5 1h-7C7.5 1 6.6 1.6 6.3 2.6l-1.2 3.5C4.4 6.4 4 7.2 4 8v11a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-1h6v1a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2V8c0-.8-.4-1.6-1.1-1.9zM7.5 3.5c.1-.3.3-.5.6-.5h7.8c.3 0 .5.2.6.5L17.4 7H6.6l.9-3.5zM6.5 15.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm11 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z\"/></svg>\n        </div>\n        <div class=\"vs-info\">\n          <h3>รถยนต์</h3>\n          <p>รับส่งผู้โดยสาร หรือของชิ้นใหญ่</p>\n        </div>\n      </div>\n    </div>\n  </div>\n\n  <!-- 2. หน้าจอฟอร์มกรอกข้อมูล -->\n  <div class=\"call-rider-container\" id=\"call-rider-container\">\n    <button class=\"btn-back\" onclick=\"TransportUI.goBackToVehicleSelection()\">\n      <svg viewBox=\"0 0 24 24\"><path d=\"M15 18l-6-6 6-6\"/></svg>\n    </button>\n\n    <div class=\"sheet-scroll-area\">\n      <div class=\"drag-handle\"></div>\n      <h2 id=\"title-text\">ส่งพัสดุ / อาหาร</h2>\n      \n      <div class=\"mode-toggle-wrapper\">\n        <button class=\"mode-btn active\" id=\"btn-mode-delivery\" onclick=\"TransportUI.switchMode('delivery')\">ส่งของ</button>\n        <button class=\"mode-btn\" id=\"btn-mode-ride\" onclick=\"TransportUI.switchMode('ride')\">ส่งคน</button>\n      </div>\n\n      <div class=\"address-input-group\">\n        <div class=\"address-icon pickup\"></div>\n        <input type=\"text\" id=\"pickup-input\" placeholder=\"จุดรับพัสดุ\" readonly onclick=\"TransportUI.openMapPicker('pickup')\">\n        <button class=\"btn-action\" onclick=\"TransportUI.getGPS('pickup')\"><svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M12 2v3M12 19v3M2 12h3M19 12h3\"/><path d=\"M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1\"/></svg></button>\n        <button class=\"btn-action\" onclick=\"TransportUI.openMapPicker('pickup')\"><svg viewBox=\"0 0 24 24\"><path d=\"M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z\"/><circle cx=\"12\" cy=\"10\" r=\"3\"/></svg></button>\n      </div>\n\n      <div class=\"address-input-group\">\n        <div class=\"address-icon dropoff\"></div>\n        <input type=\"text\" id=\"dropoff-input\" placeholder=\"จุดส่งพัสดุ\" readonly onclick=\"TransportUI.openMapPicker('dropoff')\">\n        <button class=\"btn-action\" onclick=\"TransportUI.openMapPicker('dropoff')\"><svg viewBox=\"0 0 24 24\"><path d=\"M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z\"/><circle cx=\"12\" cy=\"10\" r=\"3\"/></svg></button>\n      </div>\n\n      <!-- 🔥 ส่วนจำนวนผู้โดยสาร (ไอคอนคนทึบ + ปุ่ม + / -) -->\n      <div class=\"passenger-section\" id=\"passenger-section\">\n        <div class=\"passenger-info\">\n          <!-- Solid User Icon -->\n          <svg viewBox=\"0 0 24 24\">\n            <path d=\"M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\"/>\n          </svg>\n          <span>จำนวนผู้โดยสาร</span>\n        </div>\n        <div class=\"passenger-controls\">\n          <button class=\"btn-count\" id=\"btn-minus\" onclick=\"TransportUI.changePassenger(-1)\">-</button>\n          <span class=\"count-number\" id=\"count-display\">0</span>\n          <button class=\"btn-count\" id=\"btn-plus\" onclick=\"TransportUI.changePassenger(1)\">+</button>\n        </div>\n      </div>\n\n      <!-- ส่วนข้อมูลพัสดุ -->\n      <div id=\"parcel-section\">\n        <label class=\"input-label\">ของที่ต้องการให้รับ-ส่ง</label>\n        <div class=\"parcel-details\">\n          <textarea id=\"parcel-desc\" placeholder=\"เช่น เอกสาร กล่องพัสดุ หรืออาหารจากร้าน\"></textarea>\n        </div>\n\n        <label class=\"input-label\">หมายเหตุถึงไรเดอร์</label>\n        <div class=\"parcel-details\">\n          <textarea id=\"parcel-note\" placeholder=\"เช่น โทรมือถือจุดรับ หรือฝากของที่หน้าเคาน์เตอร์\"></textarea>\n        </div>\n\n        <button class=\"btn-attach-image\" onclick=\"TransportUI.openImagePopup()\">\n          <svg viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/><circle cx=\"8.5\" cy=\"8.5\" r=\"1.5\"/><path d=\"M21 15l-5-5L5 21\"/></svg>\n          <span id=\"attach-status\">แนบภาพสิ่งของ / จุดส่ง (ไม่บังคับ)</span>\n        </button>\n\n        <div class=\"checkbox-group\">\n          <label class=\"checkbox-item\">\n            <input type=\"checkbox\" id=\"transport-remember\" checked>\n            <span>จดจำชื่อ เบอร์โทร ที่อยู่และพิกัดจุดส่งในเครื่องนี้</span>\n          </label>\n          <label class=\"checkbox-item\">\n            <input type=\"checkbox\" id=\"transport-consent\">\n            <span>ยินยอมให้ไรเดอร์ตรวจสอบสิ่งของก่อนรับส่ง</span>\n          </label>\n        </div>\n      </div>\n\n      <div class=\"transport-contact\"><label>ชื่อผู้ติดต่อ<input id=\"transport-name\" maxlength=\"100\" autocomplete=\"name\"></label><label>เบอร์โทร<input id=\"transport-phone\" maxlength=\"15\" type=\"tel\" inputmode=\"tel\" autocomplete=\"tel\"></label></div><div class=\"fare-summary\">\n        <span id=\"fare-label\">ค่าบริการ</span>\n        <b id=\"price-text\">25 บาท</b>\n      </div>\n\n      <button class=\"btn-call-rider\" id=\"call-btn\" onclick=\"TransportUI.callRider()\">\n        <div class=\"spinner\" id=\"spinner\"></div>\n        <span id=\"btn-text\">ยืนยันเรียกไรเดอร์</span>\n      </button>\n    </div>\n  </div>\n\n  <!-- Modal Map & Image (Standard) -->\n  <div id=\"map-picker-modal\">\n    <div class=\"search-box-wrapper\">\n      <div class=\"search-input-group\">\n        <svg class=\"icon-search\" viewBox=\"0 0 24 24\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"M21 21l-4.3-4.3\"/></svg>\n        <input type=\"text\" id=\"place-search\" placeholder=\"ค้นหาสถานที่...\" onkeypress=\"TransportUI.handleSearchEnter(event)\">\n        <button class=\"btn-search\" id=\"btn-search\" onclick=\"TransportUI.searchLocation()\"><svg viewBox=\"0 0 24 24\"><path d=\"M5 12h14M12 5l7 7-7 7\"/></svg></button>\n      </div>\n    </div>\n    <div id=\"picker-map\"></div>\n    <div class=\"center-pin\">\n      <svg viewBox=\"0 0 24 24\"><path d=\"M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z\"/><circle cx=\"12\" cy=\"10\" r=\"3\" fill=\"#fff\" stroke=\"none\"/></svg>\n      <div class=\"pin-shadow\"></div>\n    </div>\n    <div class=\"picker-bottom\">\n      <div class=\"picker-info\">เลื่อนแผนที่เพื่อปักหมุด<b id=\"picker-place-name\">กำลังค้นหาชื่อสถานที่...</b></div>\n      <button class=\"btn-confirm\" onclick=\"TransportUI.confirmPin()\">ยืนยันจุดนี้</button>\n      <button class=\"btn-cancel\" onclick=\"TransportUI.closeMapPicker()\">ยกเลิก</button>\n    </div>\n  </div>\n\n  <div id=\"popup-backdrop\" class=\"popup-backdrop\" onclick=\"TransportUI.closeImagePopup()\"></div>\n  <div id=\"image-popup\" class=\"image-popup-sheet\">\n    <div class=\"image-popup-header\">\n      <div class=\"drag-handle\"></div>\n      <h3>แนบภาพถ่าย<button class=\"btn-close-popup\" onclick=\"TransportUI.closeImagePopup()\"><svg viewBox=\"0 0 24 24\"><path d=\"M18 6L6 18M6 6l12 12\"/></svg></button></h3>\n    </div>\n    <div class=\"image-popup-body\">\n      <div class=\"image-upload-section\">\n        <div class=\"image-upload-title\">ภาพสิ่งของ</div>\n        <div class=\"upload-grid\">\n          <label class=\"upload-box\" id=\"box-item\">\n            <input type=\"file\" accept=\"image/jpeg,image/png,image/webp\" onchange=\"TransportUI.previewImage(this, 'box-item')\">\n            <svg viewBox=\"0 0 24 24\"><path d=\"M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z\"/><circle cx=\"12\" cy=\"13\" r=\"4\"/></svg>\n            <span>ถ่ายภาพ<br>หรืออัปโหลด</span>\n          </label>\n        </div>\n      </div>\n      <div class=\"image-upload-section\">\n        <div class=\"image-upload-title\">ภาพจุดส่ง (หน้าบ้าน/จุดสังเกต)</div>\n        <div class=\"upload-grid\">\n          <label class=\"upload-box\" id=\"box-dropoff\">\n            <input type=\"file\" accept=\"image/jpeg,image/png,image/webp\" onchange=\"TransportUI.previewImage(this, 'box-dropoff')\">\n            <svg viewBox=\"0 0 24 24\"><path d=\"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"/><polyline points=\"9 22 9 12 15 12 15 22\"/></svg>\n            <span>ถ่ายภาพ<br>หรืออัปโหลด</span>\n          </label>\n        </div>\n      </div>\n    </div>\n    <div class=\"image-popup-footer\">\n      <button class=\"btn-save-images\" onclick=\"TransportUI.saveImages()\">บันทึกภาพ</button>\n    </div>\n  </div>\n\n</div>";let host=null,pricing=null,requestKey=crypto.randomUUID(),sending=false,uploading=0,images={},imageVersions={},pins={},leafletPromise=null;
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function loadLeaflet(){if(window.L)return Promise.resolve();if(leafletPromise)return leafletPromise;const css=document.createElement('link');css.rel='stylesheet';css.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';document.head.append(css);leafletPromise=new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';s.onload=ok;s.onerror=()=>{leafletPromise=null;no(Error('map'))};document.head.append(s)});return leafletPromise}
-async function open(){if(!host){host=document.createElement('dialog');host.id='transportBooking';host.setAttribute('aria-label','เรียกรถรับส่ง');host.innerHTML=markup;document.body.append(host)}if(!host.open)host.showModal();try{if(!K.user)await K.boot();if(K.user.role!=='customer'){showToast('กรุณาใช้บัญชีลูกค้าเพื่อเรียกรถ');return}const data=await K.request('/config');pricing=data.transport;if(!pricing)throw Error('กรุณาอัปเดต server.cjs พร้อมชุดนี้');const profile=typeof cProfile!=='undefined'?cProfile:null;if(profile){host.querySelector('#transport-name').value=profile.customer_name||'';host.querySelector('#transport-phone').value=profile.phone||'';if(profile.lat!=null&&profile.lng!=null&&!pins.dropoff){pins.dropoff={lat:Number(profile.lat),lng:Number(profile.lng)};host.querySelector('#dropoff-input').value=profile.dropoff||'จุดส่งที่บันทึกไว้'}}updatePrice()}catch(e){pricing=null;showToast(e.message)}}
+
+async function open() {
+  if (!host) {
+    host = document.createElement('dialog');
+    host.id = 'transportBooking';
+    host.setAttribute('aria-label', 'เรียกรถรับส่ง');
+    host.innerHTML = markup;
+    document.body.append(host);
+  }
+
+  if (!host.open) host.showModal();
+
+  // โหลดราคาจากเซิร์ฟเวอร์ก่อน แยกจากระบบบัญชี
+  try {
+    const response = await fetch('/api/config', {
+      credentials: 'same-origin',
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      throw Error('HTTP ' + response.status);
+    }
+
+    const data = await response.json();
+    const transport = data.transport;
+
+    if (
+      !transport ||
+      !['bike_base', 'bike_ride_base', 'car_base', 'passenger_extra']
+        .every(key => Number.isFinite(Number(transport[key])))
+    ) {
+      throw Error('เซิร์ฟเวอร์ส่งข้อมูลราคามาไม่ครบ');
+    }
+
+    pricing = transport;
+    updatePrice();
+
+  } catch (e) {
+    pricing = null;
+
+    const label = host.querySelector('#price-text');
+    if (label) {
+      label.textContent = 'โหลดราคาไม่สำเร็จ';
+    }
+
+    showToast('โหลดราคาจากระบบไม่ได้: ' + e.message);
+    return;
+  }
+
+  // จัดการบัญชีแยก ไม่ล้างราคาที่โหลดสำเร็จแล้ว
+  try {
+    if (!K.user) await K.boot();
+
+    if (K.user.role !== 'customer') {
+      showToast('กรุณาใช้บัญชีลูกค้าเพื่อเรียกรถ');
+      return;
+    }
+
+    const profile =
+      typeof cProfile !== 'undefined' ? cProfile : null;
+
+    if (profile) {
+      host.querySelector('#transport-name').value =
+        profile.customer_name || '';
+
+      host.querySelector('#transport-phone').value =
+        profile.phone || '';
+
+      if (
+        profile.lat != null &&
+        profile.lng != null &&
+        !pins.dropoff
+      ) {
+        pins.dropoff = {
+          lat: Number(profile.lat),
+          lng: Number(profile.lng)
+        };
+
+        host.querySelector('#dropoff-input').value =
+          profile.dropoff || 'จุดส่งที่บันทึกไว้';
+      }
+    }
+
+  } catch (e) {
+    showToast('โหลดบัญชีลูกค้าไม่สำเร็จ: ' + e.message);
+  }
+}
 function close(){if(sending){showToast('กำลังส่งคำขอ กรุณารอสักครู่');return}host?.close()}
 let currentVehicle = 'bike';
   let currentMode = 'delivery';
