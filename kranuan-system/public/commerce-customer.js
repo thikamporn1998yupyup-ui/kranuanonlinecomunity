@@ -137,6 +137,185 @@ const deliveryOldLoad=centralLoad;centralLoad=async function(){if(centralLoading
 categoryBar=function(){const items=[['ทั้งหมด','grid'],['อาหาร','food'],['เครื่องดื่ม','drink'],['บริการ','service'],['ร้านค้า','shop'],['ตลาด','market'],['เรียกไรเดอร์','bike']];return '<nav class="c-category-nav" aria-label="หมวดหมู่">'+items.map(([label,key])=>{const active=label==='ตลาด'?view==='ตลาด':label==='เรียกไรเดอร์'?view==='ส่งของ':view==='ร้านค้า'&&category===label;return '<button class="c-category '+(active?'active':'')+'" aria-pressed="'+active+'" onclick="setCategory(\''+label+'\')"><span>'+C.icon(key)+'</span><b>'+label+'</b></button>'}).join('')+'</nav>'};
 
 
+
+/* KRANUAN — LIGHT MY ORDERS */
+(() => {
+  const previousLoad = centralLoad;
+  K.listeners.delete(previousLoad);
+
+  let lastFingerprint = '';
+
+  const style = document.createElement('style');
+  style.textContent = `
+    .kr-lite-order {
+      background: #fff;
+      border: 1px solid #eee;
+      border-radius: 16px;
+      padding: 16px;
+      margin: 12px 0;
+      cursor: pointer;
+    }
+    .kr-lite-order:focus-visible {
+      outline: 3px solid #d76f39;
+    }
+    .kr-lite-rider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-top: 1px solid #eee;
+    }
+    .kr-lite-avatar {
+      width: 48px;
+      height: 48px;
+      flex: none;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #f5e7d7;
+      display: grid;
+      place-items: center;
+    }
+    .kr-lite-chat {
+      width: 100%;
+      padding: 12px;
+      border: 0;
+      border-radius: 12px;
+      background: #d76f39;
+      color: white;
+      font-weight: 700;
+    }
+    .kr-lite-muted {
+      font-size: 12px;
+      color: #6d7782;
+    }
+  `;
+  document.head.appendChild(style);
+
+  orders = function() {
+    return liveOrders.map(o => {
+      const rider = o.rider;
+      const avatar = rider?.avatar_url || '';
+
+      const photo = avatar.startsWith('/api/riders/')
+        ? '<img class="kr-lite-avatar" loading="lazy" decoding="async" src="' +
+          C.esc(avatar) + '" alt="รูปไรเดอร์">'
+        : '<span class="kr-lite-avatar">🛵</span>';
+
+      const status = cStatusInfo[o.status]?.[0] || o.status;
+
+      return '<article class="kr-lite-order" tabindex="0" data-order-id="' +
+        C.esc(o.id) + '">' +
+        '<small class="kr-lite-muted">ออเดอร์ #' +
+          C.esc(String(o.id).slice(-6).toUpperCase()) + '</small>' +
+        '<h3>' + C.esc(o.shop || 'รายการสั่งซื้อ') + '</h3>' +
+        '<p>' + C.esc(o.item || 'รายการที่สั่งซื้อ') + '</p>' +
+        '<p class="kr-lite-muted">' + C.esc(status) + '</p>' +
+        '<strong>รวม ' + C.money(o.total) + '</strong>' +
+        '<div class="kr-lite-rider">' + photo +
+          '<div><b>' +
+            C.esc(rider?.name || 'กำลังรอไรเดอร์รับงาน') +
+          '</b><div class="kr-lite-muted">ไรเดอร์ที่มาส่ง</div></div>' +
+        '</div>' +
+        (o.rider_id
+          ? '<button type="button" class="kr-lite-chat" data-kr-rider-chat="' +
+            C.esc(o.id) + '">💬 แชทหาไรเดอร์</button>'
+          : '<p class="kr-lite-muted">แชทได้เมื่อไรเดอร์รับงาน</p>') +
+        '</article>';
+    }).join('') ||
+      '<p class="c-empty">ยังไม่มีรายการสั่งซื้อ</p>';
+  };
+
+  centralLoad = async function() {
+    if (view !== 'ออเดอร์ของฉัน') {
+      return previousLoad();
+    }
+
+    if (centralLoading) return;
+    centralLoading = true;
+
+    try {
+      const rows = await K.request('/orders');
+
+      if (!Array.isArray(rows)) {
+        throw Error('ข้อมูลออเดอร์ไม่ถูกต้อง');
+      }
+
+      liveOrders = rows;
+      centralReady = true;
+
+      const fingerprint = JSON.stringify(rows.map(o => [
+        o.id, o.status, o.shop, o.item, o.total,
+        o.rider_id, o.rider?.name, o.rider?.avatar_url
+      ]));
+
+      if (
+        view === 'ออเดอร์ของฉัน' &&
+        (fingerprint !== lastFingerprint ||
+         !document.getElementById('krLiteOrders'))
+      ) {
+        lastFingerprint = fingerprint;
+
+        document.getElementById('app').innerHTML =
+          categoryBar() +
+          '<h2>รายการของฉัน</h2>' +
+          '<div id="krLiteOrders">' + orders() + '</div>';
+      }
+
+    } catch (error) {
+      centralNotice(
+        'โหลดรายการไม่สำเร็จ: ' + error.message
+      );
+    } finally {
+      centralLoading = false;
+    }
+  };
+
+  K.on(centralLoad);
+
+  document.addEventListener('click', event => {
+    const chat = event.target.closest?.(
+      '[data-kr-rider-chat]'
+    );
+
+    if (chat) {
+      if (typeof window.KranuanOpenOrderChat === 'function') {
+        window.KranuanOpenOrderChat(
+          chat.dataset.krRiderChat
+        );
+      } else {
+        centralNotice(
+          'ระบบแชทยังไม่พร้อม กรุณารีเฟรชหน้า'
+        );
+      }
+      return;
+    }
+
+    const card = event.target.closest?.(
+      '.kr-lite-order[data-order-id]'
+    );
+
+    if (card) {
+      window.KranuanOrderFocus?.open(
+        card.dataset.orderId
+      );
+    }
+  });
+
+  document.addEventListener('keydown', event => {
+    if (!['Enter', ' '].includes(event.key)) return;
+
+    const card = event.target.closest?.(
+      '.kr-lite-order[data-order-id]'
+    );
+
+    if (card && event.target === card) {
+      event.preventDefault();
+      window.KranuanOrderFocus?.open(
+        card.dataset.orderId
+      );
+    }
+  });
+})();
 /* Existing "เรียกไรเดอร์ / ส่งของ" screen: courier pickup and delivery, not passenger booking. */
 let courierRequest={key:crypto.randomUUID(),draft:null,fee:null};
 function courierDraft(){return courierRequest.draft||(courierRequest.draft={customer_name:cProfile?.customer_name||'',phone:cProfile?.phone||'',pickup:'',dropoff:cProfile?.dropoff||'',description:'',note:'',lat:cProfile?.lat??'',lng:cProfile?.lng??'',pickup_lat:'',pickup_lng:''})}
