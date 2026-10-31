@@ -11,7 +11,51 @@ DB.log=async(kind,o)=>K.request('/reports',{method:'POST',body:JSON.stringify({k
 DB.getProfile=async()=>null;DB.saveProfile=async p=>{localStorage.setItem(PROF_KEY,JSON.stringify(p))};DB.photo=async(slot,data)=>data;
 actions.toggle=async()=>{const next=!online;await DB.presence(next);online=next;if(online&&window.Notification&&Notification.permission==='default')Notification.requestPermission().catch(()=>{});toast(online?'ออนไลน์ รับงานจากระบบกลางแล้ว':'ปิดรับงานแล้ว');if(online){seen=new Set();detect()}};
 actions.picked=async id=>{await DB.patch(id,{status:'picked'});toast(jobs.find(j=>j.id===id)?.type==='ride'?'รับผู้โดยสารแล้ว เริ่มเดินทาง':'รับของแล้ว กำลังจัดส่ง')};
-actions.delivered=async id=>{await DB.patch(id,{status:'delivered'});window.dispatchEvent(new CustomEvent('kranuan:delivery-completed',{detail:{orderId:id}}));toast('ส่งสำเร็จ กรุณาดำเนินการชำระเงินให้ครบ')};
+
+actions.delivered = async function(id) {
+  const job = jobs.find(j => j.id === id);
+
+  if (!job) {
+    toast('ไม่พบงาน กรุณาโหลดรายการใหม่');
+    return;
+  }
+
+  // ฟังก์ชันนี้ใช้กับส่งคนและส่งของ
+  // งานอาหารมีระบบถ่ายรูปแยกอยู่แล้ว
+  if (!['ride', 'parcel', 'market'].includes(job.type)) {
+    throw Error('ประเภทงานไม่ถูกต้อง');
+  }
+
+  // ป้องกันการกดส่งสำเร็จซ้ำ
+  if (window.krTransportCompleting) return;
+  window.krTransportCompleting = true;
+
+  try {
+    // รอเซิร์ฟเวอร์บันทึกสถานะก่อน
+    await DB.patch(id, { status: 'delivered' });
+
+    toast('ส่งถึงปลายทางแล้ว กำลังเปิดหน้าชำระเงิน');
+
+    window.dispatchEvent(
+      new CustomEvent('kranuan:delivery-completed', {
+        detail: { orderId: String(id) }
+      })
+    );
+
+    // เปิดหน้าชำระเงินโดยตรง
+    if (typeof window.KranuanOpenOrderPayment === 'function') {
+      await window.KranuanOpenOrderPayment(id);
+    } else {
+      toast('บันทึกส่งสำเร็จแล้ว กรุณาเปิดเมนูชำระเงิน');
+    }
+
+    await riderSync();
+  } catch (error) {
+    toast('ดำเนินการไม่สำเร็จ: ' + error.message);
+  } finally {
+    window.krTransportCompleting = false;
+  }
+};
 actions.doCancel=async()=>{sh.msg='งานที่รับแล้วต้องให้ผู้ดูแลช่วยยกเลิก กรุณาติดต่อฝ่ายดูแลผ่านเมนูร้องเรียน';};
 actions.sendSos=async()=>{await DB.log('sos',{lat:pos?.lat,lng:pos?.lng,detail:'ไรเดอร์กด SOS'});sh.msg='บันทึกในหน้าเรื่องแจ้งของผู้ดูแลแล้ว ยังไม่โทรหรือแจ้งหน่วยฉุกเฉินอัตโนมัติ โทรขอความช่วยเหลือได้ทันที'};
 
