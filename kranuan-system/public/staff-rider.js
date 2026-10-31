@@ -46,7 +46,45 @@ DB.saveProfile = async function(p) {
     loading?.close();
   }
 };
-DB.photo=async(slot,image)=>{if(!riderConnected)throw Error('กรุณาเข้าสู่ระบบไรเดอร์');const p=await K.request('/staff/photo',{method:'POST',body:JSON.stringify({slot,image})});applyStaffProfile({...p,name:K.user.name});return slot==='avatar'?p.pending_avatar||p.avatar_url:p.photos[Number(slot.slice(1))]};
+
+DB.photo = async function(slot, image) {
+  if (!riderConnected) {
+    throw Error('กรุณาเข้าสู่ระบบไรเดอร์');
+  }
+
+  const removing = image == null;
+
+  const loading = window.KranuanRiderLoading?.start(
+    removing
+      ? 'กำลังลบรูปภาพ...'
+      : 'กำลังอัปโหลดรูปภาพ...',
+    removing
+      ? 'กำลังอัปเดตรูปโปรไฟล์ในระบบกลาง'
+      : 'กำลังส่งรูปให้ผู้ดูแลตรวจสอบ'
+  );
+
+  try {
+    const result = await K.request('/staff/photo', {
+      method: 'POST',
+      body: JSON.stringify({
+        slot,
+        image
+      })
+    });
+
+    applyStaffProfile({
+      ...result,
+      name: K.user.name
+    });
+
+    return slot === 'avatar'
+      ? result.pending_avatar || result.avatar_url
+      : result.photos[Number(slot.slice(1))];
+
+  } finally {
+    loading?.close();
+  }
+};
 actions.rmPhoto=async slot=>{await DB.photo(slot,null);toast('นำภาพออกจากระบบแล้ว')};
 const beforeStaffRiderSync=riderSync;riderSync=async function(){if(riderConnected&&!staffProfileBusy&&!staffPhotoBusy&&!staffPickerOpen&&!(tab==='settings'&&document.activeElement?.matches('input,textarea,select'))){staffProfileBusy=true;try{const before=JSON.stringify(centralStaffProfile);await DB.getProfile();if(tab==='settings'&&before!==JSON.stringify(centralStaffProfile))render()}catch(e){toast('โหลดรูปบัญชีไม่ได้: '+e.message)}finally{staffProfileBusy=false}}await beforeStaffRiderSync()};
 const beforeStaffRiderRender=render;render=function(){beforeStaffRiderRender();if(!riderConnected||!centralStaffProfile)return;const p=centralStaffProfile;document.getElementById('riderAccountStatus')?.remove();const slot=document.createElement('div');slot.id='riderAccountStatus';slot.className='card';slot.style.cssText='padding:10px!important;margin:3px 0!important';const label={none:'ยังไม่มีรูปโปรไฟล์',pending:'ส่งรูปแล้ว รอผู้ดูแลตรวจสอบ',approved:'ผู้ดูแลอนุมัติรูปแล้ว',rejected:'กรุณาเปลี่ยนรูปและส่งตรวจใหม่'}[p.photo_status];slot.innerHTML='<strong style="display:flex;align-items:center;gap:6px">'+(p.verified?'<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#2188da"/><path d="m6 12 4 4 8-8" stroke="white" stroke-width="2.5" fill="none"/></svg>บัญชีไรเดอร์รับรองแล้ว':'สถานะบัญชีไรเดอร์')+'</strong><div style="font-size:12px;color:var(--tx2);margin-top:3px">'+esc(label||'')+'</div>'+(p.review_note?'<p style="margin:3px 0;font-size:12px">เหตุผลจากผู้ดูแล: '+esc(p.review_note)+'</p>':'')+(p.photo_status==='pending'?'<p style="font-size:11px;margin:3px 0;color:var(--tx2)">รูปที่ส่งตรวจแสดงให้คุณและผู้ดูแลเห็นเท่านั้น</p>':'');const target=document.querySelector('#screen .profhead')?.closest('.card')||document.querySelector('#screen .switch');if(target)target.insertAdjacentElement('afterend',slot)};
