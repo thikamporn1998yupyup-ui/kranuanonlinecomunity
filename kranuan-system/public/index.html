@@ -925,77 +925,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   <!-- ========================================== -->
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-  // ตั้งค่า Firebase ของคุณ
-  const firebaseConfig = {
-    apiKey: "AIzaSyChVHvlAidaeXKqhOk9ekJwLutjbWcCCbs",
-    authDomain: "kranuan-app.firebaseapp.com",
-    databaseURL: "https://kranuan-app-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "kranuan-app",
-    storageBucket: "kranuan-app.firebasestorage.app",
-    messagingSenderId: "719095302980",
-    appId: "1:719095302980:web:0e4adabe60db4a98446511",
-    measurementId: "G-XGFZLXQ3WG"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const provider = new GoogleAuthProvider();
-
-  // จัดการเมื่อกดปุ่มล็อกอิน
-  document.getElementById('googleLoginBtn').addEventListener('click', () => {
-    signInWithPopup(auth, provider).then(async (result) => {
-      const user = result.user;
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyChVHvlAidaeXKqhOk9ekJwLutjbWcCCbs",
-    authDomain: "kranuan-app.firebaseapp.com",
-    databaseURL: "https://kranuan-app-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "kranuan-app",
-    storageBucket: "kranuan-app.firebasestorage.app",
-    messagingSenderId: "719095302980",
-    appId: "1:719095302980:web:0e4adabe60db4a98446511",
-    measurementId: "G-XGFZLXQ3WG"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const provider = new GoogleAuthProvider();
-
-  document.getElementById('googleLoginBtn').addEventListener('click', () => {
-    signInWithPopup(auth, provider).then(async (result) => {
-      const user = result.user;
-      
-      try {
-        const response = await fetch('/api/auth/google', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: user.email, name: user.displayName })
-        });
-        
-        if(response.ok) {
-          alert(`ยินดีต้อนรับคุณ ${user.displayName}!`);
-          window.location.reload(); 
-        } else {
-          alert('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์');
-        }
-      } catch (error) {
-        alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
-      }
-      
-    }).catch((error) => {
-      console.error("Google Login Error:", error);
-      alert('ยกเลิกการล็อกอิน: ' + error.message);
-    });
-  });
-</script>
 <!-- ========================================== --> 
   
 <script src="/website-cms.js?v=1" defer></script>
