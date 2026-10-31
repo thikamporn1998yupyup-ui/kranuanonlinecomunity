@@ -536,56 +536,49 @@
     refreshLocation();
   }
 
-  async function refreshOrder() {
-    if (!activeId || !dialog?.open || refreshing) return;
-    refreshing = true;
+ 
+async function refreshOrder() {
+  if (!activeId || !dialog?.open || refreshing) return;
 
-    try {
+  refreshing = true;
+  const requestedId = activeId;
 
-const order = await K.request(
-  '/orders/' + encodeURIComponent(activeId)
-);
+  try {
+    const order = await K.request(
+      '/orders/' + encodeURIComponent(requestedId)
+    );
 
-      }
+    if (requestedId !== activeId || !dialog?.open) return;
 
-      const order = orders.find(
-        x => String(x.id) === String(activeId)
-      );
-
-      if (!order) {
-        const el = document.getElementById('kofMain');
-        if (el && !currentOrder) {
-          el.innerHTML = `
-            <div class="kof-card">
-              กำลังรอข้อมูลออเดอร์จากเซิร์ฟเวอร์...
-            </div>
-          `;
-        }
-        return;
-      }
-
-      currentOrder = order;
-      renderOrder(order);
-
-    } catch (error) {
-      const el = document.getElementById('kofMain');
-
-      if (el && !currentOrder) {
-        el.innerHTML = `
-          <div class="kof-card">
-            ยังโหลดออเดอร์ไม่ได้
-            <p class="kof-sub">
-              ตรวจสอบอินเทอร์เน็ตแล้วกดรีเฟรชอีกครั้ง
-            </p>
-          </div>
-        `;
-      }
-
-      console.warn('Order tracking:', error);
-    } finally {
-      refreshing = false;
+    if (!order || String(order.id) !== requestedId) {
+      throw new Error('ไม่พบข้อมูลออเดอร์ที่กำลังติดตาม');
     }
+
+    currentOrder = order;
+    renderOrder(order);
+
+  } catch (error) {
+    if (requestedId !== activeId || !dialog?.open) return;
+
+    const el = document.getElementById('kofMain');
+
+    if (el && !currentOrder) {
+      el.innerHTML = `
+        <div class="kof-card">
+          ยังโหลดสถานะออเดอร์ไม่ได้
+          <p class="kof-sub">
+            กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดรีเฟรชอีกครั้ง
+          </p>
+        </div>
+      `;
+    }
+
+    console.warn('Order tracking:', error);
+
+  } finally {
+    refreshing = false;
   }
+}
 
   async function refreshLocation() {
     if (
