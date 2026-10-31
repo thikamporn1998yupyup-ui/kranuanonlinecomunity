@@ -80,7 +80,31 @@ const clients=new Map();function emit(){for(const [res] of clients){try{res.writ
 function transaction(fn){db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result}catch(e){db.exec('ROLLBACK');throw e}}
 function addEvent(orderId,u,status,note=''){run('INSERT INTO order_events(order_id,actor_id,status,note,created_at) VALUES(?,?,?,?,?)',orderId,u.id,status,note,now())}
 const buckets=new Map();function limit(req,key,max=200){const ip=req.socket.remoteAddress;const k=ip+':'+key;let b=buckets.get(k);if(!b||b.until<Date.now()){b={n:0,until:Date.now()+60000};buckets.set(k,b)}if(++b.n>max)fail(429,'ทำรายการบ่อยเกินไป กรุณารอสักครู่')}
-function send(res,status,value){const task=saveQueue.then(async()=>{await persistState();if(!res.destroyed){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(value))}});saveQueue=task.catch(()=>{});return task}
+
+function send(res, status, value) {
+  const readOnly = ['GET', 'HEAD'].includes(
+    res.req?.method
+  );
+
+  const task = saveQueue.then(async () => {
+    // ไม่จำเป็นต้องบันทึกฐานข้อมูลซ้ำเมื่อแค่อ่าน
+    if (!readOnly) {
+      await persistState();
+    }
+
+    if (!res.destroyed) {
+      res.writeHead(status, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store'
+      });
+      res.end(JSON.stringify(value));
+    }
+  });
+
+  saveQueue = task.catch(() => {});
+  return task;
+}
+
 async function body(req){let size=0,chunks=[];for await(const chunk of req){size+=chunk.length;if(size>3500000)fail(413,'รูปหรือข้อมูลใหญ่เกินไป');chunks.push(chunk)}try{return JSON.parse(Buffer.concat(chunks).toString()||'{}')}catch{fail(400,'JSON ไม่ถูกต้อง')}}
 function checkOrigin(req){const allowed=process.env.APP_ORIGIN||'http://'+req.headers.host;const origin=req.headers.origin;if(origin&&origin!==allowed)fail(403,'Origin ไม่ถูกต้อง');if(req.headers['sec-fetch-site']==='cross-site')fail(403,'ไม่รับคำขอข้ามเว็บไซต์')}
 let importBusy=false;
