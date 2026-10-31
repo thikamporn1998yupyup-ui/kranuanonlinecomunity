@@ -10,12 +10,71 @@ const profileBadge = () =>
 const categoryBeforeRiderProfiles = categoryBar;
 
 categoryBar = function () {
-  const helmet =
-    '<img src="data:image/webp;base64,UklGRtICAABXRUJQVlA4IMYCAACwDgCdASpQAFAAPrFKoEynI6MiKPScAOAWCWMAz0lmyAf9vE27zNpVzFHywMzooJzBoW1LO7WsDR7+hbnc98PmWL244ct9mPfW4P5wN27/Q42S7xhkY3TAt0VZ8yewWXs86xdPLJz2k0CUTbpDHkW7Q9VIDIdpEnNAsm+C+AAA/vgaqv643N161m2WiNg8rQV7yumhWyQl882lhV4rMSrbSBn1N92Tn1k+DjvNZ20p4KtWNgnwAnWy8Y/LpYSAhKaXODszpGUjMcOdCdnE/OYhjNuq+bkQtdF2uWZ2zXgp0UKGZ7eDbfQCir5kVY7NP8y9+fKdMiM9Mr6wLR+4uS3/7igH3qGxEXHZJ50eSQBt2hSGW8W5lXahIo1yTlptIeKB6bRj+vNdDdvKvJnulJDtK9g9KvTQL1j7FX4t/cCS483TlobG8qGtyRtUVIG8GrprarzxRr9iasc1p+ipGdVF5s9kQxj7JzKeRl9qFZg+/ygZ63tv8Dtvy8FzlOSCrYMUqhWza+epjwOBiauNL2k3hANidaVibqLPLbyH/K53n70oenIwIMfJG82iY/NhtOzJKAln4leoMNvB256oq8anzoViC1tOdFNv8uUgkNr4udm/ThPIDx+sIaRLhOTBKbyYZp0RzwXpKqAvQ7hDZ8V9PsFRzVopqxXMz9/wPMrKjoMWNLXPyEB+rB9slmyP2mEiC9LjpJH+oLsq04QqNUJs81O2dy2Xo3wkaRuqH4dZWmqVyhtyrEmts2Xbhsn6g7rF8jCiSta5mWTUcTHG29O/ryLHZ0nr0YdL+6LfUl6gQ5IbN0PxR1abdac4fH9dOACkwbQAPnygthZcFTBvByIeLZO4U41YC3NWoqdrE5UEORNDrHYMyfg2Xeamc9Gp2wOsnZNSWzO7hdF3Ku4+YAc6eLl4gBPeJDAqWrizY0isJjQ2Y00AAA==" alt="" style="width:34px;height:34px;display:block;object-fit:contain;border-radius:8px;margin:auto">';
+ const helmet = `
+<svg
+  viewBox="0 0 64 64"
+  width="30"
+  height="30"
+  aria-hidden="true"
+  style="display:block;margin:0 auto;"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <g
+    fill="none"
+    stroke="#C86A3A"
+    stroke-width="3.2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M20 54v-4c0-7 5-13 12-15" />
+    <path d="M44 54v-4c0-7-5-13-12-15" />
+    <path d="M24 50h16" />
+    <path d="M22 22c0-10 7-16 10-16s10 6 10 16" />
+    <path d="M18 24c2-3 7-5 14-5s12 2 14 5" />
+    <path d="M19 25v8c0 6 6 11 13 11s13-5 13-11v-8" />
+    <path d="M23 28h18" />
+    <path d="M26 36h12" />
+    <path d="M29 44v6" />
+    <path d="M35 44v6" />
+    <path d="M27 13l3 3" />
+    <path d="M37 13l-3 3" />
+  </g>
+</svg>
+`;
 
-  const wheelie =
-    '<img src="data:image/webp;base64,UklGRqgCAABXRUJQVlA4IJwCAACwDgCdASpQAFAAPrFQokynJKMiJnzKaOAWCWMA0yIA4kKy23A592yVf92/D6ct8GUsYz4gNIFNK8fv0v6NJMZD68BLCmF5Gzeu34zZGlYq+X2+u4iXHBcoXtaw9e5CCNbZARa7zohBW5BriG0kKWpkCvk5JjE/mvgmmXL4PgAA/vdrrlGSKc4rWc1wBEGtsU0z9nT4iYG30VjjjsTnxYyDzfrudDh1G34x+vfWRPW2v8MZexm+gN4T+87up4GUfTjBPx+nXgvPU3ob8Z7gYrZXHEWdmrYq5MTYuVGQB157Sav89/X4AZCu7Yr/mhykJmt5TyTV7BwCeGLIkfNRP1QavfNnZ0PFYDm80r/I5uy66yd6PJe5RPst2eye4rHyPs0gRNNs6x8i7YIkQEQJ6quic8tLEPSi1zRr8u3WQwqzCC/rL4nFjlRCpWqEymGnH0ir0oCWJaYpkXd2s85/kzdiS4V245GSqo9pMMgFLO2fviDF84Co+rqCbasxGslJkOsy6poDyT4BYh1PWSucN1ZeN0re4NyWK8auJVRNKYHjX3/0YIYs/MgsI2ETBMF1y1NynFmnSoqZSJTvlZJa9Z7i9WgmVpEgavfRx7y+mYuyl1koKiox5ppl/hJQxT0eEktG8k11Wxm9OtW4Qn1O+W4ktRmYMUARsApLhK4F7u8EMWSJBsoNEUvLiFxnUJQ1sfIMPuIxXhVn+zgX44GZABI+uecLP4CU2nNZjqksFJJP28av6mm8rLRf7uNNYtq+JJSXAkf0h/HDf3R7cI6CaFooqb4Mn0UOjhcuEItHhhzbf5WNfGPNx0/zV1peDOz4HJ0P8d3nTOSYM/NKSsGBMBBlHwgGM2aPCiXIEpCKKQMOeeJ9AAB8Z6lDsxAAAA==" alt="" style="width:34px;height:34px;display:block;object-fit:contain;border-radius:8px;margin:auto">';
-
+const wheelie = `
+<svg
+  viewBox="0 0 64 64"
+  width="30"
+  height="30"
+  aria-hidden="true"
+  style="display:block;margin:0 auto;"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <g
+    fill="none"
+    stroke="#C86A3A"
+    stroke-width="3.2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <circle cx="18" cy="46" r="6" />
+    <circle cx="46" cy="33" r="6" />
+    <path d="M14 52h30" />
+    <path d="M18 40l8-13h10l6 6" />
+    <path d="M36 27l7-8" />
+    <path d="M43 19l5 2" />
+    <path d="M26 27l-8-5h-8" />
+    <path d="M25 28l9 8 8-1" />
+    <path d="M34 36l-10 5" />
+    <path d="M13 23l10 6" />
+    <path d="M9 22h8" />
+    <path d="M46 27l4 6" />
+    <path d="M41 39l5-6" />
+    <path d="M18 40l0 0" />
+  </g>
+</svg>
+`;
   let html = categoryBeforeRiderProfiles();
 
   html = html.replace(
