@@ -437,6 +437,21 @@ window.KranuanOpenOrderChat = function(orderId) {
 
   open(String(orderId), 'chat');
 };
+      
+// เปิดหน้าชำระเงินตามออเดอร์โดยตรง
+window.KranuanOpenOrderPayment =
+  async function(orderId) {
+    if (!orderId) return;
+
+    const focus = document.getElementById('krOrderFocus');
+
+    if (focus?.open) {
+      window.KranuanOrderFocus?.close();
+    }
+
+    await open(String(orderId), 'payment');
+  };
+
 /* END KRANUAN — FAST ORDER CHAT */
 })();
 
