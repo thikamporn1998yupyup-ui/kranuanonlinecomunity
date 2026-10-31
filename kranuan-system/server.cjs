@@ -740,6 +740,42 @@ if (action === 'status' && method === 'POST') {
     snap.pickup_photo_at = now();
   }
 
+  // FOOD V4: ต้องมีภาพหลักฐานก่อนยืนยันส่งถึงลูกค้า
+  if (
+    o.kind === 'food' &&
+    u.role === 'rider' &&
+    next === 'done'
+  ) {
+    const proof = b.photo;
+
+    if (
+      typeof proof !== 'string' ||
+      proof.length > 700000 ||
+      !/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(proof)
+    ) {
+      fail(400, 'กรุณาถ่ายภาพยืนยันการส่งอาหาร');
+    }
+
+    const bytes = Buffer.from(
+      proof.slice('data:image/jpeg;base64,'.length),
+      'base64'
+    );
+
+    if (
+      bytes.length < 100 ||
+      bytes.length > 500000 ||
+      bytes[0] !== 255 ||
+      bytes[1] !== 216 ||
+      bytes[2] !== 255
+    ) {
+      fail(400, 'ไฟล์ภาพไม่ถูกต้อง กรุณาถ่ายใหม่');
+    }
+
+    snap.delivery_photo = proof;
+    snap.delivery_photo_at = now();
+  }
+
+
   transaction(() => {
     const result = run(
       'UPDATE orders SET status=?,snapshot=?,updated_at=? ' +
