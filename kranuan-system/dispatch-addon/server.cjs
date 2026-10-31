@@ -1,7 +1,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),promptpay=require('./promptpay.cjs');
 module.exports=function createDispatch({db,clock=()=>Date.now(),persist=async()=>{},testMode=false}){
- let persisted=null,hasProfileTable=false,hasMemberTable=false;const tables=['dispatch_payees','dispatch_messages','dispatch_payments','dispatch_notices','dispatch_food_receipts'];let queue=Promise.resolve(),dirty=false;const streams=new Map(),buckets=new Map();
+ let persisted=null,hasProfileTable=false,hasMemberTable=false;const tables=['dispatch_payees','dispatch_messages','dispatch_payments','dispatch_notices','dispatch_food_receipts','dispatch_community_messages'];let queue=Promise.resolve(),dirty=false;const streams=new Map(),buckets=new Map();
  const plain=r=>r&&typeof r==='object'?{...r}:r,get=(sql,...values)=>plain(db.prepare(sql).get(...values)),all=(sql,...values)=>db.prepare(sql).all(...values).map(plain),write=(sql,...values)=>{const result=db.prepare(sql).run(...values);if(result.changes)dirty=true;return result},now=()=>new Date(clock()).toISOString(),uid=()=>crypto.randomUUID(),digest=s=>crypto.createHash('sha256').update(s).digest('hex');
  const fail=(status,message)=>{throw Object.assign(Error(message),{status})},text=(v,max=200)=>typeof v==='string'?v.trim().slice(0,max):'';
  function snapshot(){return JSON.parse(JSON.stringify({version:1,tables:Object.fromEntries(tables.map(table=>[table,all('SELECT * FROM '+table)]))}))}
@@ -34,6 +34,57 @@ module.exports=function createDispatch({db,clock=()=>Date.now(),persist=async()=
  else if(p==='/api/dispatch/notices'&&method==='GET'){feedbackNotices(u);result=all('SELECT * FROM dispatch_notices WHERE user_id=? ORDER BY created_at DESC LIMIT 100',u.id)}
  else if(p==='/api/dispatch/notices/read'&&method==='POST'){if(Array.isArray(b.ids)){if(b.ids.length>100||b.ids.some(x=>typeof x!=='string'||x.length>100))fail(400,'รายการแจ้งเตือนไม่ถูกต้อง');if(b.ids.length)write('UPDATE dispatch_notices SET read_at=? WHERE user_id=? AND id IN ('+b.ids.map(()=>'?').join(',')+')',now(),u.id,...b.ids)}else if(b.id)write('UPDATE dispatch_notices SET read_at=? WHERE id=? AND user_id=?',now(),text(b.id,100),u.id);else write('UPDATE dispatch_notices SET read_at=? WHERE user_id=? AND read_at IS NULL',now(),u.id);result={ok:true}}
  
+else if(p==='/api/dispatch/community'&&method==='GET'){
+  const messages=all(
+    "SELECT m.id,m.sender_id,m.body,m.pinned,m.created_at,u.name,u.role FROM dispatch_community_messages m JOIN users u ON u.id=m.sender_id WHERE m.hidden=0 ORDER BY m.created_at DESC,m.rowid DESC LIMIT 100"
+  ).reverse();
+  const pinned=get(
+    "SELECT m.id,m.sender_id,m.body,m.pinned,m.created_at,u.name,u.role FROM dispatch_community_messages m JOIN users u ON u.id=m.sender_id WHERE m.hidden=0 AND m.pinned=1 ORDER BY m.created_at DESC LIMIT 1"
+  );
+  result={messages,pinned:pinned||null};
+}
+else if(p==='/api/dispatch/community'&&method==='POST'){
+  limit(u.id,'community',8);
+  if(typeof b.message!=='string'||!b.message.trim()||b.message.length>500)
+    fail(400,'ข้อความต้องมีความยาว 1–500 ตัวอักษร');
+  const message=text(b.message,500),key=text(b.client_key,100);
+  if(!key)fail(400,'ไม่มีรหัสข้อความ');
+  const previous=get(
+    'SELECT id,body FROM dispatch_community_messages WHERE sender_id=? AND client_key=?',
+    u.id,key
+  );
+  if(previous){
+    if(previous.body!==message)fail(409,'รหัสข้อความซ้ำ');
+    result={id:previous.id};
+  }else{
+    const mid=uid();
+    write(
+      'INSERT INTO dispatch_community_messages(id,sender_id,body,created_at,client_key) VALUES(?,?,?,?,?)',
+      mid,u.id,message,now(),key
+    );
+    write(
+      "DELETE FROM dispatch_community_messages WHERE id IN (SELECT id FROM dispatch_community_messages WHERE pinned=0 ORDER BY created_at DESC,rowid DESC LIMIT -1 OFFSET 300)"
+    );
+    result={id:mid};
+    status=201;
+    notify();
+  }
+}
+else if(p.match(/^\/api\/dispatch\/community\/[^/]+\/(pin|delete)$/)&&method==='POST'){
+  if(u.role!=='admin')fail(403,'เฉพาะผู้ดูแลระบบ');
+  const parts=p.split('/'),mid=parts[4],action=parts[5];
+  const found=get('SELECT id,hidden FROM dispatch_community_messages WHERE id=?',mid);
+  if(!found||found.hidden)fail(404,'ไม่พบข้อความ');
+  if(action==='pin'){
+    write('UPDATE dispatch_community_messages SET pinned=0 WHERE pinned=1');
+    write('UPDATE dispatch_community_messages SET pinned=1 WHERE id=?',mid);
+  }else{
+    write('UPDATE dispatch_community_messages SET hidden=1,pinned=0 WHERE id=?',mid);
+  }
+  result={ok:true};
+  notify();
+}
+
 else if (
   p.match(/^\/api\/dispatch\/orders\/[^/]+\/chat$/) &&
   method === 'GET'
