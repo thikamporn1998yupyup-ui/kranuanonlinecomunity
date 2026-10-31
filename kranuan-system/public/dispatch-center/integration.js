@@ -772,8 +772,12 @@ window.KranuanOpenOrderChat = function(orderId) {
 
           if (
             Number(bill.due) === 0 &&
-            bill.food_receipt?.state !== 'reported'
+            bill.food_receipt?.state !== 'reported' &&
+            bill.payments?.some(payment =>
+              payment.state === 'confirmed'
+            )
           ) {
+
             if (krCelebratedOrders.has(orderId)) return;
 
             krCelebratedOrders.add(orderId);
