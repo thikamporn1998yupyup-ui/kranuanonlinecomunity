@@ -1077,3 +1077,819 @@
   }
 })();
 
+/* KRANUAN — ADMIN MARKET ANNOUNCEMENTS */
+(() => {
+  'use strict';
+
+  if (window.__krMarketAnnouncements) return;
+  window.__krMarketAnnouncements = true;
+
+  const MARKER = /\[\[KR-MARKET:([a-zA-Z0-9_-]{6,120})\]\]/;
+  const CATS = [
+    'ของกิน/อาหารสด',
+    'ของใช้/มือสอง',
+    'ผลผลิตเกษตร',
+    'บริการ/รับจ้าง',
+    'ฝากร้าน/แจกฟรี'
+  ];
+
+  const S = {
+    user: null,
+    chat: null,
+    modal: null,
+    listings: null
+  };
+
+  const esc = value => String(value ?? '').replace(
+    /[&<>"']/g,
+    c => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    })[c]
+  );
+
+  async function api(path, body) {
+    let csrf = window.K?.csrf;
+
+    if (body && !csrf) {
+      const response = await fetch('/api/session', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}'
+      });
+
+      const session = await response.json();
+      if (!response.ok) {
+        throw Error(session.error || 'กรุณาเข้าสู่ระบบ');
+      }
+      csrf = session.csrf;
+    }
+
+    const response = await fetch('/api' + path, {
+      method: body ? 'POST' : 'GET',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(csrf ? { 'X-CSRF-Token': csrf } : {})
+      },
+      ...(body ? { body: JSON.stringify(body) } : {})
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw Error(result.error || 'เชื่อมต่อระบบไม่ได้');
+    }
+
+    return result;
+  }
+
+  function error(message) {
+    const el = S.modal?.querySelector('[data-error]');
+    if (el) el.textContent = message || '';
+  }
+
+  function styles() {
+    const style = document.createElement('style');
+
+    style.textContent = `
+      #krCommunityDialog .kc-admin-post {
+        padding:9px;
+        border:0;
+        border-radius:11px;
+        background:#293b50;
+        color:#fff;
+        font-size:12px;
+        font-weight:700;
+        white-space:nowrap;
+      }
+
+      #krMarketAttachDialog {
+        width:min(94vw,470px);
+        max-width:470px;
+        max-height:90dvh;
+        margin:auto;
+        padding:0;
+        border:0;
+        border-radius:20px;
+        background:#fff;
+        color:#263547;
+        font:14px/1.5 system-ui,Tahoma,sans-serif;
+        overflow:auto;
+      }
+
+      #krMarketAttachDialog::backdrop {
+        background:#141b26aa;
+      }
+
+      #krMarketAttachDialog * {
+        box-sizing:border-box;
+      }
+
+      #krMarketAttachDialog header {
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        padding:15px;
+        border-bottom:1px solid #eee;
+      }
+
+      #krMarketAttachDialog h3 {
+        margin:0;
+        font-size:17px;
+      }
+
+      #krMarketAttachDialog button {
+        cursor:pointer;
+      }
+
+      #krMarketAttachDialog .km-tabs {
+        display:flex;
+        gap:7px;
+        padding:12px;
+      }
+
+      #krMarketAttachDialog .km-tabs button {
+        flex:1;
+        padding:10px 5px;
+        border:1px solid #e4e7eb;
+        border-radius:10px;
+        background:#fff;
+        font-size:12px;
+        font-weight:700;
+      }
+
+      #krMarketAttachDialog .km-tabs
+      button[aria-pressed="true"] {
+        background:#d66d34;
+        color:white;
+        border-color:#d66d34;
+      }
+
+      #krMarketAttachDialog .km-content {
+        padding:0 14px 15px;
+      }
+
+      #krMarketAttachDialog label {
+        display:grid;
+        gap:5px;
+        margin:9px 0;
+        font-size:12px;
+      }
+
+      #krMarketAttachDialog input,
+      #krMarketAttachDialog select,
+      #krMarketAttachDialog textarea {
+        width:100%;
+        padding:10px;
+        border:1px solid #dce2e8;
+        border-radius:10px;
+        background:#fff;
+        color:#263547;
+        font:14px system-ui,Tahoma,sans-serif;
+      }
+
+      #krMarketAttachDialog textarea {
+        min-height:65px;
+        resize:vertical;
+      }
+
+      #krMarketAttachDialog .km-list {
+        max-height:44dvh;
+        overflow:auto;
+      }
+
+      #krMarketAttachDialog .km-item {
+        width:100%;
+        display:block;
+        margin:6px 0;
+        padding:11px;
+        border:1px solid #e8ebef;
+        border-radius:11px;
+        background:white;
+        text-align:left;
+        color:#263547;
+      }
+
+      #krMarketAttachDialog .km-item small {
+        display:block;
+        margin-top:4px;
+        color:#84909b;
+      }
+
+      #krMarketAttachDialog .km-submit {
+        width:100%;
+        margin-top:10px;
+        padding:12px;
+        border:0;
+        border-radius:11px;
+        background:#d66d34;
+        color:white;
+        font-weight:700;
+      }
+
+      #krMarketAttachDialog [data-error] {
+        padding:0 14px 12px;
+        color:#b63324;
+        font-size:12px;
+      }
+
+      #krCommunityDialog .kc-market-card {
+        margin-top:8px;
+        max-width:260px;
+        padding:9px;
+        border:1px solid #efd7c0;
+        border-radius:13px;
+        background:#fffaf4;
+        color:#263547;
+        box-shadow:0 2px 9px #0000000c;
+      }
+
+      #krCommunityDialog .kc-market-card img {
+        width:100%;
+        max-height:125px;
+        object-fit:cover;
+        border-radius:8px;
+      }
+
+      #krCommunityDialog .kc-market-card strong {
+        display:block;
+        margin-top:5px;
+        overflow-wrap:anywhere;
+      }
+
+      #krCommunityDialog .kc-market-card small {
+        display:block;
+        color:#75808b;
+        font-size:11px;
+      }
+
+      #krCommunityDialog .kc-market-card button {
+        margin-top:7px;
+        padding:8px 11px;
+        border:0;
+        border-radius:8px;
+        background:#dc743d;
+        color:#fff;
+        font-size:12px;
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
+  // Share an existing market listing into group chat
+  async function share(listing) {
+    if (S.user?.role !== 'admin') {
+      throw Error('เฉพาะแอดมินเท่านั้น');
+    }
+
+    const message =
+      '📣 ประกาศตลาด: ' +
+      String(listing.title).slice(0, 80) +
+      '\n[[KR-MARKET:' + listing.id + ']]';
+
+    await api('/dispatch/community', {
+      message,
+      client_key: crypto.randomUUID()
+    });
+  }
+
+  // Open the real listing in the market
+  async function openMarket(id) {
+    S.chat?.close();
+
+    try {
+      if (typeof window.setCategory === 'function') {
+        window.setCategory('ตลาด');
+      }
+
+      if (typeof window.marketLoad === 'function') {
+        await window.marketLoad(true);
+      }
+
+      if (typeof window.mkOpen === 'function') {
+        window.mkOpen(id);
+      } else {
+        throw Error('หน้าตลาดยังไม่พร้อม');
+      }
+    } catch (err) {
+      alert('เปิดประกาศไม่ได้: ' + err.message);
+    }
+  }
+
+  // Turn a market announcement into a card
+  async function decorateMessage(row) {
+    const bubble = row.querySelector('.kc-bubble');
+    if (!bubble || row.dataset.marketReady) return;
+
+    const content = bubble.textContent || '';
+    const match = content.match(MARKER);
+    if (!match) return;
+
+    row.dataset.marketReady = '1';
+
+    const listingId = match[1];
+
+    bubble.textContent = content.replace(
+      MARKER, ''
+    ).trim();
+
+    const card = document.createElement('div');
+    card.className = 'kc-market-card';
+    card.textContent = 'กำลังโหลดประกาศ…';
+
+    row.querySelector('.kc-message-main')?.append(card);
+
+    try {
+      const listing = await api(
+        '/market/listings/' + encodeURIComponent(listingId)
+      );
+
+      if (listing.status !== 'approved') {
+        throw Error('ประกาศไม่ได้เผยแพร่');
+      }
+
+      if (!row.isConnected) return;
+
+      card.replaceChildren();
+
+      const picture = Array.isArray(listing.images)
+        ? listing.images[0]
+        : null;
+
+      if (picture) {
+        const image = document.createElement('img');
+        image.src = picture;
+        image.loading = 'lazy';
+        image.alt = 'ภาพประกาศตลาด';
+        card.appendChild(image);
+      }
+
+      const title = document.createElement('strong');
+      title.textContent = listing.title;
+
+      const price = listing.priceType === 'free'
+        ? 'ฟรี'
+        : listing.priceType === 'ask'
+          ? 'สอบถามราคา'
+          : Number(listing.price || 0)
+              .toLocaleString('th-TH') + ' บาท';
+
+      const meta = document.createElement('small');
+      meta.textContent = [
+        listing.category,
+        price,
+        listing.area
+      ].filter(Boolean).join(' · ');
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = 'ดูประกาศในหน้าตลาด';
+
+      button.onclick = () => openMarket(listingId);
+
+      card.append(title, meta, button);
+
+    } catch (err) {
+      card.textContent =
+        'ประกาศนี้ถูกปิดหรือไม่พร้อมแสดงแล้ว';
+    }
+  }
+
+  function decorateMessages() {
+    if (!S.chat) return;
+
+    S.chat.querySelectorAll('.kc-row')
+      .forEach(decorateMessage);
+
+    // Existing server-side admin-only soft delete
+    S.chat.querySelectorAll(
+      '.kc-tools [data-action="delete"]'
+    ).forEach(button => {
+      button.textContent = '🗑 ลบข้อความ';
+    });
+  }
+
+  function adminButton() {
+    if (!S.chat || S.user?.role !== 'admin') return;
+
+    const header = S.chat.querySelector('header');
+    if (!header || header.querySelector('.kc-admin-post')) {
+      return;
+    }
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'kc-admin-post';
+    button.textContent = '📣 แนบประกาศ';
+    button.onclick = openPanel;
+
+    header.querySelector('[data-close]')?.before(button);
+  }
+
+  function makeModal() {
+    if (S.modal) return S.modal;
+
+    const modal = document.createElement('dialog');
+    modal.id = 'krMarketAttachDialog';
+
+    modal.innerHTML = `
+      <header>
+        <h3>📣 ประกาศในแชทอำเภอ</h3>
+        <button type="button" data-close>×</button>
+      </header>
+
+      <div class="km-tabs">
+        <button type="button" data-mode="existing"
+          aria-pressed="true">เลือกจากตลาด</button>
+        <button type="button" data-mode="new"
+          aria-pressed="false">สร้างประกาศใหม่</button>
+      </div>
+
+      <div class="km-content"></div>
+      <div data-error role="status"></div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.querySelector('[data-close]').onclick =
+      () => modal.close();
+
+    modal.querySelectorAll('[data-mode]').forEach(button => {
+      button.onclick = () => switchMode(button.dataset.mode);
+    });
+
+    S.modal = modal;
+    return modal;
+  }
+
+  function switchMode(mode) {
+    const modal = makeModal();
+    error('');
+
+    modal.querySelectorAll('[data-mode]').forEach(button => {
+      button.setAttribute(
+        'aria-pressed',
+        String(button.dataset.mode === mode)
+      );
+    });
+
+    const content = modal.querySelector('.km-content');
+
+    if (mode === 'existing') {
+      content.innerHTML = `
+        <label>
+          ค้นหาประกาศในตลาด
+          <input data-search
+            placeholder="ค้นชื่อสินค้า ร้านค้า หรือบริการ">
+        </label>
+        <div class="km-list">กำลังโหลดประกาศ…</div>
+      `;
+
+      content.querySelector('[data-search]').oninput =
+        showListings;
+
+      showListings();
+      return;
+    }
+
+    content.innerHTML = `
+      <form data-create>
+        <label>
+          ประเภทประกาศ
+          <select name="kind">
+            <option value="sell">ขายสินค้า / บริการ</option>
+            <option value="wanted">ตามหาสินค้า</option>
+          </select>
+        </label>
+
+        <label>
+          ชื่อประกาศ
+          <input name="title" maxlength="80" required
+            placeholder="เช่น ผักสดจากสวน">
+        </label>
+
+        <label>
+          รายละเอียด
+          <textarea name="detail" maxlength="600"
+            placeholder="รายละเอียดเพิ่มเติม"></textarea>
+        </label>
+
+        <label>
+          หมวดหมู่
+          <select name="category">
+            ${CATS.map(c =>
+              `<option>${esc(c)}</option>`
+            ).join('')}
+          </select>
+        </label>
+
+        <label>
+          พื้นที่
+          <input name="area" required maxlength="80"
+            value="อำเภอกระนวน">
+        </label>
+
+        <label>
+          รูปแบบราคา
+          <select name="priceType">
+            <option value="fixed">ระบุราคา</option>
+            <option value="ask">สอบถามราคา</option>
+            <option value="free">ฟรี</option>
+          </select>
+        </label>
+
+        <label data-price>
+          ราคา (บาท)
+          <input name="price" type="number"
+            min="0" max="10000" step=".01" value="0">
+        </label>
+
+        <label data-phone>
+          เบอร์ติดต่อเจ้าของประกาศ
+          <input name="phone" inputmode="tel"
+            placeholder="08xxxxxxxx" maxlength="15">
+        </label>
+
+        <label>
+          แนบภาพประกาศ (ไม่บังคับ)
+          <input name="photo" type="file"
+            accept="image/jpeg,image/png,image/webp">
+        </label>
+
+        <button type="submit" class="km-submit">
+          สร้างลงตลาดและแชร์ในแชท
+        </button>
+      </form>
+    `;
+
+    const form = content.querySelector('form');
+
+    const update = () => {
+      const sell = form.elements.kind.value === 'sell';
+
+      form.querySelector('[data-phone]').hidden = !sell;
+      form.elements.phone.required = sell;
+
+      form.querySelector('[data-price]').hidden =
+        form.elements.priceType.value !== 'fixed';
+    };
+
+    form.elements.kind.onchange = update;
+    form.elements.priceType.onchange = update;
+    form.onsubmit = createListing;
+
+    update();
+  }
+
+  async function showListings() {
+    const list = S.modal?.querySelector('.km-list');
+    if (!list) return;
+
+    if (!S.listings) {
+      try {
+        S.listings = await api('/market/listings');
+      } catch (err) {
+        error(err.message);
+        list.textContent = 'โหลดประกาศไม่ได้';
+        return;
+      }
+    }
+
+    if (!list.isConnected) return;
+
+    const search = S.modal
+      .querySelector('[data-search]')
+      ?.value.trim().toLowerCase() || '';
+
+    const items = S.listings
+      .filter(listing =>
+        listing.status === 'approved' &&
+        [
+          listing.title,
+          listing.category,
+          listing.area
+        ].join(' ').toLowerCase().includes(search)
+      )
+      .slice(0, 50);
+
+    list.replaceChildren();
+
+    for (const listing of items) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'km-item';
+
+      const name = document.createElement('strong');
+      name.textContent = listing.title;
+
+      const detail = document.createElement('small');
+      detail.textContent = [
+        listing.category,
+        listing.area
+      ].filter(Boolean).join(' · ');
+
+      button.append(name, detail);
+
+      button.onclick = async () => {
+        button.disabled = true;
+        error('');
+
+        try {
+          await share(listing);
+          S.modal.close();
+        } catch (err) {
+          error('แนบประกาศไม่ได้: ' + err.message);
+        } finally {
+          button.disabled = false;
+        }
+      };
+
+      list.appendChild(button);
+    }
+
+    if (!items.length) {
+      list.textContent = 'ไม่พบประกาศที่ตรงกับคำค้น';
+    }
+  }
+
+  async function preparePhoto(file) {
+    if (!file || !file.size) return null;
+
+    if (
+      !/^image\/(jpeg|png|webp)$/.test(file.type) ||
+      file.size > 10000000
+    ) {
+      throw Error('ใช้รูป JPG PNG หรือ WebP ไม่เกิน 10 MB');
+    }
+
+    const bitmap = await createImageBitmap(file);
+
+    try {
+      const canvas = document.createElement('canvas');
+      const ratio = Math.min(
+        1,
+        1000 / Math.max(bitmap.width, bitmap.height)
+      );
+
+      canvas.width = Math.max(
+        1,
+        Math.round(bitmap.width * ratio)
+      );
+
+      canvas.height = Math.max(
+        1,
+        Math.round(bitmap.height * ratio)
+      );
+
+      canvas.getContext('2d').drawImage(
+        bitmap, 0, 0, canvas.width, canvas.height
+      );
+
+      const data = canvas.toDataURL('image/jpeg', .74);
+
+      if (data.length > 450000) {
+        throw Error('รูปใหญ่เกินไป กรุณาเลือกรูปเล็กลง');
+      }
+
+      return data;
+    } finally {
+      bitmap.close();
+    }
+  }
+
+  async function createListing(event) {
+    event.preventDefault();
+
+    const form = event.currentTarget;
+    const button = form.querySelector('[type="submit"]');
+
+    button.disabled = true;
+    error('');
+
+    try {
+      const values = new FormData(form);
+
+      const kind = values.get('kind');
+      const priceType = kind === 'wanted'
+        ? 'ask'
+        : values.get('priceType');
+
+      const picture = await preparePhoto(
+        form.elements.photo.files[0]
+      );
+
+      const listing = {
+        kind,
+        title: String(values.get('title')).trim(),
+        detail: String(values.get('detail')).trim(),
+        category: values.get('category'),
+        area: String(values.get('area')).trim(),
+        priceType,
+        price: priceType === 'fixed'
+          ? Number(values.get('price'))
+          : 0,
+        phone: kind === 'sell'
+          ? String(values.get('phone')).trim()
+          : '',
+        images: picture ? [picture] : [],
+        poster_name: S.user.name,
+        acceptsDelivery: false
+      };
+
+      if (!listing.title || !listing.area) {
+        throw Error('กรุณากรอกชื่อและพื้นที่');
+      }
+
+      if (
+        kind === 'sell' &&
+        !/^\+?[0-9]{9,15}$/.test(listing.phone)
+      ) {
+        throw Error('กรุณากรอกเบอร์ติดต่อให้ถูกต้อง');
+      }
+
+      // Create the real market listing
+      const created = await api(
+        '/market/listings',
+        listing
+      );
+
+      // Then share it into community chat
+      try {
+        await share(created);
+        S.modal.close();
+      } catch (err) {
+        S.listings = null;
+
+        error(
+          'ลงตลาดสำเร็จแล้ว แต่แนบเข้าแชทไม่สำเร็จ: ' +
+          err.message +
+          ' กรุณาเลือกประกาศเดิมเพื่อแนบอีกครั้ง'
+        );
+      }
+
+    } catch (err) {
+      error(err.message);
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  function openPanel() {
+    const modal = makeModal();
+    switchMode('existing');
+
+    if (!modal.open) {
+      modal.showModal();
+    }
+  }
+
+  async function attach() {
+    const dialog = document.getElementById(
+      'krCommunityDialog'
+    );
+
+    if (!dialog || dialog === S.chat) return;
+
+    S.chat = dialog;
+
+    try {
+      const session = await api('/dispatch/session');
+      S.user = session.user;
+    } catch {
+      S.user = null;
+    }
+
+    adminButton();
+
+    const list = dialog.querySelector('.kc-list');
+
+    if (list) {
+      new MutationObserver(decorateMessages).observe(
+        list,
+        { childList: true }
+      );
+    }
+
+    decorateMessages();
+  }
+
+  styles();
+
+  new MutationObserver(() => {
+    if (!S.chat || !S.chat.isConnected) {
+      attach();
+    }
+  }).observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+
+  attach();
+})();
+
