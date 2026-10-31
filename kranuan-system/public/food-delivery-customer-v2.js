@@ -317,14 +317,35 @@
         const stage = currentStage(o);
         const was = lastStatus.get(o.id);
 
-        if (
+       
+        // เปิดหน้าชำระเมื่อเพิ่งส่งสำเร็จ
+        const changedToDone =
           initialized &&
           was &&
-          was !== stage &&
-          stage === 'done'
+          was !== 'done' &&
+          stage === 'done';
+
+        // รองรับลูกค้าที่เพิ่งเปิดแอปหลังส่งสำเร็จ
+        const finishedAt = Date.parse(o.updated_at || '');
+        const elapsed = Date.now() - finishedAt;
+
+        const recentlyCompleted =
+          !initialized &&
+          stage === 'done' &&
+          Number.isFinite(elapsed) &&
+          elapsed >= 0 &&
+          elapsed <= 120000;
+
+        const paymentKey = 'krFoodPaymentOpened:' + o.id;
+
+        if (
+          (changedToDone || recentlyCompleted) &&
+          !sessionStorage.getItem(paymentKey)
         ) {
+          sessionStorage.setItem(paymentKey, '1');
           paymentPanel(o);
         }
+
 
         lastStatus.set(o.id, stage);
       }
