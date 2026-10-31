@@ -427,15 +427,22 @@
       }
     };
 
+    
     confirm.onclick = async () => {
-      if (!photo) return;
+      if (!photo || confirm.disabled) return;
 
       confirm.disabled = true;
       cancel.disabled = true;
       input.disabled = true;
-      error.textContent = 'กำลังบันทึกหลักฐาน...';
+      error.textContent = 'กำลังยืนยันส่งสำเร็จ...';
+
+      const loading = window.KranuanRiderLoading?.start(
+        'กำลังยืนยันส่งสำเร็จ...',
+        'กำลังบันทึกรูปหลักฐานกับระบบกลาง'
+      );
 
       try {
+        // รอเซิร์ฟเวอร์บันทึกจริงก่อน
         await K.request(
           '/orders/' + encodeURIComponent(orderId) + '/status',
           {
@@ -447,33 +454,60 @@
           }
         );
 
-        d.close();
+      } catch (saveError) {
+        error.textContent =
+          'บันทึกไม่สำเร็จ: ' + saveError.message;
 
-        window.dispatchEvent(
-          new CustomEvent('kranuan:delivery-completed', {
-            detail: { orderId: String(orderId) }
-          })
-        );
-
-        toast('ส่งงานสำเร็จ กำลังเปิดหน้าชำระเงิน');
-
-        // เปิดหน้ารับเงินสำหรับไรเดอร์โดยตรง
-        if (
-          typeof window.KranuanOpenOrderPayment === 'function'
-        ) {
-          await window.KranuanOpenOrderPayment(orderId);
-        }
-
-        if (typeof riderSync === 'function') {
-          await riderSync();
-        }
-      } catch (e) {
-        error.textContent = 'เกิดข้อผิดพลาด: ' + e.message;
         confirm.disabled = false;
         cancel.disabled = false;
         input.disabled = false;
+        loading?.close();
+        return;
+      }
+
+      // ยืนยันส่งสำเร็จแล้ว
+      // ห้ามส่งข้อมูลซ้ำหากหน้าเงินมีปัญหา
+      loading?.update(
+        'บันทึกส่งสำเร็จแล้ว',
+        'กำลังเตรียมหน้าชำระเงิน'
+      );
+
+      d.close();
+
+      window.dispatchEvent(
+        new CustomEvent('kranuan:delivery-completed', {
+          detail: { orderId: String(orderId) }
+        })
+      );
+
+      // ปิด Loading ก่อนเปิดหน้าชำระเงิน
+      loading?.close();
+
+      toast('ส่งสำเร็จแล้ว กำลังเปิดหน้าชำระเงิน');
+
+      if (
+        typeof window.KranuanOpenOrderPayment === 'function'
+      ) {
+        try {
+          await window.KranuanOpenOrderPayment(orderId);
+        } catch (payError) {
+          toast(
+            'ส่งงานสำเร็จแล้ว แต่เปิดหน้าชำระเงินไม่ได้: ' +
+            payError.message
+          );
+        }
+      } else {
+        toast(
+          'ส่งงานสำเร็จแล้ว กรุณาเปิดเมนูชำระเงิน'
+        );
+      }
+
+      // โหลดรายการใหม่เบื้องหลัง
+      if (typeof riderSync === 'function') {
+        riderSync().catch(() => {});
       }
     };
+
 
     d.showModal();
 
