@@ -210,36 +210,13 @@ async function ensureCollection(id) {
     );
 
     if (!collectionUnfinished(bill, payments)) {
-
       P.ids.delete(id);
       savePending();
       return;
     }
 
-    // ยังมียอดค้าง จึงเปิดหน้ารับเงิน
-    if (S.pay?.open) S.pay.close();
-
-
-        // ใช้บัญชีที่ล็อกอินอยู่ ไม่ต้องโหลดรายการทุกออเดอร์
-        const currentUser = window.K?.user;
-
-        if (currentUser) {
-          S.user = currentUser;
-          S.csrf = window.K?.csrf || S.csrf;
-        } else if (!S.user) {
-          const session = await req('/dispatch/session');
-          S.user = session.user;
-        }
-
-        // เปิดห้องข้อมูลเฉพาะออเดอร์ที่ต้องชำระ
-        const paymentHost = dialog();
-
-        if (!paymentHost.open) {
-          paymentHost.showModal();
-        }
-
-        await openRoom(id, true);
-
+    // เปิดเฉพาะแถบรับชำระเงิน ไม่เปิดแชทด้านหลัง
+    await window.KranuanOpenOrderPayment(id);
 
   } catch (error) {
     notice(
