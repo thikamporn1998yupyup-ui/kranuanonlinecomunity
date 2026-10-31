@@ -6,17 +6,33 @@ let riderDirectory = { rows: [], index: 0, photo: 0 };
 const profileBadge = () =>
   '<span class="rp-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11"/><path d="m6 12 4 4 8-8"/></svg>บัญชีรับรองแล้ว</span>';
 
+
 const categoryBeforeRiderProfiles = categoryBar;
 
 categoryBar = function () {
-  const html = categoryBeforeRiderProfiles();
+  const helmet =
+    '<img src="data:image/webp;base64,UklGRtICAABXRUJQVlA4IMYCAACwDgCdASpQAFAAPrFKoEynI6MiKPScAOAWCWMAz0lmyAf9vE27zNpVzFHywMzooJzBoW1LO7WsDR7+hbnc98PmWL244ct9mPfW4P5wN27/Q42S7xhkY3TAt0VZ8yewWXs86xdPLJz2k0CUTbpDHkW7Q9VIDIdpEnNAsm+C+AAA/vgaqv643N161m2WiNg8rQV7yumhWyQl882lhV4rMSrbSBn1N92Tn1k+DjvNZ20p4KtWNgnwAnWy8Y/LpYSAhKaXODszpGUjMcOdCdnE/OYhjNuq+bkQtdF2uWZ2zXgp0UKGZ7eDbfQCir5kVY7NP8y9+fKdMiM9Mr6wLR+4uS3/7igH3qGxEXHZJ50eSQBt2hSGW8W5lXahIo1yTlptIeKB6bRj+vNdDdvKvJnulJDtK9g9KvTQL1j7FX4t/cCS483TlobG8qGtyRtUVIG8GrprarzxRr9iasc1p+ipGdVF5s9kQxj7JzKeRl9qFZg+/ygZ63tv8Dtvy8FzlOSCrYMUqhWza+epjwOBiauNL2k3hANidaVibqLPLbyH/K53n70oenIwIMfJG82iY/NhtOzJKAln4leoMNvB256oq8anzoViC1tOdFNv8uUgkNr4udm/ThPIDx+sIaRLhOTBKbyYZp0RzwXpKqAvQ7hDZ8V9PsFRzVopqxXMz9/wPMrKjoMWNLXPyEB+rB9slmyP2mEiC9LjpJH+oLsq04QqNUJs81O2dy2Xo3wkaRuqH4dZWmqVyhtyrEmts2Xbhsn6g7rF8jCiSta5mWTUcTHG29O/ryLHZ0nr0YdL+6LfUl6gQ5IbN0PxR1abdac4fH9dOACkwbQAPnygthZcFTBvByIeLZO4U41YC3NWoqdrE5UEORNDrHYMyfg2Xeamc9Gp2wOsnZNSWzO7hdF3Ku4+YAc6eLl4gBPeJDAqWrizY0isJjQ2Y00AAA==" alt="" style="width:34px;height:34px;display:block;object-fit:contain;border-radius:8px;margin:auto">';
+
+  const wheelie =
+    '<img src="data:image/webp;base64,UklGRqgCAABXRUJQVlA4IJwCAACwDgCdASpQAFAAPrFQokynJKMiJnzKaOAWCWMA0yIA4kKy23A592yVf92/D6ct8GUsYz4gNIFNK8fv0v6NJMZD68BLCmF5Gzeu34zZGlYq+X2+u4iXHBcoXtaw9e5CCNbZARa7zohBW5BriG0kKWpkCvk5JjE/mvgmmXL4PgAA/vdrrlGSKc4rWc1wBEGtsU0z9nT4iYG30VjjjsTnxYyDzfrudDh1G34x+vfWRPW2v8MZexm+gN4T+87up4GUfTjBPx+nXgvPU3ob8Z7gYrZXHEWdmrYq5MTYuVGQB157Sav89/X4AZCu7Yr/mhykJmt5TyTV7BwCeGLIkfNRP1QavfNnZ0PFYDm80r/I5uy66yd6PJe5RPst2eye4rHyPs0gRNNs6x8i7YIkQEQJ6quic8tLEPSi1zRr8u3WQwqzCC/rL4nFjlRCpWqEymGnH0ir0oCWJaYpkXd2s85/kzdiS4V245GSqo9pMMgFLO2fviDF84Co+rqCbasxGslJkOsy6poDyT4BYh1PWSucN1ZeN0re4NyWK8auJVRNKYHjX3/0YIYs/MgsI2ETBMF1y1NynFmnSoqZSJTvlZJa9Z7i9WgmVpEgavfRx7y+mYuyl1koKiox5ppl/hJQxT0eEktG8k11Wxm9OtW4Qn1O+W4ktRmYMUARsApLhK4F7u8EMWSJBsoNEUvLiFxnUJQ1sfIMPuIxXhVn+zgX44GZABI+uecLP4CU2nNZjqksFJJP28av6mm8rLRf7uNNYtq+JJSXAkf0h/HDf3R7cI6CaFooqb4Mn0UOjhcuEItHhhzbf5WNfGPNx0/zV1peDOz4HJ0P8d3nTOSYM/NKSsGBMBBlHwgGM2aPCiXIEpCKKQMOeeJ9AAB8Z6lDsxAAAA==" alt="" style="width:34px;height:34px;display:block;object-fit:contain;border-radius:8px;margin:auto">';
+
+  let html = categoryBeforeRiderProfiles();
+
+  html = html.replace(
+    '<span>' + C.icon('bike') +
+    '</span><b>เรียกไรเดอร์</b>',
+    '<span>' + wheelie +
+    '</span><b>เรียกไรเดอร์</b>'
+  );
+
   return html.replace(
     '</nav>',
     '<button type="button" class="c-category" onclick="openRiderDirectory()"><span>' +
-    C.icon('bike') +
+    helmet +
     '</span><b>ดูไรเดอร์</b></button></nav>'
   );
 };
+
 
 async function openRiderDirectory(id) {
   let d = document.getElementById('riderProfilesDialog');
