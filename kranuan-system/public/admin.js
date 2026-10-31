@@ -95,6 +95,39 @@ async function importOsm(b){b.disabled=true;message('กำลังค้นห
 async function importFile(b){b.disabled=true;try{const f=document.getElementById('shopImport').files[0];if(!f)throw Error('เลือกไฟล์ JSON ก่อน');if(f.size>3000000)throw Error('ไฟล์ต้องเล็กกว่า 3 MB');const data=JSON.parse(await f.text());const r=await K.request('/admin/import',{method:'POST',body:JSON.stringify(data)});message('นำเข้า '+r.added+' ร้าน ข้าม '+r.skipped+' รายการ');await staffLoad(false)}catch(e){message(e.message)}finally{b.disabled=false}}
 function exportShops(){const blob=new Blob([JSON.stringify({shops:adminShops},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='kranuan-shops.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 async function staffLogout(){await K.logout();location.reload()}
-(async()=>{try{await K.boot();if(!['admin','merchant'].includes(K.user.role)){document.getElementById('staffIdentity').textContent='กรุณาเข้าสู่ระบบด้วยบัญชีทีมงาน';document.getElementById('staffApp').innerHTML='<div class="card"><button class="kbutton primary" onclick="staffLogin()">เข้าสู่ระบบ</button></div>';return}await staffLoad(); K.on(() => {   // หน้ารับออเดอร์ของร้าน โหลดเฉพาะออเดอร์   if (     K.user.role === 'merchant' &&     staffTab === 'orders'   ) {     void merchantRefreshOrders();      return;   }    // หน้าอื่นยังคงใช้ระบบโหลดข้อมูลเดิม   staffLoad(staffTab === 'orders'); });K.connect()}catch(e){message('เชื่อมต่อไม่ได้: '+e.message)}})();
+
+(async () => {
+  try {
+    await K.boot();
+
+    if (!['admin', 'merchant'].includes(K.user.role)) {
+      document.getElementById('staffIdentity').textContent =
+        'กรุณาเข้าสู่ระบบด้วยบัญชีทีมงาน';
+
+      document.getElementById('staffApp').innerHTML =
+        '<div class="card"><button class="kbutton primary" onclick="staffLogin()">เข้าสู่ระบบ</button></div>';
+
+      return;
+    }
+
+    await staffLoad();
+
+    K.on(() => {
+      if (
+        K.user.role === 'merchant' &&
+        staffTab === 'orders'
+      ) {
+        void merchantRefreshOrders();
+        return;
+      }
+
+      staffLoad(staffTab === 'orders');
+    });
+
+    K.connect();
+  } catch (e) {
+    message('เชื่อมต่อไม่ได้: ' + e.message);
+  }
+})();
 
 function resetStaffPassword(id){const d=staffDialog('<h2>เปลี่ยนรหัสผ่าน</h2><form id="resetPasswordForm"><label>รหัสผ่านใหม่ อย่างน้อย 12 ตัว<input name="password" type="password" minlength="12" required autocomplete="new-password"></label><button class="kbutton primary">บันทึกและออกจากระบบทุกเครื่อง</button></form>');d.querySelector('form').onsubmit=async e=>{e.preventDefault();e.submitter.disabled=true;try{await K.request('/admin/users/'+id+'/password',{method:'POST',body:JSON.stringify({password:e.target.password.value})});d.close();if(id===K.user.id)location.reload();else message('เปลี่ยนรหัสผ่านแล้ว บัญชีนี้ต้องเข้าสู่ระบบใหม่')}catch(err){d.querySelector('#staffDialogError').textContent=err.message;e.submitter.disabled=false}}}
