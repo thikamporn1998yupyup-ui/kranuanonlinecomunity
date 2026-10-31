@@ -1,3 +1,27 @@
 @font-face{font-family:Dispatch;src:url('/assets/fonts/LINESeedSansTH_W_Rg.woff2')}*{box-sizing:border-box}body{margin:0;background:#f5f1e9;color:#3d342d;font:14px/1.6 Dispatch,Tahoma,sans-serif}.dc-shell{max-width:650px;min-height:100dvh;margin:auto;padding:14px 12px 25px;background:#fffcf6}.dc-shell>header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;border-bottom:1px solid #eddfcb;padding-bottom:10px;margin-bottom:10px}.dc-shell>header small{font-size:9px;letter-spacing:1px;color:#ba9066}h1{font-size:19px;margin:1px 0}h2{font-size:18px;margin:8px 0}h3{font-size:15px;margin:4px 0}a{color:#b56b35;font-size:11px}.dc-shell footer{font-size:10px;text-align:center;color:#bca78d;padding:18px 0}button{font:inherit;border:0;background:#ed6e39;color:white;padding:10px 12px;border-radius:12px;min-height:40px;cursor:pointer}button:disabled{opacity:.45;cursor:default}.secondary,[data-back]{background:#fff0d6;color:#a67a48;border:1px solid #eddbbe}input,textarea,select{font:inherit;font-size:16px;box-sizing:border-box;max-width:100%;width:100%;padding:10px;border:1px solid #e5d7c3;background:white;color:#4a3d31;border-radius:10px}textarea{resize:vertical}label{display:block;font-size:12px;margin:9px 0}label input,label textarea{margin-top:4px}#dcNav,.dc-tabs{display:flex;gap:5px;margin:8px 0;overflow:auto}#dcNav button,.dc-tabs button{flex:none;font-size:11px;background:#f4eddf;color:#a18a6b}#dcNav button.active,.dc-tabs button.active{background:#ed6e39;color:white}.muted{font-size:11px;color:#a18c73;margin:7px 0}.dc-heading,.dc-actions{display:flex;align-items:center;justify-content:space-between;gap:7px;flex-wrap:wrap}.dc-actions{justify-content:flex-start;margin:10px 0}.dc-actions label{margin:0}.dc-actions button{font-size:11px}.dc-order{display:flex;gap:9px;justify-content:space-between;align-items:center;width:100%;text-align:left;background:white;color:#6b533d;border:1px solid #e9dcc9;margin:7px 0;padding:12px}.dc-order>span{display:flex;flex-direction:column;min-width:0}.dc-order small{font-size:10px;color:#ae9579}.dc-order em{font-size:9px;white-space:nowrap;border-radius:20px;background:#fff0cf;color:#a37b43;padding:4px 6px;font-style:normal}.dc-empty{border:1px dashed #d8c5a8;padding:25px;border-radius:15px;text-align:center;color:#ad9476}.dc-info,.dc-error,.dc-warning{padding:10px;border-radius:11px;font-size:11px;margin:8px 0}.dc-info,.dc-warning{background:#fff0c9;color:#9d7939}.dc-error{background:#ffe9df;color:#ac604c}#dcMessages{height:min(390px,45dvh);overflow:auto;padding:8px;background:#f5efe5;border-radius:15px;display:flex;flex-direction:column;gap:8px}.dc-message{align-self:flex-start;max-width:88%;padding:8px 11px;border:1px solid #eee3d4;border-radius:14px 14px 14px 3px;background:white}.dc-message.mine{align-self:flex-end;background:#fff0cc;border-radius:14px 14px 3px 14px}.dc-message p{font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere;margin:3px 0}.dc-message small,.dc-message time{display:block;font-size:8px;color:#ab9277}#dcChatForm{display:flex;gap:6px;align-items:flex-end;margin:8px 0}#dcChatForm textarea{flex:1;min-width:0}#dcChatForm button{flex:none}.dc-payment{background:white;border:1px solid #eadfcf;border-radius:16px;padding:13px;margin:10px 0;overflow-wrap:anywhere}.dc-payment p{font-size:12px}.dc-state{display:inline-flex;max-width:100%;border-radius:20px;font-size:10px;padding:4px 8px;background:#f1e6d4;color:#a37e48}.dc-state.reported{background:#fff0ca;color:#aa7c2e}.dc-state.confirmed{background:#e4f4e8;color:#408453}.dc-state.void{background:#f7e5e2;color:#b8796a}.dc-qr{display:flex;align-items:center;flex-direction:column;padding:10px;background:#fff;margin:10px 0;border:1px solid #eee}.dc-qr img{width:min(300px,100%);aspect-ratio:1;object-fit:contain}.dc-qr small{font-size:10px;color:#ab8e6a}.dc-slip{display:block;max-width:100%;max-height:450px;object-fit:contain}.dc-check{display:flex;gap:8px;align-items:flex-start}.dc-check input{width:20px;flex:none;margin-top:0}.dc-notice{display:flex;flex-direction:column;text-align:left;gap:3px;background:white;color:#80664b;border:1px solid #eee1ce;width:100%;margin:6px 0;padding:12px}.dc-notice b{font-size:12px}.dc-notice span{font-size:10px;color:#a38d72}.dc-notice time{font-size:8px;color:#b7a18a}.dc-notice.unread{border-left:4px solid #ed703e;background:#fff8e9}[hidden]{display:none!important}@media(max-width:360px){.dc-shell{padding:10px}.dc-shell>header h1{font-size:17px}.dc-heading b{font-size:13px}}
 
 .dc-embedded .dc-shell>header,.dc-embedded .dc-shell>footer{display:none}.dc-embedded .dc-shell{padding-top:6px}
+
+/* Food order system messages */
+#dcMessages .dc-message.dc-system {
+  align-self: center;
+  width: min(100%, 340px);
+  max-width: 100%;
+  text-align: center;
+  padding: 13px 15px;
+  border: 1px solid #ecd9b6;
+  border-radius: 16px;
+  background: #fff9eb;
+  color: #594533;
+}
+
+#dcMessages .dc-message.dc-system small {
+  color: #bd7839;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+#dcMessages .dc-message.dc-system p {
+  font-size: 12px;
+  line-height: 1.8;
+}
