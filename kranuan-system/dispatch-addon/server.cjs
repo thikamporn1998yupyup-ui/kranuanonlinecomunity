@@ -23,7 +23,37 @@ module.exports=function createDispatch({db,clock=()=>Date.now(),persist=async()=
  function customerAvatar(o){if(!hasMemberTable)return '';const p=get("SELECT avatar_url,updated_at FROM member_profiles WHERE id=? AND verified=1 AND status='active'",o.customer_id);return p?.avatar_url?'/api/dispatch/orders/'+encodeURIComponent(o.id)+'/customer-avatar?v='+encodeURIComponent(p.updated_at||''):''}
  function riderAvatar(o){if(!hasProfileTable||!o.rider_id)return '';const p=get("SELECT avatar_url,photo_version FROM staff_profiles WHERE user_id=? AND photo_status='approved'",o.rider_id);return p?.avatar_url?'/api/dispatch/orders/'+encodeURIComponent(o.id)+'/rider-avatar?v='+encodeURIComponent(o.rider_id+':'+(p.photo_version||0)):''}
  function reply(res,status,data){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(data))}
- async function handle(req,res,url){origin(req);const u=actor(req),method=req.method,p=url.pathname;limit(u.id,'api',240);const b=['POST','PUT','PATCH'].includes(method)?await body(req):{};if(!['GET','HEAD'].includes(method)&&req.headers['x-csrf-token']!==u.csrf)fail(403,'เซสชันเปลี่ยน กรุณาโหลดหน้าใหม่');closedChatCleanup();
+ 
+/* KRANUAN — SECURE CHAT MEMBERSHIP */
+const communityRoute =
+  p === '/api/dispatch/community' ||
+  /^\/api\/dispatch\/community\/[^/]+\/(pin|delete)$/.test(p);
+
+const orderChatRoute =
+  /^\/api\/dispatch\/orders\/[^/]+\/chat$/.test(p);
+
+if (communityRoute || orderChatRoute) {
+  const staffAccount = ['admin', 'rider', 'merchant']
+    .includes(u.role);
+
+  const registeredMember = hasMemberTable && !!get(
+    `SELECT 1 AS ok
+     FROM member_profiles
+     WHERE id = ?
+       AND verified = 1
+       AND status = 'active'
+       AND setup_complete = 1`,
+    u.id
+  );
+
+  if (!staffAccount && !registeredMember) {
+    fail(
+      403,
+      'กรุณาสมัครสมาชิก เข้าสู่ระบบ Google และกรอกโปรไฟล์ให้ครบก่อนใช้งานแชท'
+    );
+  }
+}
+async function handle(req,res,url){origin(req);const u=actor(req),method=req.method,p=url.pathname;limit(u.id,'api',240);const b=['POST','PUT','PATCH'].includes(method)?await body(req):{};if(!['GET','HEAD'].includes(method)&&req.headers['x-csrf-token']!==u.csrf)fail(403,'เซสชันเปลี่ยน กรุณาโหลดหน้าใหม่');closedChatCleanup();
  if(p==='/api/dispatch/events'&&method==='GET'){res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache','Connection':'keep-alive'});res.write(': connected\n\n');streams.set(res,{id:u.id,token:u.token_hash});res.on?.('close',()=>streams.delete(res));return}
  const avatarMatch=p.match(/^\/api\/dispatch\/orders\/([^/]+)\/(rider|customer)-avatar$/);if(avatarMatch&&method==='GET'){const o=orderFor(avatarMatch[1],u);const isCustomer=avatarMatch[2]==='customer';if(isCustomer?!hasMemberTable:!hasProfileTable||!o.rider_id)fail(404,'ยังไม่มีรูปโปรไฟล์');const profile=isCustomer?get("SELECT avatar_url FROM member_profiles WHERE id=? AND verified=1 AND status='active'",o.customer_id):get("SELECT avatar_url FROM staff_profiles WHERE user_id=? AND photo_status='approved'",o.rider_id),avatar=profile?.avatar_url||'',m=avatar.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);await save();if(m){res.writeHead(200,{'Content-Type':m[1],'Cache-Control':'private, no-store'});return res.end(Buffer.from(m[2],'base64'))}if(avatar.startsWith('https://')){res.writeHead(302,{'Location':avatar,'Cache-Control':'private, no-store'});return res.end()}fail(404,'ยังไม่มีรูปไรเดอร์ที่พร้อมแสดง')}const bill=await billing.handle(u,p,method,b);if(bill){await save();if(bill.media){res.writeHead(200,{'Content-Type':bill.mime,'Cache-Control':'private, no-store'});return res.end(bill.media)}return reply(res,bill.status||200,bill.data)}let result,status=200;
  if(p==='/api/dispatch/session'&&method==='GET')result={user:{id:u.id,name:u.name,role:u.role},server_time:now()};
