@@ -609,20 +609,81 @@ function jobPhoto(j){
 function unlockAudio(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();ac.resume()}catch(e){}}
 function beep(){if(!prof.sound)return;try{unlockAudio();[880,1175,880,1175].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+i*.22;o.frequency.value=f;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.25,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+.2);o.start(t);o.stop(t+.21)});navigator.vibrate&&navigator.vibrate([300,120,300])}catch(e){}}
 
-function detect(){
- const p=pending(),ids=new Set(p.map(j=>j.id));
- queue=queue.filter(j=>j.id==='TEST'||(online&&!active()&&ids.has(j.id)));
- if(cur&&cur.id!=='TEST'&&!alertBusy&&(!online||active()||!ids.has(cur.id)))nextAlert();
- if(!seen){seen=ids;return}
- p.filter(j=>!seen.has(j.id)).forEach(j=>{seen.add(j.id);if(online&&!active())notify(j)});
+
+function detect() {
+  const p = pending();
+  const ids = new Set(p.map(j => j.id));
+
+  // ไม่สะสมงานเก่าไว้ในคิวป๊อปอัป
+  queue.length = 0;
+
+  if (
+    cur && cur.id !== 'TEST' && !alertBusy &&
+    (!online || active() || !ids.has(cur.id))
+  ) {
+    nextAlert();
+  }
+
+  // ครั้งแรกให้จดจำงานที่มีอยู่แล้ว
+  if (!seen) {
+    seen = ids;
+    return;
+  }
+
+  // จดจำออเดอร์ใหม่ทุกใบ เพื่อไม่แจ้งซ้ำ
+  const fresh = p.filter(j => !seen.has(j.id));
+
+  for (const job of fresh) {
+    seen.add(job.id);
+  }
+
+  // เด้งเฉพาะออเดอร์ใหม่ล่าสุด 1 ใบ
+  if (
+    online &&
+    !active() &&
+    !cur &&
+    !alertBusy &&
+    fresh.length
+  ) {
+    notify(fresh[0]);
+  }
 }
-function notify(j){
- if(j.id!=='TEST'&&(!online||active()))return;
- if(cur?.id===j.id||queue.some(x=>x.id===j.id))return;
- queue.push(j);if(!cur)nextAlert();beep();
- const n=$('#alertQueue');if(n)n.textContent=queue.length?'รออีก '+queue.length+' งาน':'งานใหม่สำหรับคุณ';
- try{if(document.hidden&&window.Notification&&Notification.permission==='granted')new Notification('งานใหม่ '+baht(j.fee),{body:j.shop+' → '+j.dropoff})}catch(e){}
+
+function notify(j) {
+  if (!j?.id) return;
+
+  if (
+    j.id !== 'TEST' &&
+    (
+      !online ||
+      active() ||
+      !pending().some(x => x.id === j.id)
+    )
+  ) return;
+
+  // ถ้ามีป๊อปอัปอยู่แล้ว ไม่เปิดทับหรือเข้าคิว
+  if (cur || alertBusy) return;
+
+  queue.length = 0;
+  queue.push(j);
+
+  nextAlert();
+  beep();
+
+  // แจ้งเตือนระบบเมื่อแอปอยู่เบื้องหลัง
+  try {
+    if (
+      document.hidden &&
+      window.Notification &&
+      Notification.permission === 'granted'
+    ) {
+      new Notification('งานใหม่ ' + baht(j.fee), {
+        body: j.shop + ' → ' + j.dropoff
+      });
+    }
+  } catch (e) {}
 }
+
 function lockAlert(on){
  if(on===alertLocked)return;alertLocked=on;
  if(on){alertFocus=document.activeElement;oldOverflow=document.body.style.overflow;document.body.style.overflow='hidden'}
