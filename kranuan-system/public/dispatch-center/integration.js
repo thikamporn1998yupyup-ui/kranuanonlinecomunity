@@ -165,7 +165,27 @@ async function ensureCollection(id) {
     // ยังมียอดค้าง จึงเปิดหน้ารับเงิน
     if (S.pay?.open) S.pay.close();
 
-    await open(id, 'payment');
+
+        // ใช้บัญชีที่ล็อกอินอยู่ ไม่ต้องโหลดรายการทุกออเดอร์
+        const currentUser = window.K?.user;
+
+        if (currentUser) {
+          S.user = currentUser;
+          S.csrf = window.K?.csrf || S.csrf;
+        } else if (!S.user) {
+          const session = await req('/dispatch/session');
+          S.user = session.user;
+        }
+
+        // เปิดห้องข้อมูลเฉพาะออเดอร์ที่ต้องชำระ
+        const paymentHost = dialog();
+
+        if (!paymentHost.open) {
+          paymentHost.showModal();
+        }
+
+        await openRoom(id, true);
+
 
   } catch (error) {
     notice(
