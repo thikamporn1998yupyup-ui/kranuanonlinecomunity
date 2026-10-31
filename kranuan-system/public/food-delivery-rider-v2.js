@@ -289,9 +289,13 @@
   actions.delivered = async function(orderId) {
     const job = jobs.find(j => j.id === orderId);
 
-    if (!job || job.type !== 'food') {
+   
+    // งานอาหารและพัสดุต้องถ่ายภาพก่อนส่งสำเร็จ
+    // งานส่งคนใช้ขั้นตอนยืนยันปลายทางแยกต่างหาก
+    if (!job || !['food', 'parcel'].includes(job.type)) {
       return originalDelivered(orderId);
     }
+
 
     if (document.getElementById('krDeliveryProofDialog')) {
       return;
@@ -353,6 +357,18 @@
     `;
 
     document.body.appendChild(d);
+
+    if (job.type === 'parcel') {
+      d.querySelector('h2').textContent =
+        '📦 ยืนยันส่งพัสดุถึงผู้รับ';
+
+      d.querySelector('h2 + p').textContent =
+        'ตรวจสอบว่าพัสดุถึงปลายทางแล้ว ' +
+        'ถ่ายภาพพัสดุเป็นหลักฐานก่อนจบงาน';
+
+      d.querySelector('#krDeliveryConfirm').textContent =
+        'ยืนยันส่งพัสดุสำเร็จ';
+    }
 
     const input = d.querySelector('#krDeliveryPhoto');
     const preview = d.querySelector('#krDeliveryPreview');
