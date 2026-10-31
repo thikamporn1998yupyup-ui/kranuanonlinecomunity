@@ -96,7 +96,58 @@ async function prepareRiderImage(file){if(!file)throw Error('กรุณาเ�
 document.addEventListener('click',e=>{if(e.target.closest('label')?.querySelector('input[data-slot]')||e.target.matches('input[data-slot]'))staffPickerOpen=true},true);
 document.addEventListener('cancel',e=>{if(e.target.matches('input[data-slot]'))staffPickerOpen=false},true);
 window.addEventListener('focus',()=>setTimeout(()=>{if(!staffPhotoBusy)staffPickerOpen=false},1200));
-document.addEventListener('change',async e=>{const input=e.target;if(!input.matches('input[type=file][data-slot]'))return;e.stopImmediatePropagation();staffPickerOpen=false;const file=input.files?.[0];if(!file)return;if(staffPhotoBusy){toast('รออัปโหลดรูปก่อนหน้าให้เสร็จก่อน');return}staffPhotoBusy=true;input.disabled=true;try{toast('กำลังย่อรูปและส่งให้ผู้ดูแลตรวจ...');const image=await prepareRiderImage(file);await DB.photo(input.dataset.slot,image);toast('อัปโหลดสำเร็จ รูปรอตรวจจากผู้ดูแล')}catch(err){toast('อัปโหลดไม่ได้: '+err.message)}finally{staffPhotoBusy=false;staffPickerOpen=false;input.disabled=false;input.value='';render()}},true);
+
+document.addEventListener('change', async e => {
+  const input = e.target;
+
+  if (!input.matches('input[type=file][data-slot]')) {
+    return;
+  }
+
+  e.stopImmediatePropagation();
+  staffPickerOpen = false;
+
+  const file = input.files?.[0];
+  if (!file) return;
+
+  if (staffPhotoBusy) {
+    toast('รออัปโหลดรูปก่อนหน้าให้เสร็จก่อน');
+    return;
+  }
+
+  staffPhotoBusy = true;
+  input.disabled = true;
+
+  // เริ่ม Loading ตั้งแต่ขั้นตอนย่อรูปบนเครื่อง
+  const preparation = window.KranuanRiderLoading?.start(
+    'กำลังเตรียมรูปภาพ...',
+    'กำลังตรวจสอบและย่อภาพก่อนอัปโหลด'
+  );
+
+  try {
+    const image = await prepareRiderImage(file);
+
+    // DB.photo จะเปลี่ยนข้อความของ Loading เดิม
+    // เป็นกำลังอัปโหลด โดยไม่เปิดหน้าต่างซ้อน
+    await DB.photo(input.dataset.slot, image);
+
+    toast('อัปโหลดสำเร็จ รูปรอตรวจจากผู้ดูแล');
+
+  } catch (err) {
+    toast('อัปโหลดไม่ได้: ' + err.message);
+
+  } finally {
+    // ปิด Loading เมื่อจบหรือเกิดข้อผิดพลาด
+    preparation?.close();
+
+    staffPhotoBusy = false;
+    staffPickerOpen = false;
+    input.disabled = false;
+    input.value = '';
+
+    render();
+  }
+}, true);
 const beforeRiderGalleryRender=render;render=function(){beforeRiderGalleryRender();if(tab!=='settings'||!centralStaffProfile)return;const p=centralStaffProfile;document.getElementById('riderPublicProfileEditor')?.remove();const panel=document.createElement('section');panel.id='riderPublicProfileEditor';panel.className='card';panel.innerHTML='<h2>โปรไฟล์ที่ลูกค้าเห็น</h2><p class="muted">เลื่อนดูรูปแบบการ์ดโปรไฟล์ เผยแพร่เฉพาะภาพที่ผู้ดูแลอนุมัติ</p><label>แนะนำตัวสั้น ๆ<textarea id="riderPublicBio" maxlength="300" rows="3" placeholder="แนะนำสไตล์การบริการของคุณ">'+esc(p.bio||'')+'</textarea></label><label>พื้นที่ให้บริการ<input id="riderServiceArea" maxlength="100" placeholder="เช่น ในเมืองกระนวน" value="'+esc(p.service_area||'')+'"></label><label style="display:flex;gap:8px;align-items:flex-start"><input id="riderPublicConsent" type="checkbox" style="width:20px;flex:none" '+(p.gallery_public?'checked':'')+'>ยินยอมเผยแพร่ชื่อ คำแนะนำตัว พื้นที่บริการ และรูปที่อนุมัติ ให้ลูกค้าดูในโปรไฟล์ไรเดอร์</label><p class="muted">ไม่เผยแพร่เบอร์โทร ที่อยู่ส่วนตัว บัญชีธนาคาร หรือผู้ติดต่อฉุกเฉิน ปิดการเผยแพร่ได้ทุกเมื่อ</p><button type="button" class="primary full" id="saveRiderPublicProfile">บันทึกโปรไฟล์และการเผยแพร่</button>';const target=document.getElementById('riderAccountStatus');if(target)target.after(panel);else document.getElementById('screen').appendChild(panel);panel.querySelector('#saveRiderPublicProfile').onclick=async e=>{e.target.disabled=true;try{const updated=await K.request('/staff/profile',{method:'POST',body:JSON.stringify({name:prof.name,bio:panel.querySelector('#riderPublicBio').value,service_area:panel.querySelector('#riderServiceArea').value,gallery_public:panel.querySelector('#riderPublicConsent').checked})});applyStaffProfile(updated);K.user.name=updated.name;toast(updated.gallery_public?'บันทึกแล้ว ภาพที่อนุมัติจะแสดงในโปรไฟล์ลูกค้า':'บันทึกแล้ว โปรไฟล์ยังไม่เผยแพร่');render()}catch(err){toast(err.message);e.target.disabled=false}};for(const g of p.gallery||[]){const slot=document.querySelector('input[data-slot="'+g.slot+'"]')?.closest('.slotw');if(slot){const state=document.createElement('small');state.style.cssText='display:block;font-size:10px;margin-top:4px;color:var(--tx2)';state.textContent=({pending:'รอตรวจ',approved:'อนุมัติแล้ว',rejected:'ให้เปลี่ยนรูป'}[g.status]||'')+(g.note?' · '+g.note:'');slot.appendChild(state)}}};
 
 actions.rmPhoto=async slot=>{await DB.photo(slot,null);toast('นำรูปออกแล้ว');render()};
