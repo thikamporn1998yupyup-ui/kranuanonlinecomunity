@@ -777,12 +777,13 @@ if (action === 'status' && method === 'POST') {
 
 
   // PARCEL V1: รองรับภาพหลักฐานรับและส่งพัสดุ
+  
   if (
     o.kind === 'parcel' &&
     u.role === 'rider' &&
-    ['picked', 'done'].includes(next) &&
-    b.photo !== undefined
+    ['picked', 'done'].includes(next)
   ) {
+
     const photo = b.photo;
 
     if (
