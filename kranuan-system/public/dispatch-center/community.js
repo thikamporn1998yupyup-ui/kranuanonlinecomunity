@@ -100,28 +100,39 @@
     if (list) list.scrollTop = list.scrollHeight;
   }
 
-  function avatar(message) {
-    const name = String(message.name || 'สมาชิก');
-    const initial = esc(Array.from(name.trim())[0] || '?');
+  
+function avatar(message) {
+  const name = String(message.name || 'สมาชิก');
+  const initial = esc(
+    Array.from(name.trim())[0] || '?'
+  );
 
-    // รูปไรเดอร์ที่ได้รับอนุมัติและเปิดเผยสาธารณะ
-    const image = message.role === 'rider'
-      ? '/api/riders/' +
-        encodeURIComponent(message.sender_id) +
-        '/photo/avatar'
-      : '';
+  const senderId = String(message.sender_id || '');
+  const showPhoto =
+    senderId &&
+    ['customer', 'rider'].includes(message.role);
 
-    return `
-      <span class="kc-avatar">
-        <span>${initial}</span>
-        ${image ? `
-          <img src="${esc(image)}" alt=""
-            loading="lazy"
-            onerror="this.remove()">
-        ` : ''}
-      </span>
-    `;
-  }
+  const imageUrl = showPhoto
+    ? '/api/dispatch/community/avatar/' +
+      encodeURIComponent(senderId)
+    : '';
+
+  return `
+    <span class="kc-avatar">
+      <span>${initial}</span>
+      ${imageUrl ? `
+        <img
+          src="${esc(imageUrl)}"
+          alt="รูปโปรไฟล์ ${esc(name)}"
+          loading="lazy"
+          decoding="async"
+          onerror="this.remove()"
+        >
+      ` : ''}
+    </span>
+  `;
+}
+
 
   function messageContent(message, pending = false) {
     const mine = message.sender_id === S.user?.id;
