@@ -341,14 +341,20 @@
 
         const paymentKey = 'krFoodPaymentOpened:' + o.id;
 
+       
         if (
           (changedToDone || recentlyCompleted) &&
           !sessionStorage.getItem(paymentKey)
         ) {
-          sessionStorage.setItem(paymentKey, '1');
-          paymentPanel(o);
-        }
+          paymentPanel(o).then(() => {
+            const payDialog =
+              document.getElementById('dispatchPaymentDialog');
 
+            if (payDialog?.open) {
+              sessionStorage.setItem(paymentKey, '1');
+            }
+          });
+        }
 
         lastStatus.set(o.id, stage);
       }
