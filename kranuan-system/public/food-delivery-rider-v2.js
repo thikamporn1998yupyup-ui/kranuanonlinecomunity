@@ -262,9 +262,170 @@
   };
 
 
-  // ระบบส่งงานสำเร็จใช้ขั้นตอนหลักเพียงชุดเดียว
-  // ไม่เปิดป๊อปอัปสรุปยอดซ้ำ
-  // การรับเงินจัดการผ่าน dispatch-center
+
+  // FOOD V4: ถ่ายภาพก่อนยืนยันส่งถึงลูกค้า
+  const originalDelivered = actions.delivered;
+
+  actions.delivered = async function(orderId) {
+    const job = jobs.find(j => j.id === orderId);
+
+    if (!job || job.type !== 'food') {
+      return originalDelivered(orderId);
+    }
+
+    if (document.getElementById('krDeliveryProofDialog')) {
+      return;
+    }
+
+    let photo = '';
+
+    const d = document.createElement('dialog');
+    d.id = 'krDeliveryProofDialog';
+    d.style.cssText = `
+      width:min(92vw,440px);
+      max-height:85vh;
+      overflow:auto;
+      border:0;
+      border-radius:22px;
+      padding:22px;
+      background:#fffdf9;
+      color:#29251f;
+    `;
+
+    d.innerHTML = `
+      <h2>📷 ยืนยันส่งถึงลูกค้า</h2>
+      <p>ถ่ายภาพอาหารที่ส่งถึงจุดหมาย</p>
+      <p style="font-size:12px;color:#777">
+        หลีกเลี่ยงใบหน้าและข้อมูลส่วนตัวของลูกค้า
+      </p>
+
+      <input id="krDeliveryPhoto"
+        type="file"
+        accept="image/*"
+        capture="environment"
+        style="width:100%;margin:12px 0">
+
+      <img id="krDeliveryPreview"
+        alt="ภาพหลักฐานการส่ง"
+        style="display:none;width:100%;
+        max-height:280px;object-fit:contain;
+        border-radius:12px;margin-bottom:12px">
+
+      <p id="krDeliveryError"
+        role="status" style="color:#b43a32"></p>
+
+      <button id="krDeliveryConfirm"
+        type="button" disabled
+        style="width:100%;padding:15px;
+        border:0;border-radius:12px;
+        background:#e96531;color:#fff;
+        font-weight:800">
+        ยืนยันส่งงานสำเร็จ
+      </button>
+
+      <button id="krDeliveryCancel"
+        type="button"
+        style="width:100%;padding:13px;
+        border:0;border-radius:12px;
+        margin-top:10px;background:#eee">
+        ยกเลิก
+      </button>
+    `;
+
+    document.body.appendChild(d);
+
+    const input = d.querySelector('#krDeliveryPhoto');
+    const preview = d.querySelector('#krDeliveryPreview');
+    const confirm = d.querySelector('#krDeliveryConfirm');
+    const cancel = d.querySelector('#krDeliveryCancel');
+    const error = d.querySelector('#krDeliveryError');
+
+    d.onclose = () => d.remove();
+    cancel.onclick = () => d.close();
+
+    input.onchange = async () => {
+      photo = '';
+      confirm.disabled = true;
+      preview.style.display = 'none';
+
+      if (!input.files?.[0]) return;
+
+      try {
+        error.textContent = 'กำลังเตรียมรูปภาพ...';
+        photo = await compressPhoto(input.files[0]);
+
+        if (photo.length > 700000) {
+          throw Error('ภาพใหญ่เกินไป กรุณาถ่ายใหม่');
+        }
+
+        preview.src = photo;
+        preview.style.display = 'block';
+        confirm.disabled = false;
+        error.textContent = '';
+      } catch (e) {
+        photo = '';
+        error.textContent = e.message;
+      }
+    };
+
+    confirm.onclick = async () => {
+      if (!photo) return;
+
+      confirm.disabled = true;
+      cancel.disabled = true;
+      input.disabled = true;
+      error.textContent = 'กำลังบันทึกหลักฐาน...';
+
+      try {
+        await K.request(
+          '/orders/' + encodeURIComponent(orderId) + '/status',
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              status: 'done',
+              photo: photo
+            })
+          }
+        );
+
+        d.close();
+
+        window.dispatchEvent(
+          new CustomEvent('kranuan:delivery-completed', {
+            detail: { orderId: String(orderId) }
+          })
+        );
+
+        toast('ส่งงานสำเร็จ กำลังเปิดหน้าชำระเงิน');
+
+        // เปิดหน้ารับเงินสำหรับไรเดอร์โดยตรง
+        if (
+          typeof window.KranuanOpenOrderPayment === 'function'
+        ) {
+          await window.KranuanOpenOrderPayment(orderId);
+        }
+
+        if (typeof riderSync === 'function') {
+          await riderSync();
+        }
+      } catch (e) {
+        error.textContent = 'เกิดข้อผิดพลาด: ' + e.message;
+        confirm.disabled = false;
+        cancel.disabled = false;
+        input.disabled = false;
+      }
+    };
+
+    d.showModal();
+
+    // เปิดกล้องทันทีเมื่อเบราว์เซอร์อนุญาต
+    try {
+      input.click();
+    } catch (_) {
+      // หากเปิดไม่ได้ ไรเดอร์กดเลือกกล้องเองได้
+    }
+  };
+
 
   console.log('Kranuan Food Delivery Rider V2 loaded');
 })();
