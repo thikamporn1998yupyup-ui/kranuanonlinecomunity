@@ -106,41 +106,56 @@
     return d;
   }
 
-  function paymentPanel(o) {
-    const d = dialog(
-      '<h2>✅ จัดส่งสำเร็จ</h2>' +
-      '<p>ออเดอร์ <b>#' +
-      esc(o.short_code || o.id.slice(0, 8)) +
-      '</b></p>' +
-      '<p>ค่าอาหาร ' + baht(o.goods_total) +
-      '<br>ค่าจัดส่ง ' + baht(o.fee) + '</p>' +
-      '<h3>ยอดรวม ' + baht(o.total) + '</h3>' +
-      `<p style="background:#fff1d6;padding:14px;
-      border-radius:12px">
-        กรุณาตรวจจำนวนและสภาพอาหารให้ตรงกับออเดอร์
-        ก่อนรับของ แล้วชำระเงินสดหรือโอนตรงให้ผู้รับเงิน
-        ตามที่ตกลงไว้กับร้านและไรเดอร์
+ 
+  // เปิดหน้าชำระเงินจริงแทนป๊อปอัปสรุปยอดซ้ำ
+  const openingPayments = new Set();
 
-        <strong>แอปไม่ได้รับหรือยืนยันเงินแทน</strong>
-      </p>` +
-      `<button id="krViewOrderTimeline"
-        style="border:0;background:#e75d2c;
-        color:#fff;padding:12px;border-radius:12px;
-        width:100%">
-        ดูประวัติออเดอร์และรูปถ่าย
-      </button>`
-    );
+  async function paymentPanel(o) {
+    if (!o?.id || openingPayments.has(o.id)) return;
 
-    if (!d) return;
+    openingPayments.add(o.id);
 
-    d.querySelector('#krViewOrderTimeline').onclick = () => {
-      d.close();
-      openTracker(o.id);
-    };
+    try {
+      const bill = await K.request(
+        '/dispatch/orders/' +
+        encodeURIComponent(o.id) +
+        '/settlement'
+      );
+
+      // ยืนยันชำระครบแล้ว ไม่เปิดอะไรอีก
+      const due = Number(bill?.due);
+
+      if (Number.isFinite(due) &&
+          due <= 0 &&
+          bill?.food_receipt?.state !== 'reported') {
+        return;
+      }
+
+      // ปิดป๊อปอัปเก่า หากยังเปิดอยู่
+      const oldDialog =
+        document.getElementById('krFoodTrackDialog');
+
+      if (oldDialog?.open) oldDialog.close();
+
+      if (
+        typeof window.KranuanOpenOrderPayment !== 'function'
+      ) {
+        console.warn('Payment system not ready');
+        return;
+      }
+
+      await window.KranuanOpenOrderPayment(o.id);
+
+    } catch (error) {
+      console.error(
+        'Cannot open order payment:',
+        error
+      );
+    } finally {
+      openingPayments.delete(o.id);
+    }
   }
 
-  function orderLine(o) {
-    return `
       <button type="button"
         data-oid="${esc(o.id)}"
         style="width:100%;text-align:left;
