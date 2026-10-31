@@ -62,7 +62,7 @@
 
     root.innerHTML = `
       <button id="krFoodTrackBtn"
-        style="background:#df5c2b;color:white;border:0;
+         style="display:none;background:#df5c2b;color:white;border:0;
         border-radius:50px;padding:12px 18px;
         font-weight:700;box-shadow:0 6px 25px #0004">
         🛍 ติดตามออเดอร์
