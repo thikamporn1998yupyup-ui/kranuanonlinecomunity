@@ -776,6 +776,47 @@ if (action === 'status' && method === 'POST') {
   }
 
 
+  // PARCEL V1: รองรับภาพหลักฐานรับและส่งพัสดุ
+  if (
+    o.kind === 'parcel' &&
+    u.role === 'rider' &&
+    ['picked', 'done'].includes(next) &&
+    b.photo !== undefined
+  ) {
+    const photo = b.photo;
+
+    if (
+      typeof photo !== 'string' ||
+      photo.length > 700000 ||
+      !/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(photo)
+    ) {
+      fail(400, 'รูปหลักฐานพัสดุไม่ถูกต้อง');
+    }
+
+    const bytes = Buffer.from(
+      photo.slice('data:image/jpeg;base64,'.length),
+      'base64'
+    );
+
+    if (
+      bytes.length < 100 ||
+      bytes.length > 500000 ||
+      bytes[0] !== 255 ||
+      bytes[1] !== 216 ||
+      bytes[2] !== 255
+    ) {
+      fail(400, 'กรุณาถ่ายรูป JPEG ใหม่');
+    }
+
+    if (next === 'picked') {
+      snap.pickup_photo = photo;
+      snap.pickup_photo_at = now();
+    } else {
+      snap.delivery_photo = photo;
+      snap.delivery_photo_at = now();
+    }
+  }
+
   transaction(() => {
     const result = run(
       'UPDATE orders SET status=?,snapshot=?,updated_at=? ' +
