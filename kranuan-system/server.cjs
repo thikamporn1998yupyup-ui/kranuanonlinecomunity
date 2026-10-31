@@ -178,6 +178,23 @@ async function api(req,res,url){
  needUser(u);
  if(!['GET','HEAD'].includes(method)&&req.headers['x-csrf-token']!==u.csrf)fail(403,'เซสชันเปลี่ยน กรุณาโหลดหน้าใหม่');
  const b=['POST','PATCH','PUT'].includes(method)?await body(req):{};
+/* KRANUAN — VERIFIED MEMBERS ONLY */
+if (
+  u.role === 'customer' &&
+  !accounts.ready(u.id) &&
+  !['GET', 'HEAD'].includes(method) &&
+  p !== '/api/logout' &&
+  p !== '/api/login' &&
+  !p.startsWith('/api/accounts/')
+) {
+  fail(
+    428,
+    accounts.verified(u.id)
+      ? 'กรุณากรอกข้อมูลโปรไฟล์ให้ครบก่อนใช้งาน'
+      : 'กรุณาสมัครสมาชิกและเข้าสู่ระบบ Google ก่อนใช้งาน'
+  );
+}
+
  // One-time customer/order test reset. Admin + CSRF + explicit server flag.
  if(p==='/api/admin/test-data-reset'&&['GET','POST'].includes(method)){
   needUser(u,['admin']);
