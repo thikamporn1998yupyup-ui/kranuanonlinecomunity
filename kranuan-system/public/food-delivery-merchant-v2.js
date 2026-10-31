@@ -19,20 +19,22 @@
     cancelled: 'ยกเลิกออเดอร์'
   };
 
+
   const steps = {
     waiting: {
       next: 'confirmed',
-      label: '✓ ยืนยันรับออเดอร์'
+      label: 'ยืนยันออเดอร์และเรียกไรเดอร์'
     },
     confirmed: {
       next: 'preparing',
-      label: '🍳 เริ่มเตรียมอาหาร'
+      label: 'เริ่มเตรียมอาหาร'
     },
     preparing: {
-      next: 'ready',
-      label: '🛵 อาหารพร้อมส่ง แจ้งไรเดอร์'
+      next: 'food_ready',
+      label: 'อาหารพร้อมให้ไรเดอร์รับ'
     }
   };
+
 
   const originalRender = staffRender;
 
@@ -63,9 +65,12 @@
 
       const card = cards[index];
 
-      const stage = order.status === 'waiting'
-        ? (order.food_stage || 'waiting')
-        : order.status;
+      
+      const stage =
+        ['waiting', 'ready', 'assigned'].includes(order.status)
+          ? (order.food_stage || 'waiting')
+          : order.status;
+
 
       const code = order.short_code ||
         String(order.id || '').slice(0, 8).toUpperCase();
@@ -121,11 +126,13 @@
       }
 
       // เปลี่ยนปุ่มเดิมเป็นขั้นตอนรับออเดอร์
+    
       if (
         K.user.role !== 'merchant' ||
-        order.status !== 'waiting' ||
+        !['waiting', 'ready', 'assigned'].includes(order.status) ||
         K.user.shop_id !== order.shop_id
       ) return;
+
 
       const step = steps[stage];
 
