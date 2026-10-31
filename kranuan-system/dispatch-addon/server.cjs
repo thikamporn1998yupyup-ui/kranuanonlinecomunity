@@ -24,6 +24,9 @@ module.exports=function createDispatch({db,clock=()=>Date.now(),persist=async()=
  function riderAvatar(o){if(!hasProfileTable||!o.rider_id)return '';const p=get("SELECT avatar_url,photo_version FROM staff_profiles WHERE user_id=? AND photo_status='approved'",o.rider_id);return p?.avatar_url?'/api/dispatch/orders/'+encodeURIComponent(o.id)+'/rider-avatar?v='+encodeURIComponent(o.rider_id+':'+(p.photo_version||0)):''}
  function reply(res,status,data){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(data))}
  
+/* เก็บพิกัดสดในหน่วยความจำ ไม่เก็บประวัติ GPS */
+const liveRiderPositions = new Map();
+
 async function handle(req,res,url){
   origin(req);
   const u=actor(req),method=req.method,p=url.pathname;
@@ -72,7 +75,99 @@ async function handle(req,res,url){
 
 
  if(p==='/api/dispatch/events'&&method==='GET'){res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache','Connection':'keep-alive'});res.write(': connected\n\n');streams.set(res,{id:u.id,token:u.token_hash});res.on?.('close',()=>streams.delete(res));return}
- const avatarMatch=p.match(/^\/api\/dispatch\/orders\/([^/]+)\/(rider|customer)-avatar$/);if(avatarMatch&&method==='GET'){const o=orderFor(avatarMatch[1],u);const isCustomer=avatarMatch[2]==='customer';if(isCustomer?!hasMemberTable:!hasProfileTable||!o.rider_id)fail(404,'ยังไม่มีรูปโปรไฟล์');const profile=isCustomer?get("SELECT avatar_url FROM member_profiles WHERE id=? AND verified=1 AND status='active'",o.customer_id):get("SELECT avatar_url FROM staff_profiles WHERE user_id=? AND photo_status='approved'",o.rider_id),avatar=profile?.avatar_url||'',m=avatar.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);await save();if(m){res.writeHead(200,{'Content-Type':m[1],'Cache-Control':'private, no-store'});return res.end(Buffer.from(m[2],'base64'))}if(avatar.startsWith('https://')){res.writeHead(302,{'Location':avatar,'Cache-Control':'private, no-store'});return res.end()}fail(404,'ยังไม่มีรูปไรเดอร์ที่พร้อมแสดง')}const bill=await billing.handle(u,p,method,b);if(bill){await save();if(bill.media){res.writeHead(200,{'Content-Type':bill.mime,'Cache-Control':'private, no-store'});return res.end(bill.media)}return reply(res,bill.status||200,bill.data)}let result,status=200;
+ 
+/* KRANUAN — PRIVATE LIVE RIDER LOCATION */
+const locationMatch = p.match(
+  /^\/api\/dispatch\/orders\/([^/]+)\/location$/
+);
+
+if (locationMatch) {
+  if (!['GET', 'POST'].includes(method)) {
+    fail(405, 'ไม่รองรับคำสั่งนี้');
+  }
+
+  const o = orderFor(locationMatch[1], u);
+
+  const active = !!o.rider_id &&
+    ['assigned', 'picked'].includes(o.status);
+
+  // ลูกค้าดูตำแหน่งเฉพาะออเดอร์ของตัวเอง
+  if (method === 'GET') {
+    const latest = liveRiderPositions.get(o.id);
+
+    const fresh = active &&
+      latest &&
+      latest.riderId === o.rider_id &&
+      clock() - latest.time < 90000;
+
+    return reply(res, 200, fresh ? {
+      available: true,
+      lat: latest.lat,
+      lng: latest.lng,
+      accuracy: latest.accuracy,
+      updated_at: new Date(latest.time).toISOString()
+    } : {
+      available: false
+    });
+  }
+
+  // เฉพาะไรเดอร์ที่รับงานนี้เท่านั้นที่ส่ง GPS ได้
+  if (
+    u.role !== 'rider' ||
+    o.rider_id !== u.id ||
+    !active
+  ) {
+    fail(403, 'เฉพาะไรเดอร์ที่กำลังรับงานนี้');
+  }
+
+  // ไรเดอร์หยุดแชร์ตำแหน่ง
+  if (b.stop === true) {
+    liveRiderPositions.delete(o.id);
+
+    return reply(res, 200, {
+      ok: true,
+      available: false
+    });
+  }
+
+  const lat = Number(b.lat);
+  const lng = Number(b.lng);
+  const accuracy = b.accuracy == null
+    ? null : Number(b.accuracy);
+
+  if (
+    b.lat == null ||
+    b.lng == null ||
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng) ||
+    Math.abs(lat) > 90 ||
+    Math.abs(lng) > 180 ||
+    (accuracy !== null &&
+      (!Number.isFinite(accuracy) ||
+       accuracy < 0 ||
+       accuracy > 5000))
+  ) {
+    fail(400, 'พิกัด GPS ไม่ถูกต้อง');
+  }
+
+  liveRiderPositions.set(o.id, {
+    riderId: u.id,
+    lat,
+    lng,
+    accuracy,
+    time: clock()
+  });
+
+  // ล้างพิกัดเก่าที่ไม่ได้อัปเดต
+  for (const [id, point] of liveRiderPositions) {
+    if (clock() - point.time > 120000) {
+      liveRiderPositions.delete(id);
+    }
+  }
+
+  return reply(res, 200, { ok: true });
+}
+const avatarMatch=p.match(/^\/api\/dispatch\/orders\/([^/]+)\/(rider|customer)-avatar$/);if(avatarMatch&&method==='GET'){const o=orderFor(avatarMatch[1],u);const isCustomer=avatarMatch[2]==='customer';if(isCustomer?!hasMemberTable:!hasProfileTable||!o.rider_id)fail(404,'ยังไม่มีรูปโปรไฟล์');const profile=isCustomer?get("SELECT avatar_url FROM member_profiles WHERE id=? AND verified=1 AND status='active'",o.customer_id):get("SELECT avatar_url FROM staff_profiles WHERE user_id=? AND photo_status='approved'",o.rider_id),avatar=profile?.avatar_url||'',m=avatar.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);await save();if(m){res.writeHead(200,{'Content-Type':m[1],'Cache-Control':'private, no-store'});return res.end(Buffer.from(m[2],'base64'))}if(avatar.startsWith('https://')){res.writeHead(302,{'Location':avatar,'Cache-Control':'private, no-store'});return res.end()}fail(404,'ยังไม่มีรูปไรเดอร์ที่พร้อมแสดง')}const bill=await billing.handle(u,p,method,b);if(bill){await save();if(bill.media){res.writeHead(200,{'Content-Type':bill.mime,'Cache-Control':'private, no-store'});return res.end(bill.media)}return reply(res,bill.status||200,bill.data)}let result,status=200;
  if(p==='/api/dispatch/session'&&method==='GET')result={user:{id:u.id,name:u.name,role:u.role},server_time:now()};
  else if(p==='/api/dispatch/orders'&&method==='GET'){const orders=all("SELECT * FROM orders WHERE customer_id=? OR rider_id=? ORDER BY updated_at DESC LIMIT 100",u.id,u.id);result= orders.filter(o=>o.kind==='food'||chatWindow(o).open||o.status==='done'||['assigned','picked'].includes(o.status)).map(o=>({id:o.id,kind:o.kind,status:o.status,fee:o.fee_satang/100,customer_name:o.customer_name,rider_name:get('SELECT name FROM users WHERE id=?',o.rider_id)?.name||'',rider_avatar:riderAvatar(o),customer_avatar:customerAvatar(o),chat:chatWindow(o),my_role:o.rider_id===u.id?'rider':'customer',updated_at:o.updated_at,last_message:get('SELECT body,sender_id,created_at FROM dispatch_messages WHERE order_id=? ORDER BY created_at DESC,rowid DESC LIMIT 1',o.id)||null,settlement:billing.summary(o)}))}
  else if(p==='/api/dispatch/payee'&&['GET','POST'].includes(method)){if(u.role!=='rider')fail(403,'เฉพาะบัญชีไรเดอร์');if(method==='POST'){const phone=text(b.phone,30).replace(/[\s-]/g,''),name=text(b.name,100);if(!/^0\d{9}$/.test(phone)||!name)fail(400,'กรอกชื่อผู้รับเงินจริงและเบอร์ไทย 10 หลักที่ผูกพร้อมเพย์');const previous=get('SELECT * FROM dispatch_payees WHERE user_id=?',u.id);if(!previous||previous.phone!==phone||previous.name!==name){if(get("SELECT id FROM dispatch_payments WHERE rider_id=? AND state='reported'",u.id))fail(409,'มีรายการรอยืนยันเงินเข้า กรุณาตรวจรายการก่อนเปลี่ยนบัญชี');write("UPDATE dispatch_payments SET state='void' WHERE rider_id=? AND state='pending'",u.id);write("INSERT INTO dispatch_payees(user_id,phone,name,updated_at) VALUES(?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET phone=excluded.phone,name=excluded.name,state='pending',version=dispatch_payees.version+1,review_note='',reviewer_id=NULL,reviewed_at=NULL,updated_at=excluded.updated_at",u.id,phone,name,now())}notify([u.id])}result=payeeView(get('SELECT * FROM dispatch_payees WHERE user_id=?',u.id))}
