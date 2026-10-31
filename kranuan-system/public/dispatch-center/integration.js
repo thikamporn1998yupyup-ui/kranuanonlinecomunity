@@ -115,6 +115,65 @@ function decorate(){mount();document.querySelectorAll('.c-tracking-card[data-tra
 function actions(host,id){if(!host||host.querySelector('[data-dispatch-order="'+id+'"]'))return;host.querySelectorAll('[data-dispatch-order]').forEach(x=>x.remove());const row=document.createElement('div');row.className='dispatch-order-actions';row.dataset.dispatchOrder=id;for(const [tab,title,symbol]of [['chat','แชทตามงาน','chat'],['payment','ชำระ / ตรวจรับเงิน','cash']]){const b=document.createElement('button');b.type='button';b.innerHTML=icon(symbol)+'<span>'+title+'</span>';b.onclick=()=>open(id,tab);row.append(b)}host.append(row)}
 async function poll(){if(S.busy||document.hidden)return;S.busy=true;try{const known=window.K?.user;if(known&&S.user?.id!==known.id){if(S.user&&S.dialog?.open)S.dialog.close();S.user=known;S.csrf=window.K.csrf;S.known.clear();S.primed=false;S.orders=[];S.notices=[];S.keys.clear();S.eventsSource?.close();S.eventsSource=null}if(!S.user)S.user=(await req('/dispatch/session')).user;const [notices,orders]=await Promise.all([req('/dispatch/notices'),req('/dispatch/orders')]);const fresh=S.primed?notices.filter(n=>!n.read_at&&!S.known.has(n.id)):[];const wasPrimed=S.primed,previous=S.orders;S.notices=notices;S.orders=orders;if(wasPrimed){const candidate=orders.find(o=>o.my_role==='customer'&&o.status==='done'&&o.settlement?.due===0&&(previous.find(x=>x.id===o.id)?.status!=='done'||fresh.some(n=>n.order_id===o.id&&n.kind==='payment_confirmed')));if(candidate)review(candidate.id,true).catch(()=>{})}for(const n of notices)S.known.add(n.id);S.primed=true;badge();if(fresh.some(n=>inboxUnread().some(x=>x.id===n.id)))sound();renderInbox();if(S.room&&S.dialog?.open)await loadRoom();if(pendingState()){for(const n of fresh){if(n.kind==='payment_report'&&orders.some(o=>o.id===n.order_id&&o.my_role==='rider'&&o.status==='done'))P.ids.add(n.order_id)}for(const o of orders){if(o.my_role!=='rider')continue;if(o.status==='done'&&Number(o.settlement?.due)>0&&(P.ids.has(o.id)||(wasPrimed&&previous.some(x=>x.id===o.id&&x.status!=='done'))))P.ids.add(o.id);else if(o.status==='cancelled')P.ids.delete(o.id)}savePending();if(!P.opening&&!S.pay?.open&&P.ids.size)queueMicrotask(()=>ensureCollection().catch(()=>{}))}if(!S.eventsSource&&window.EventSource){S.eventsSource=new EventSource('/api/dispatch/events');S.eventsSource.addEventListener('refresh',()=>poll())}decorate()}catch(e){if(S.dialog?.open){if(S.room)roomError(e);else notice(e.message)}}finally{S.busy=false}}
 
+/* AUTO PAYMENT — RIDE & PARCEL CUSTOMER */
+const originalTransportPaymentPoll = poll;
+
+poll = async function(...args) {
+  const wasBusy = S.busy;
+  await originalTransportPaymentPoll(...args);
+
+  if (
+    wasBusy ||
+    S.busy ||
+    document.hidden ||
+    S.user?.role !== 'customer' ||
+    S.pay?.open
+  ) return;
+
+  const unpaidOrder = S.orders.find(order =>
+    order.my_role === 'customer' &&
+    ['ride', 'parcel'].includes(order.kind) &&
+    order.status === 'done' &&
+    Number(order.settlement?.due) > 0 &&
+    !S.auto.has(order.id)
+  );
+
+  if (!unpaidOrder) return;
+
+  S.auto.add(unpaidOrder.id);
+
+  try {
+    if (S.dialog?.open) {
+      if (S.room === unpaidOrder.id) {
+        await loadRoom(true);
+
+        if (
+          S.bill &&
+          Number(S.bill.due) > 0
+        ) {
+          openPayment();
+        }
+      } else {
+        await openRoom(unpaidOrder.id, true);
+      }
+    } else {
+      await open(unpaidOrder.id, 'payment');
+    }
+
+    if (!S.pay?.open) {
+      S.auto.delete(unpaidOrder.id);
+    }
+
+  } catch (error) {
+    S.auto.delete(unpaidOrder.id);
+    console.warn(
+      'เปิดหน้าชำระเงินอัตโนมัติไม่สำเร็จ:',
+      error
+    );
+  }
+};
+/* END AUTO PAYMENT */
+
 const F={seen:new Set(),busy:false,id:null,rating:5,feedback:{},payment:null,upload:'',uploading:false,token:0};
 function afterError(message){const e=document.querySelector('#dispatchReviewDialog [data-error],#dispatchTipDialog [data-error]');if(e)e.textContent=message||''}
 function afterDialog(id){let d=document.getElementById(id);if(!d){d=document.createElement('dialog');d.id=id;d.className='kranuan-aftercare';document.body.append(d);d.addEventListener('close',()=>{if(id==='dispatchTipDialog'){F.token++;F.upload='';F.uploading=false}})}return d}
