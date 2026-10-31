@@ -6,7 +6,52 @@ function activityMarkup(){const rows=myActivityRows.filter(r=>myActivityFilter==
 function bindActivity(){if(view!=='ออเดอร์ของฉัน')return;document.querySelectorAll('.activity-thumb img').forEach(img=>img.onerror=()=>{img.parentElement.innerHTML=C.icon('bag')});document.querySelectorAll('[data-activity-filter]').forEach(btn=>btn.onclick=()=>{myActivityFilter=btn.dataset.activityFilter;drawMyActivity()});document.querySelectorAll('[data-activity-id]').forEach(btn=>btn.onclick=()=>openMyActivity(btn.dataset.activityId))}
 function drawMyActivity(){if(view!=='ออเดอร์ของฉัน')return;const root=document.getElementById('app');root.innerHTML=categoryBar()+activityMarkup();bindActivity();topNav()}
 async function loadMyActivity(force=false){if(myActivityBusy||!K.user)return;myActivityBusy=true;try{const data=await K.request('/my-activity');myActivityRows=data.items;myActivityReady=true;if(view==='ออเดอร์ของฉัน')drawMyActivity();const d=document.getElementById('activityOrderDialog');if(d?.open){const frame=d.querySelector('.c-delivery-frame');if(frame){syncDeliveryFrame(frame);const o=liveOrders.find(x=>x.id===frame.dataset.order);if(o){const pill=d.querySelector('.c-state-pill');if(pill)pill.textContent=rideTrackingInfo(o)[0];const cancel=d.querySelector('[data-cancel-order]');if(cancel)cancel.hidden=!['waiting','ready'].includes(o.status)}}} }catch(e){if(view==='ออเดอร์ของฉัน')centralNotice('โหลดรายการไม่ได้: '+e.message)}finally{myActivityBusy=false}}
-async function openMyActivity(id){const row=myActivityRows.find(x=>x.id===id);if(!row)return;try{if(row.target==='order'){const order=await K.request('/orders/'+encodeURIComponent(row.source_id));const index=liveOrders.findIndex(o=>o.id===order.id);if(index<0)liveOrders.push(order);else liveOrders[index]=order;const holder=document.createElement('div');holder.innerHTML=activityBaseOrders();const card=[...holder.querySelectorAll('[data-tracking-id]')].find(x=>x.dataset.trackingId===row.source_id);if(!card)throw Error('เปิดรายละเอียดรายการไม่ได้');const d=C.dialog('activityOrderDialog','<div class="c-dialog-head"><strong>รายละเอียดออเดอร์</strong><button type="button" class="c-icon-btn" data-close aria-label="ปิดรายละเอียด">'+C.icon('close')+'</button></div>'+card.outerHTML);d.querySelector('[data-close]').onclick=()=>d.close();const frame=d.querySelector('.c-delivery-frame');if(frame)frame.onload=()=>syncDeliveryFrame(frame);staffCustomerIdentity();return}if(row.target==='market'){const listings=await K.request('/market/listings');state.listings=listings.map(l=>({...l,areaId}));go('ตลาด');mkOpen(row.source_id);return}if(row.target==='shop')await openCentralShop(row.source_id)}catch(e){centralNotice(e.message)}}
+
+async function openMyActivity(id) {
+  const row = myActivityRows.find(x => x.id === id);
+  if (!row) return;
+
+  try {
+    if (row.target === 'order') {
+      const orderId = row.source_id;
+      if (!orderId) throw new Error('ไม่พบหมายเลขออเดอร์');
+
+      if (typeof window.KranuanOrderFocus?.open !== 'function') {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = '/kranuan-order-focus.js?v=20261101';
+          script.onload = resolve;
+          script.onerror = () =>
+            reject(new Error('โหลดหน้ารายละเอียดออเดอร์ไม่สำเร็จ'));
+          document.body.appendChild(script);
+        });
+      }
+
+      if (typeof window.KranuanOrderFocus?.open !== 'function') {
+        throw new Error('ระบบรายละเอียดออเดอร์ยังไม่พร้อม');
+      }
+
+      window.KranuanOrderFocus.open(orderId);
+      return;
+    }
+
+    if (row.target === 'market') {
+      const listings = await K.request('/market/listings');
+      state.listings = listings.map(l => ({ ...l, areaId }));
+      go('ตลาด');
+      mkOpen(row.source_id);
+      return;
+    }
+
+    if (row.target === 'shop') {
+      await openCentralShop(row.source_id);
+      return;
+    }
+  } catch (error) {
+    console.error('My activity:', error);
+    centralNotice('เปิดรายละเอียดรายการไม่ได้: ' + error.message);
+  }
+}
 const activityBeforeTopNav=topNav;topNav=function(){activityBeforeTopNav();const el=document.getElementById('nav');if(!el)return;el.setAttribute('aria-label','เมนูหลัก');el.innerHTML=[['ร้านค้า','home','หน้าแรก'],['ออเดอร์ของฉัน','orders','รายการของฉัน'],['ข่าว','news','ข่าวชุมชน'],['ส่งของ','rider','เรียกไรเดอร์']].map(([v,ic,label])=>'<button type="button" class="'+(view===v?'active':'')+'" aria-current="'+(view===v?'page':'false')+'" data-view="'+v+'">'+icon(ic)+'<span>'+label+'</span></button>').join('');el.querySelectorAll('[data-view]').forEach(btn=>btn.onclick=()=>go(btn.dataset.view))};
 const catalogSegments={อาหาร:['ทั้งหมด','อาหารตามสั่ง','ก๋วยเตี๋ยว','หมูกระทะ','หม่าล่า','ส้มตำ / อีสาน','ชาบู / ปิ้งย่าง','ญี่ปุ่น / เกาหลี','ขนม / เบเกอรี่','อื่น ๆ'],เครื่องดื่ม:['ทั้งหมด','กาแฟ','ชา / ชานม','น้ำผลไม้','อื่น ๆ'],ร้านค้า:['ทั้งหมด','ของชำ / ของใช้','เสื้อผ้า','ไอที / อุปกรณ์','สุขภาพ','อื่น ๆ']};
 let chosenSegments={};
