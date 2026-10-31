@@ -66,7 +66,45 @@ function markPending(id){if(!pendingState())return;P.ids.add(id);savePending()}
 function collectionUnfinished(bill,payments=[]){return !bill||Number(bill.due)>0||bill.food_receipt?.state==='reported'||payments.some(p=>p.purpose==='tip'&&p.state==='reported')}
 function collectionLocked(){return pendingState()&&P.ids.has(S.room)&&collectionUnfinished(S.bill,S.tipPayments||[])}
 function releaseCollection(){if(pendingState()&&S.detail?.status==='done'&&S.detail.rider_id===S.user.id&&!collectionUnfinished(S.bill,S.tipPayments||[])){if(P.ids.delete(S.room))savePending()}}
-async function ensureCollection(id){if(!pendingState()||P.opening)return;if(!id)id=[...P.ids][0];if(!id)return;if(S.pay?.open&&S.room===id)return;P.opening=true;try{if(S.pay?.open)S.pay.close();await open(id,'payment')}catch(e){notice('เปิดยอดค้างไม่สำเร็จ: '+e.message)}finally{P.opening=false}}
+
+async function ensureCollection(id) {
+  if (!pendingState() || P.opening) return;
+
+  if (!id) id = [...P.ids][0];
+  if (!id) return;
+
+  if (S.pay?.open && S.room === id) return;
+
+  P.opening = true;
+
+  try {
+    // ตรวจยอดล่าสุดจากเซิร์ฟเวอร์ก่อนเปิดหน้ารับเงิน
+    const bill = await req(
+      '/dispatch/orders/' +
+      encodeURIComponent(id) +
+      '/settlement'
+    );
+
+    // ไม่มีรายการค้างเก็บหรือค้างตรวจ
+    if (!collectionUnfinished(bill, [])) {
+      P.ids.delete(id);
+      savePending();
+      return;
+    }
+
+    // ยังมียอดค้าง จึงเปิดหน้ารับเงิน
+    if (S.pay?.open) S.pay.close();
+
+    await open(id, 'payment');
+
+  } catch (error) {
+    notice(
+      'ตรวจสอบยอดค้างไม่สำเร็จ: ' + error.message
+    );
+  } finally {
+    P.opening = false;
+  }
+}
 window.addEventListener('kranuan:delivery-completed',e=>{const id=e.detail?.orderId;if(typeof id!=='string')return;if(!S.user&&window.K?.user)S.user=window.K.user;markPending(id);ensureCollection(id).catch(()=>{})});
 
 const css=document.createElement('link');css.rel='stylesheet';css.href='/dispatch-center/integration.css?v=20261030-collection';document.head.append(css);let scheduled=false;new MutationObserver(()=>{if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;decorate()})}).observe(document.body,{subtree:true,childList:true});decorate();poll();setInterval(poll,5000);window.addEventListener('pagehide',()=>S.eventsSource?.close());window.addEventListener('pageshow',()=>{if(S.eventsSource?.readyState===2)S.eventsSource=null;poll()});
