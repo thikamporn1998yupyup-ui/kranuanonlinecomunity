@@ -14,3 +14,17 @@ CREATE UNIQUE INDEX IF NOT EXISTS dispatch_one_collection ON dispatch_payments(o
 CREATE INDEX IF NOT EXISTS dispatch_message_order_time ON dispatch_messages(order_id,created_at);
 CREATE INDEX IF NOT EXISTS dispatch_payment_order_time ON dispatch_payments(order_id,created_at);
 CREATE INDEX IF NOT EXISTS dispatch_notice_user_time ON dispatch_notices(user_id,created_at);
+
+CREATE TABLE IF NOT EXISTS dispatch_community_messages (
+  id TEXT PRIMARY KEY,
+  sender_id TEXT NOT NULL,
+  body TEXT NOT NULL,
+  pinned INTEGER NOT NULL DEFAULT 0,
+  hidden INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  client_key TEXT NOT NULL,
+  UNIQUE(sender_id, client_key)
+);
+
+CREATE INDEX IF NOT EXISTS dispatch_community_time
+ON dispatch_community_messages(created_at);
