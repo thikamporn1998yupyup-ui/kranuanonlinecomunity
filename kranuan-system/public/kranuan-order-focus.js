@@ -768,9 +768,6 @@ async function refreshOrder() {
     document.getElementById('kofMain').textContent =
       'กำลังโหลดข้อมูลออเดอร์...';
 
-    document.getElementById('kofChats').textContent =
-      'กำลังโหลดข้อความ...';
-
     // Close the booking popup after a successful booking.
     const transport = document.getElementById(
       'transportBooking'
