@@ -535,6 +535,9 @@ window.KranuanOpenOrderChat = function(orderId) {
       if (!orderId) return;
 
       const id = String(orderId);
+      // จดจำงานที่ต้องตรวจรับเงิน เพื่อกลับมาทำต่อได้
+      markPending(id);
+
 
       // ปิดหน้าติดตามเดิม
       window.KranuanOrderFocus?.close();
