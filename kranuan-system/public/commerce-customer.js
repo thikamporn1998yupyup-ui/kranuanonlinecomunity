@@ -297,9 +297,46 @@ categoryBar=function(){const items=[['ทั้งหมด','grid'],['อาห
     if (card) {
       window.KranuanOrderFocus?.open(
         card.dataset.orderId
-      );
+      krOpenOrderDetail(card.dataset.orderId);
     }
   });
+
+let krOrderDetailLoad = null;
+
+async function krOpenOrderDetail(id) {
+  try {
+    if (!window.KranuanOrderFocus?.open) {
+      if (!krOrderDetailLoad) {
+        krOrderDetailLoad = new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src =
+            '/kranuan-order-focus.js?v=20261031-repair3';
+
+          script.onload = resolve;
+          script.onerror = () =>
+            reject(new Error('โหลดระบบรายละเอียดไม่สำเร็จ'));
+
+          document.body.appendChild(script);
+        }).catch(error => {
+          krOrderDetailLoad = null;
+          throw error;
+        });
+      }
+
+      await krOrderDetailLoad;
+    }
+
+    if (typeof window.KranuanOrderFocus?.open !== 'function') {
+      throw new Error('ระบบรายละเอียดออเดอร์ยังไม่พร้อม');
+    }
+
+    window.KranuanOrderFocus.open(id);
+
+  } catch (error) {
+    console.error('Order detail:', error);
+    alert('เปิดออเดอร์ไม่สำเร็จ: ' + error.message);
+  }
+}
 
   document.addEventListener('keydown', event => {
     if (!['Enter', ' '].includes(event.key)) return;
