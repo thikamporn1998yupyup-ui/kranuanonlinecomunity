@@ -414,7 +414,28 @@ const clean = {
  if(p==='/api/transport/vehicle'&&['GET','POST'].includes(method)){needUser(u,['rider']);if(method==='POST'){if(!['bike','car'].includes(b.vehicle))fail(400,'เลือกประเภทรถให้ถูกต้อง');if(get("SELECT id FROM orders WHERE rider_id=? AND status IN ('assigned','picked')",u.id))fail(409,'ส่งงานปัจจุบันให้เสร็จก่อนเปลี่ยนรถ');const r=get("SELECT id FROM reports WHERE user_id=? AND kind='transport_vehicle' ORDER BY created_at DESC LIMIT 1",u.id);if(r)run('UPDATE reports SET payload=?,created_at=? WHERE id=?',JSON.stringify({vehicle:b.vehicle}),now(),r.id);else run('INSERT INTO reports VALUES(?,?,?,?,?)',id(),u.id,'transport_vehicle',JSON.stringify({vehicle:b.vehicle}),now());emit()}return send(res,200,{vehicle:transportVehicle(u.id)})}
  if(p==='/api/presence'&&method==='POST'){needUser(u,['rider']);if(b.accepts_rides!==undefined&&typeof b.accepts_rides!=='boolean')fail(400,'สถานะรับส่งคนไม่ถูกต้อง');const online=b.online===undefined?!!u.online:b.online===true,rides=b.accepts_rides===undefined?!!u.accepts_rides:b.accepts_rides;run('UPDATE users SET online=?,accepts_rides=? WHERE id=?',online?1:0,rides?1:0,u.id);return send(res,200,{ok:true,user:publicUser(get('SELECT * FROM users WHERE id=?',u.id))})}
  if(p==='/api/reports'&&method==='POST'){run('INSERT INTO reports VALUES(?,?,?,?,?)',id(),u.id,text(b.kind,50),JSON.stringify(b).slice(0,10000),now());return send(res,201,{ok:true,message:'บันทึกเรื่องแล้ว ยังไม่มีระบบโทรหรือแจ้งเจ้าหน้าที่ภายนอก'})}
- if(p==='/api/orders'&&method==='GET')return send(res,200,visibleOrders(u).map(o=>orderView(o,u)));
+
+if (p === '/api/orders' && method === 'GET') {
+  return send(res, 200, visibleOrders(u).map(o => {
+    const v = orderView(o, u);
+
+    if (url.searchParams.get('lite') === '1') {
+      v.image = '';
+      v.insideImage = '';
+      v.pickup_photo = '';
+      v.shop_image_url = '';
+      v.product_image_url = '';
+
+      v.items = (v.items || []).map(item => ({
+        ...item,
+        image_url: ''
+      }));
+    }
+
+    return v;
+  }));
+}
+
  if(p==='/api/orders'&&method==='POST'){
  const idem=required(req.headers['idempotency-key'],'รหัสคำขอ',100),old=get('SELECT * FROM orders WHERE customer_id=? AND idempotency_key=?',u.id,idem);if(old)return send(res,200,orderView(old,u));
  needUser(u,['customer']);const name=required(b.customer_name,'ชื่อผู้รับ',100),phone=required(b.phone,'เบอร์โทร',30),dropoff=required(b.dropoff,'ที่อยู่ปลายทาง',500);if(!/^\+?[0-9]{9,15}$/.test(phone))fail(400,'เบอร์โทรไม่ถูกต้อง');
