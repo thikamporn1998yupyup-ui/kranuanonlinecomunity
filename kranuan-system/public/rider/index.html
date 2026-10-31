@@ -1404,5 +1404,207 @@ body.rmc-map-screen .topbar small{text-shadow:0 1px 2px rgba(0,0,0,.6)}
 </script>
 <!-- END KRANUAN RIDER LIVE GPS -->
 
+<script id="kranuan-rider-loading-ui">
+(() => {
+  if (window.KranuanRiderLoading) return;
+
+  const style = document.createElement('style');
+  style.id = 'krUnifiedLoadingStyle';
+  style.textContent = `
+    #krUnifiedLoading {
+      width:min(90vw,350px);
+      max-width:350px;
+      border:0;
+      padding:0;
+      background:transparent;
+      color:#fff;
+      overflow:visible;
+    }
+    #krUnifiedLoading::backdrop {
+      background:rgba(4,13,21,.72);
+      backdrop-filter:blur(5px);
+    }
+    #krUnifiedLoading .kr-load-card {
+      padding:30px 24px;
+      text-align:center;
+      border-radius:28px;
+      background:linear-gradient(150deg,#19463d,#111b29);
+      border:1px solid #83f2c266;
+      box-shadow:0 24px 70px #0009;
+      animation:krLoadIn .35s cubic-bezier(.16,1,.3,1);
+    }
+    #krUnifiedLoading svg {
+      display:block;
+      width:104px;
+      height:104px;
+      margin:0 auto 14px;
+    }
+    #krUnifiedLoading .kr-ring {
+      transform-origin:52px 52px;
+      animation:krLoadSpin 1.8s linear infinite;
+    }
+    #krUnifiedLoading .kr-pin {
+      animation:krLoadFloat 1.5s ease-in-out infinite;
+    }
+    #krUnifiedLoading h2 {
+      margin:8px 0;
+      font-size:21px;
+      color:white;
+    }
+    #krUnifiedLoading p {
+      margin:0;
+      color:#bad7cd;
+      font-size:13px;
+      line-height:1.6;
+    }
+    #krUnifiedLoading .kr-track {
+      height:4px;
+      width:75%;
+      margin:20px auto 0;
+      background:#ffffff22;
+      border-radius:8px;
+      overflow:hidden;
+    }
+    #krUnifiedLoading .kr-track i {
+      display:block;
+      width:35%;
+      height:100%;
+      background:#83f2c2;
+      border-radius:8px;
+      animation:krLoadSlide 1.5s ease-in-out infinite;
+    }
+    @keyframes krLoadSpin {
+      to { transform:rotate(360deg); }
+    }
+    @keyframes krLoadFloat {
+      50% { transform:translateY(-5px); }
+    }
+    @keyframes krLoadSlide {
+      from { transform:translateX(-110%); }
+      to { transform:translateX(360%); }
+    }
+    @keyframes krLoadIn {
+      from {
+        opacity:0;
+        transform:translateY(35px) scale(.9);
+      }
+      to {
+        opacity:1;
+        transform:none;
+      }
+    }
+    @media(prefers-reduced-motion:reduce) {
+      #krUnifiedLoading * {
+        animation:none!important;
+      }
+    }
+  `;
+  document.head.append(style);
+
+  const popup = document.createElement('dialog');
+  popup.id = 'krUnifiedLoading';
+  popup.setAttribute(
+    'aria-label',
+    'สถานะกำลังดำเนินการ'
+  );
+
+  popup.innerHTML = `
+    <div class="kr-load-card"
+         role="status"
+         aria-live="polite">
+      <svg viewBox="0 0 104 104"
+           fill="none"
+           aria-hidden="true">
+        <circle cx="52" cy="52" r="38"
+                stroke="#A8ECD5"
+                stroke-opacity=".2"
+                stroke-width="5"/>
+        <path class="kr-ring"
+              d="M52 14 A38 38 0 0 1 90 52"
+              stroke="#83F2C2"
+              stroke-width="5"
+              stroke-linecap="round"/>
+        <g class="kr-pin">
+          <path
+            d="M52 27c-12 0-21 9-21 21
+               0 14 21 33 21 33s21-19
+               21-33c0-12-9-21-21-21Z"
+            fill="#83F2C2"/>
+          <circle cx="52" cy="48" r="8"
+                  fill="#16463A"/>
+        </g>
+      </svg>
+
+      <h2 data-title>
+        กำลังดำเนินการ...
+      </h2>
+      <p data-note>
+        ระบบกำลังจัดเตรียมข้อมูล กรุณารอสักครู่
+      </p>
+      <div class="kr-track"><i></i></div>
+    </div>
+  `;
+
+  document.body.append(popup);
+
+  popup.addEventListener(
+    'cancel',
+    e => e.preventDefault()
+  );
+
+  let token = 0;
+  let timer = null;
+
+  const titleNode =
+    popup.querySelector('[data-title]');
+
+  const noteNode =
+    popup.querySelector('[data-note]');
+
+  window.KranuanRiderLoading = {
+    start(
+      title = 'กำลังดำเนินการ...',
+      note = 'กรุณารอสักครู่'
+    ) {
+      const id = ++token;
+      clearTimeout(timer);
+
+      titleNode.textContent = title;
+      noteNode.textContent = note;
+
+      // ไม่แสดง Loading หากโหลดเร็วมาก
+      if (!popup.open) {
+        timer = setTimeout(() => {
+          if (id === token && !popup.open) {
+            popup.showModal();
+          }
+        }, 220);
+      }
+
+      return {
+        update(nextTitle, nextNote) {
+          if (id !== token) return;
+
+          titleNode.textContent = nextTitle;
+          noteNode.textContent = nextNote;
+        },
+
+        close() {
+          if (id !== token) return;
+
+          ++token;
+          clearTimeout(timer);
+
+          if (popup.open) {
+            popup.close();
+          }
+        }
+      };
+    }
+  };
+})();
+</script>
+
 </body>
 </html>
+
