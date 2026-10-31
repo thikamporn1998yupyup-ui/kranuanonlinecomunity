@@ -417,6 +417,12 @@ if (!shortCode) {
   fail(503, 'ไม่สามารถออกเลขออเดอร์ได้ กรุณาลองใหม่');
 }
 
+
+const foodPaymentMethod = text(b.payment_method || 'cash', 20);
+
+if (!['cash', 'transfer'].includes(foodPaymentMethod)) {
+  fail(400, 'กรุณาเลือกวิธีชำระเงิน');
+}
 snapshot = {
   shop: shop.name,
   shop_image_url: shop.image_url,
