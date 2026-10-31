@@ -572,7 +572,57 @@ window.KranuanOpenOrderChat = function(orderId) {
           paymentHost.showModal();
         }
 
-        await openRoom(id, true);
+
+        // เปิดหน้าชำระเงินทันที ระหว่างโหลดข้อมูลจริง
+        const loadingPay = paymentDialog();
+
+        loadingPay.innerHTML = `
+          <div style="
+            padding:35px 20px;
+            text-align:center;
+            color:#252525;
+          ">
+            <div style="
+              width:42px;
+              height:42px;
+              border:4px solid #e8e8e8;
+              border-top-color:#e86b32;
+              border-radius:50%;
+              margin:0 auto 20px;
+              animation:krPaymentSpin .8s linear infinite;
+            "></div>
+
+            <h2>กำลังตรวจสอบยอดชำระ...</h2>
+            <p style="color:#777;font-size:14px">
+              กำลังโหลดข้อมูลล่าสุดจากระบบ
+            </p>
+
+            <style>
+              @keyframes krPaymentSpin {
+                to { transform:rotate(360deg); }
+              }
+            </style>
+          </div>
+        `;
+
+        if (!loadingPay.open) {
+          loadingPay.showModal();
+        }
+
+        try {
+          // โหลดข้อมูลจริงแล้วแทนหน้ากำลังโหลด
+          await openRoom(id, true);
+
+          if (!S.detail || !S.bill || S.room !== id) {
+            throw Error('ไม่สามารถโหลดข้อมูลการชำระเงินได้');
+          }
+        } catch (loadError) {
+          if (loadingPay.open) {
+            loadingPay.close();
+          }
+
+          throw loadError;
+        }
 
 
         const payDialog = S.pay;
