@@ -33,7 +33,33 @@ actions.toggle = async () => {
   // ป้องกันออเดอร์เดิมเด้งซ้ำหลังเปิดออนไลน์
   detect();
 };
-actions.picked=async id=>{await DB.patch(id,{status:'picked'});toast(jobs.find(j=>j.id===id)?.type==='ride'?'รับผู้โดยสารแล้ว เริ่มเดินทาง':'รับของแล้ว กำลังจัดส่ง')};
+
+actions.picked = async function(id) {
+  const job = jobs.find(j => j.id === id);
+  const isRide = job?.type === 'ride';
+
+  const loading = window.KranuanRiderLoading?.start(
+    isRide
+      ? 'กำลังยืนยันรับผู้โดยสาร...'
+      : 'กำลังยืนยันรับสินค้า...',
+    'กำลังบันทึกสถานะกับระบบกลาง'
+  );
+
+  try {
+    // รอให้เซิร์ฟเวอร์ยืนยันก่อนแสดงว่าสำเร็จ
+    await DB.patch(id, { status: 'picked' });
+
+    toast(
+      isRide
+        ? 'รับผู้โดยสารแล้ว เริ่มเดินทาง'
+        : 'รับของแล้ว กำลังจัดส่ง'
+    );
+
+  } finally {
+    // ปิด Loading ทั้งกรณีสำเร็จและผิดพลาด
+    loading?.close();
+  }
+};
 
 
 actions.delivered = async function(id) {
