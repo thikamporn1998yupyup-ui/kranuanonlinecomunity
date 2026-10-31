@@ -156,6 +156,9 @@
     }
   }
 
+  function orderLine(o) {
+    return `
+
       <button type="button"
         data-oid="${esc(o.id)}"
         style="width:100%;text-align:left;
