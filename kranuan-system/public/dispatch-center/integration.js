@@ -555,7 +555,25 @@ window.KranuanOpenOrderChat = function(orderId) {
       };
 
       try {
-        await open(id, 'payment');
+
+        // ใช้ข้อมูลบัญชีปัจจุบัน ลดการโหลดรายการทั้งหมด
+        if (window.K?.user) {
+          S.user = window.K.user;
+          S.csrf = window.K.csrf || S.csrf;
+        } else if (!S.user) {
+          const session = await req('/dispatch/session');
+          S.user = session.user;
+        }
+
+        // เปิดเฉพาะข้อมูลออเดอร์ที่ต้องชำระ
+        const paymentHost = dialog();
+
+        if (!paymentHost.open) {
+          paymentHost.showModal();
+        }
+
+        await openRoom(id, true);
+
 
         const payDialog = S.pay;
 
