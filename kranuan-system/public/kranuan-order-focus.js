@@ -417,7 +417,7 @@
     const root = document.getElementById('kofMain');
     if (!root) return;
 
-    const fingerprint = JSON.stringify(order);
+     const fingerprint = JSON.stringify([   order.id,   order.status,   order.rider_id,   order.rider?.name,   order.rider?.avatar_url,   order.rider?.verified,   order.type,   order.item,   order.pickup,   order.dropoff,   order.customer_name,   order.total,   order.fee,   order.vehicle_label ]);
 
     if (fingerprint === lastRender) return;
     lastRender = fingerprint;
@@ -541,9 +541,11 @@
     refreshing = true;
 
     try {
-      const orders = await K.request('/orders');
-      if (!Array.isArray(orders)) {
-        throw Error('ข้อมูลออเดอร์ไม่ถูกต้อง');
+
+const order = await K.request(
+  '/orders/' + encodeURIComponent(activeId)
+);
+
       }
 
       const order = orders.find(
@@ -846,7 +848,7 @@
     if (currentOrder?.rider_id) {
       refreshLocation();
     }
-  }, 12000);
+  }, 4000);
 
   // Show the latest district messages.
   setInterval(() => {
