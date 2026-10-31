@@ -694,6 +694,21 @@ if (action === 'status' && method === 'POST') {
     fail(409, 'เปลี่ยนสถานะนี้ไม่ได้ หรือคุณไม่มีสิทธิ์');
   }
 
+  // FOOD V3: ต้องรอร้านแจ้งว่าอาหารพร้อมก่อนรับสินค้า
+  if (
+    o.kind === 'food' &&
+    u.role === 'rider' &&
+    next === 'picked' &&
+    snap.order_mode === 'merchant_confirm' &&
+    snap.food_stage !== 'ready'
+  ) {
+    fail(
+      409,
+      'ร้านกำลังเตรียมอาหาร กรุณารอร้านแจ้งอาหารพร้อม'
+    );
+  }
+
+
   // ออเดอร์อาหารต้องมีภาพเมื่อไรเดอร์กดรับสินค้า
   if (o.kind === 'food' && next === 'picked') {
     pickupPhoto = b.photo;
