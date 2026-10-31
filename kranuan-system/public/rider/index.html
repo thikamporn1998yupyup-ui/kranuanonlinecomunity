@@ -787,5 +787,409 @@ body.rmc-map-screen .topbar small{text-shadow:0 1px 2px rgba(0,0,0,.6)}
 })();
 </script>
 <script src="/food-delivery-rider-v2.js?v=2"></script>
+  
+<!-- KRANUAN RIDER — LIVE GPS SHARING -->
+<style>
+  #jobbar .kr-live-gps {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-top:8px;
+    padding:10px;
+    border:1px solid rgba(255,165,95,.3);
+    border-radius:14px;
+    background:#17232d;
+    color:#fff;
+    font:12px/1.45 system-ui,Tahoma,sans-serif;
+    box-shadow:0 4px 15px #0003;
+  }
+
+  #jobbar .kr-live-gps button {
+    flex:none;
+    border:0;
+    border-radius:10px;
+    background:#e17a42;
+    color:white;
+    padding:11px;
+    font-size:12px;
+    font-weight:800;
+    cursor:pointer;
+  }
+
+  #jobbar .kr-live-gps button.sharing {
+    background:#b63232;
+  }
+
+  #jobbar .kr-live-gps-info {
+    flex:1;
+    min-width:0;
+    overflow-wrap:anywhere;
+  }
+
+  #jobbar .kr-live-gps-info strong {
+    display:block;
+    font-size:12px;
+    color:#fff;
+  }
+
+  #jobbar .kr-live-gps-info small {
+    display:block;
+    color:#c1cbd2;
+    font-size:10px;
+    margin-top:3px;
+  }
+</style>
+
+<script>
+(() => {
+  'use strict';
+
+  if (window.KranuanRiderGPS) return;
+
+  let sharing = false;
+  let orderId = null;
+  let watchId = null;
+  let heartbeat = null;
+  let lastFix = null;
+  let lastSent = 0;
+  let inFlight = null;
+  let statusText = 'ยังไม่ได้แชร์ตำแหน่ง';
+
+  function currentJob() {
+    if (
+      !window.K ||
+      K.user?.role !== 'rider' ||
+      typeof riderConnected === 'undefined' ||
+      !riderConnected ||
+      typeof active !== 'function'
+    ) return null;
+
+    const job = active();
+
+    if (!job) return null;
+
+    if (!['accepted','picked'].includes(job.status)) {
+      return null;
+    }
+
+    return job;
+  }
+
+  function draw() {
+    const bar = document.getElementById('jobbar');
+    if (!bar) return;
+
+    const job = currentJob();
+
+    if (!job) {
+      bar.querySelector('.kr-live-gps')?.remove();
+      if (sharing) stopSharing();
+      return;
+    }
+
+    if (sharing && orderId !== job.id) {
+      stopSharing();
+    }
+
+    let panel = bar.querySelector('.kr-live-gps');
+
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.className = 'kr-live-gps';
+
+      const info = document.createElement('div');
+      info.className = 'kr-live-gps-info';
+
+      const title = document.createElement('strong');
+      title.className = 'kr-gps-title';
+
+      const detail = document.createElement('small');
+      detail.className = 'kr-gps-detail';
+
+      info.append(title, detail);
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'kr-gps-button';
+
+      button.onclick = () => {
+        if (sharing) {
+          stopSharing();
+        } else {
+          startSharing();
+        }
+      };
+
+      panel.append(info, button);
+      bar.appendChild(panel);
+    }
+
+    const title = panel.querySelector('.kr-gps-title');
+    const detail = panel.querySelector('.kr-gps-detail');
+    const button = panel.querySelector('.kr-gps-button');
+
+    title.textContent = sharing
+      ? '📡 กำลังแชร์ GPS ให้ลูกค้า'
+      : '📍 แชร์ตำแหน่งให้ลูกค้า';
+
+    detail.textContent = statusText;
+
+    button.textContent = sharing
+      ? 'หยุดแชร์'
+      : 'เริ่มแชร์ GPS';
+
+    button.classList.toggle('sharing', sharing);
+  }
+
+  async function sendFix(position, force = false) {
+    if (!sharing || !orderId || !position) return;
+    if (inFlight) return;
+
+    const age = Date.now() - position.timestamp;
+
+    if (age > 60000 || age < -5000) {
+      statusText = 'รอตำแหน่ง GPS ล่าสุด';
+      draw();
+      return;
+    }
+
+    if (!force && Date.now() - lastSent < 12000) {
+      return;
+    }
+
+    const lat = Number(position.coords.latitude);
+    const lng = Number(position.coords.longitude);
+    const accuracy = Number(position.coords.accuracy);
+
+    if (
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng)
+    ) return;
+
+    const sendingOrder = orderId;
+    lastSent = Date.now();
+
+    inFlight = K.request(
+      '/dispatch/orders/' +
+      encodeURIComponent(sendingOrder) +
+      '/location',
+      {
+        method:'POST',
+        body:JSON.stringify({
+          lat,
+          lng,
+          accuracy:Number.isFinite(accuracy)
+            ? accuracy : null
+        })
+      }
+    );
+
+    try {
+      await inFlight;
+
+      if (sharing && orderId === sendingOrder) {
+        statusText = 'ส่ง GPS ล่าสุด ' +
+          new Date().toLocaleTimeString('th-TH');
+      }
+
+    } catch (error) {
+      lastSent = 0;
+
+      if (sharing) {
+        statusText =
+          'ส่งตำแหน่งไม่สำเร็จ: ' + error.message;
+      }
+
+    } finally {
+      inFlight = null;
+      draw();
+    }
+  }
+
+  function startSharing() {
+    const job = currentJob();
+
+    if (!job) {
+      alert('กรุณารับงานก่อนแชร์ GPS');
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      alert('เครื่องนี้ไม่รองรับ GPS');
+      return;
+    }
+
+    if (sharing) return;
+
+    sharing = true;
+    orderId = job.id;
+    lastFix = null;
+    lastSent = 0;
+
+    statusText = 'กำลังขอพิกัดจากเครื่อง...';
+
+    watchId = navigator.geolocation.watchPosition(
+      position => {
+        if (!sharing) return;
+
+        if (currentJob()?.id !== orderId) {
+          stopSharing();
+          return;
+        }
+
+        lastFix = position;
+
+        sendFix(position);
+      },
+
+      error => {
+        if (!sharing) return;
+
+        if (error.code === 1) {
+          statusText = 'ไม่ได้รับอนุญาต GPS';
+          stopSharing();
+          return;
+        }
+
+        statusText =
+          'กำลังรอสัญญาณ GPS จากเครื่อง';
+        draw();
+      },
+
+      {
+        enableHighAccuracy:true,
+        maximumAge:5000,
+        timeout:20000
+      }
+    );
+
+    // Keep location fresh even when the rider is stationary.
+    heartbeat = setInterval(() => {
+      if (!sharing) return;
+
+      if (currentJob()?.id !== orderId) {
+        stopSharing();
+        return;
+      }
+
+      if (lastFix) {
+        sendFix(lastFix, true);
+      }
+    }, 25000);
+
+    draw();
+  }
+
+  async function stopSharing() {
+    if (!sharing && !orderId) return;
+
+    const previousOrder = orderId;
+
+    sharing = false;
+    orderId = null;
+    lastFix = null;
+    lastSent = 0;
+
+    if (watchId !== null) {
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+    }
+
+    if (heartbeat !== null) {
+      clearInterval(heartbeat);
+      heartbeat = null;
+    }
+
+    statusText = 'หยุดแชร์ตำแหน่งแล้ว';
+    draw();
+
+    if (!previousOrder) return;
+
+    try {
+      // Finish any in-flight update before clearing the position.
+      if (inFlight) {
+        await inFlight.catch(() => {});
+      }
+
+      await K.request(
+        '/dispatch/orders/' +
+        encodeURIComponent(previousOrder) +
+        '/location',
+        {
+          method:'POST',
+          body:JSON.stringify({stop:true})
+        }
+      );
+    } catch {
+      // The backend automatically hides positions
+      // for completed or cancelled orders.
+    }
+  }
+
+  function init() {
+    const jobbar = document.getElementById('jobbar');
+
+    if (!jobbar) return;
+
+    new MutationObserver(() => {
+      draw();
+    }).observe(jobbar, {
+      childList:true
+    });
+
+    setInterval(draw, 2000);
+
+    window.addEventListener(
+      'kranuan:delivery-completed',
+      () => stopSharing()
+    );
+
+    window.addEventListener('pagehide', () => {
+      if (!sharing || !orderId) return;
+
+      const id = orderId;
+
+      stopSharing();
+
+      // Best-effort stop when leaving the rider page.
+      fetch(
+        '/api/dispatch/orders/' +
+        encodeURIComponent(id) +
+        '/location',
+        {
+          method:'POST',
+          credentials:'same-origin',
+          keepalive:true,
+          headers:{
+            'Content-Type':'application/json',
+            'X-CSRF-Token':K.csrf || ''
+          },
+          body:JSON.stringify({stop:true})
+        }
+      ).catch(() => {});
+    });
+
+    draw();
+  }
+
+  window.KranuanRiderGPS = {
+    start:startSharing,
+    stop:stopSharing,
+    get active() { return sharing; }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener(
+      'DOMContentLoaded',
+      init,
+      {once:true}
+    );
+  } else {
+    init();
+  }
+})();
+</script>
+<!-- END KRANUAN RIDER LIVE GPS -->
+
 </body>
 </html>
