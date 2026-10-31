@@ -510,6 +510,7 @@ const actions={
     try{if(navigator.share)await navigator.share({title:t,text:t,url:u});else{await navigator.clipboard.writeText(u);sh.msg='คัดลอกลิงก์ตำแหน่งแล้ว'}}catch(e){}},
   async unblock(id){prof.blocked=prof.blocked.filter(b=>b.id!==id);await DB.saveProfile(prof)},
 
+ 
   async takeAlert() {
     const order = cur;
     if (!order || alertBusy) return;
@@ -529,31 +530,43 @@ const actions={
     clearInterval(alertTimer);
     queue.length = 0;
 
-    // พับหน้าต่างทันที ก่อนรอเซิร์ฟเวอร์
+    // พับหน้าต่างรับงานทันที
     const card = $('#alert .alertcard');
 
-    if (card?.animate) {
-      card.animate([
-        { opacity: 1, transform: 'translateY(0) scale(1)' },
-        { opacity: 0, transform: 'translateY(90px) scale(.8)' }
-      ], {
-        duration: 220,
-        easing: 'cubic-bezier(.4,0,1,1)',
-        fill: 'forwards'
-      });
-    }
+    card?.animate?.([
+      {
+        opacity: 1,
+        transform: 'translateY(0) scale(1)'
+      },
+      {
+        opacity: 0,
+        transform: 'translateY(90px) scale(.8)'
+      }
+    ], {
+      duration: 220,
+      easing: 'cubic-bezier(.4,0,1,1)',
+      fill: 'forwards'
+    });
 
     const folded = new Promise(resolve => {
       setTimeout(() => {
-        if (cur?.id === order.id) nextAlert();
+        if (cur?.id === order.id) {
+          nextAlert();
+        }
         resolve();
       }, 220);
     });
 
+    // เรียก Loading ส่วนกลางที่ติดตั้งไว้
+    const loading = window.KranuanRiderLoading?.start(
+      'กำลังยืนยันรับงาน...',
+      'ระบบกลางกำลังบันทึกออเดอร์'
+    );
+
     let claimed = false;
 
     try {
-      // ให้เซิร์ฟเวอร์ยืนยันก่อน
+      // เซิร์ฟเวอร์ต้องยืนยันก่อน
       const accepted = await DB.claim(order.id);
 
       if (!accepted) {
@@ -562,7 +575,12 @@ const actions={
 
       claimed = true;
 
-      // โหลดรายละเอียดล่าสุดในเบื้องหลัง
+      // เปลี่ยนข้อความระหว่างโหลดข้อมูล
+      loading?.update(
+        'รอพิกัดสักครู่...',
+        'กำลังโหลดจุดรับ-ส่งและรายละเอียดงาน'
+      );
+
       const latest = await DB.jobs();
 
       const job = latest.find(j =>
@@ -580,16 +598,22 @@ const actions={
 
       detect();
       render();
+
       await folded;
 
-      // เด้งหน้ารายละเอียดหลังโหลดเสร็จ
+      // ปิด Loading ก่อนเปิดรายละเอียด
+      loading?.close();
+
       if (typeof showRiderDetails === 'function') {
-        const old = document.getElementById('riderOrderDetails');
+        const old =
+          document.getElementById('riderOrderDetails');
+
         if (old?.open) old.close();
 
         showRiderDetails(order.id);
 
-        const popup = document.getElementById('riderOrderDetails');
+        const popup =
+          document.getElementById('riderOrderDetails');
 
         if (popup) {
           popup.style.borderRadius = '28px';
@@ -598,16 +622,19 @@ const actions={
             '0 24px 80px rgba(0,0,0,.45)';
 
           const header = document.createElement('div');
+
           header.style.cssText =
             'text-align:center;padding:18px 8px;' +
             'color:#38b878';
 
           header.innerHTML =
             '<div style="font-size:48px">✓</div>' +
-            '<strong style="font-size:24px">รับงานสำเร็จ!</strong>';
+            '<strong style="font-size:24px">' +
+            'รับงานสำเร็จ!</strong>';
 
           popup.prepend(header);
 
+          // เด้งรายละเอียดขึ้นแบบนุ่มนวล
           popup.animate?.([
             {
               opacity: 0,
@@ -628,17 +655,23 @@ const actions={
 
     } catch (error) {
       await folded;
+      loading?.close();
 
-      toast(claimed
-        ? 'รับงานแล้ว แต่โหลดรายละเอียดไม่สำเร็จ กรุณารีเฟรช'
-        : 'รับงานไม่สำเร็จ: ' + error.message
+      toast(
+        claimed
+          ? 'รับงานแล้ว แต่โหลดรายละเอียดไม่สำเร็จ กรุณารีเฟรช'
+          : 'รับงานไม่สำเร็จ: ' + error.message
       );
 
-      if (claimed && typeof riderSync === 'function') {
+      if (
+        claimed &&
+        typeof riderSync === 'function'
+      ) {
         riderSync().catch(() => {});
       }
 
     } finally {
+      loading?.close();
       alertBusy = false;
     }
   }
