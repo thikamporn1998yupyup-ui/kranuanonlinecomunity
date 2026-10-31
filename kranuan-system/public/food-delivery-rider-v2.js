@@ -261,33 +261,14 @@
     dialog.showModal();
   };
 
-  // แสดงสรุปยอดหลังส่งอาหารสำเร็จ
+
+  // ส่งงานตามกระบวนการหลัก โดยไม่เปิดหน้าสรุปซ้ำ
   const originalDelivered = actions.delivered;
 
   actions.delivered = async function(orderId) {
-    const job = jobs.find(item => item.id === orderId);
-
-    // ใช้ระบบเดิมยืนยันการส่งสำเร็จก่อน
     await originalDelivered(orderId);
+  };
 
-    if (!job || job.type !== 'food') return;
-
-    const total = Number(job.total || (
-      Number(job.goods_total || 0) +
-      Number(job.fee || 0)
-    ));
-
-    const dialog = document.createElement('dialog');
-
-    dialog.style.cssText = `
-      border:0;
-      border-radius:20px;
-      padding:22px;
-      width:min(92vw,420px);
-      background:#fffdf8;
-      color:#29251f;
-      box-shadow:0 15px 80px #0008;
-    `;
 
     dialog.innerHTML = `
       <h2>✅ ส่งอาหารสำเร็จ</h2>
