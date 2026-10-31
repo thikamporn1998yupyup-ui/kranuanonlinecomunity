@@ -167,6 +167,68 @@ if (locationMatch) {
 
   return reply(res, 200, { ok: true });
 }
+
+/* Community chat: approved member and rider avatars */
+const communityAvatarMatch = p.match(
+  /^\/api\/dispatch\/community\/avatar\/([^/]+)$/
+);
+
+if (communityAvatarMatch && method === 'GET') {
+  const senderId = decodeURIComponent(communityAvatarMatch[1]);
+
+  const exists = get(
+    "SELECT 1 AS ok FROM dispatch_community_messages WHERE sender_id=? AND hidden=0 LIMIT 1",
+    senderId
+  );
+  if (!exists) fail(404, 'ไม่พบผู้ส่งข้อความ');
+
+  const sender = get(
+    'SELECT role FROM users WHERE id=?',
+    senderId
+  );
+  if (!sender) fail(404, 'ไม่พบสมาชิก');
+
+  let avatar = '';
+
+  if (sender.role === 'rider' && hasProfileTable) {
+    const profile = get(
+      "SELECT avatar_url FROM staff_profiles WHERE user_id=? AND photo_status='approved'",
+      senderId
+    );
+    avatar = profile?.avatar_url || '';
+  }
+
+  if (sender.role === 'customer' && hasMemberTable) {
+    const profile = get(
+      "SELECT avatar_url FROM member_profiles WHERE id=? AND verified=1 AND status='active' AND setup_complete=1",
+      senderId
+    );
+    avatar = profile?.avatar_url || '';
+  }
+
+  const image = avatar.match(
+    /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/
+  );
+
+  if (image) {
+    res.writeHead(200, {
+      'Content-Type': image[1],
+      'Cache-Control': 'private, no-store',
+      'X-Content-Type-Options': 'nosniff'
+    });
+    return res.end(Buffer.from(image[2], 'base64'));
+  }
+
+  if (avatar.startsWith('https://')) {
+    res.writeHead(302, {
+      Location: avatar,
+      'Cache-Control': 'private, no-store'
+    });
+    return res.end();
+  }
+
+  fail(404, 'ยังไม่มีรูปโปรไฟล์ที่พร้อมแสดง');
+}
 const avatarMatch=p.match(/^\/api\/dispatch\/orders\/([^/]+)\/(rider|customer)-avatar$/);if(avatarMatch&&method==='GET'){const o=orderFor(avatarMatch[1],u);const isCustomer=avatarMatch[2]==='customer';if(isCustomer?!hasMemberTable:!hasProfileTable||!o.rider_id)fail(404,'ยังไม่มีรูปโปรไฟล์');const profile=isCustomer?get("SELECT avatar_url FROM member_profiles WHERE id=? AND verified=1 AND status='active'",o.customer_id):get("SELECT avatar_url FROM staff_profiles WHERE user_id=? AND photo_status='approved'",o.rider_id),avatar=profile?.avatar_url||'',m=avatar.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);await save();if(m){res.writeHead(200,{'Content-Type':m[1],'Cache-Control':'private, no-store'});return res.end(Buffer.from(m[2],'base64'))}if(avatar.startsWith('https://')){res.writeHead(302,{'Location':avatar,'Cache-Control':'private, no-store'});return res.end()}fail(404,'ยังไม่มีรูปไรเดอร์ที่พร้อมแสดง')}const bill=await billing.handle(u,p,method,b);if(bill){await save();if(bill.media){res.writeHead(200,{'Content-Type':bill.mime,'Cache-Control':'private, no-store'});return res.end(bill.media)}return reply(res,bill.status||200,bill.data)}let result,status=200;
  if(p==='/api/dispatch/session'&&method==='GET')result={user:{id:u.id,name:u.name,role:u.role},server_time:now()};
  else if(p==='/api/dispatch/orders'&&method==='GET'){const orders=all("SELECT * FROM orders WHERE customer_id=? OR rider_id=? ORDER BY updated_at DESC LIMIT 100",u.id,u.id);result= orders.filter(o=>o.kind==='food'||chatWindow(o).open||o.status==='done'||['assigned','picked'].includes(o.status)).map(o=>({id:o.id,kind:o.kind,status:o.status,fee:o.fee_satang/100,customer_name:o.customer_name,rider_name:get('SELECT name FROM users WHERE id=?',o.rider_id)?.name||'',rider_avatar:riderAvatar(o),customer_avatar:customerAvatar(o),chat:chatWindow(o),my_role:o.rider_id===u.id?'rider':'customer',updated_at:o.updated_at,last_message:get('SELECT body,sender_id,created_at FROM dispatch_messages WHERE order_id=? ORDER BY created_at DESC,rowid DESC LIMIT 1',o.id)||null,settlement:billing.summary(o)}))}
