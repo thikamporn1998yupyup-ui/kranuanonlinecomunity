@@ -294,10 +294,9 @@ categoryBar=function(){const items=[['ทั้งหมด','grid'],['อาห
       '.kr-lite-order[data-order-id]'
     );
 
-    if (card) {
-      window.KranuanOrderFocus?.open(
-        card.dataset.orderId
-      krOpenOrderDetail(card.dataset.orderId);
+   if (card) {
+  krOpenOrderDetail(card.dataset.orderId);
+}
     }
   });
 
