@@ -92,7 +92,7 @@ const css=document.createElement('link');css.rel='stylesheet';css.href='/dispatc
         const script = document.createElement('script');
 
         script.src =
-          '/dispatch-center/community.js?v=20261031-fix2';
+          '/dispatch-center/community.js?v=20261031-admin2';
 
         script.onload = () => {
           if (typeof window.openKranuanCommunity === 'function') {
