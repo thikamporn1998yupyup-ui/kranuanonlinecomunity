@@ -459,7 +459,66 @@ payment_method: foodPaymentMethod
  addEvent(oid,u,status);return oid;
  });emit();return send(res,201,orderView(get('SELECT * FROM orders WHERE id=?',orderId),u));
  }
- const orderMatch=p.match(/^\/api\/orders\/([^/]+)(?:\/(claim|status|events|feedback))?$/);
+ 
+/* KRANUAN — RIDER ARRIVED AT DESTINATION */
+const arrivalMatch = p.match(
+  /^\/api\/orders\/([^/]+)\/arrive$/
+);
+
+if (arrivalMatch && method === 'POST') {
+  needUser(u, ['rider']);
+
+  const oid = arrivalMatch[1];
+  const order = get(
+    'SELECT * FROM orders WHERE id=?', oid
+  );
+
+  if (!order) fail(404, 'ไม่พบออเดอร์');
+
+  if (
+    order.rider_id !== u.id ||
+    order.status !== 'picked'
+  ) {
+    fail(409, 'ต้องเป็นไรเดอร์ที่กำลังจัดส่งงานนี้');
+  }
+
+  const snap = JSON.parse(order.snapshot);
+
+  if (!snap.arrived_at) {
+    const arrivedAt = now();
+    snap.arrived_at = arrivedAt;
+
+    transaction(() => {
+      const result = run(
+        "UPDATE orders SET snapshot=?,updated_at=? " +
+        "WHERE id=? AND status='picked'",
+        JSON.stringify(snap),
+        arrivedAt,
+        oid
+      );
+
+      if (!result.changes) {
+        fail(409, 'สถานะเปลี่ยนแล้ว กรุณาโหลดใหม่');
+      }
+
+      addEvent(
+        oid,
+        u,
+        'arrived',
+        'ไรเดอร์ถึงจุดส่งแล้ว'
+      );
+    });
+
+    emit();
+  }
+
+  return send(res, 200, {
+    ok: true,
+    arrived_at: snap.arrived_at
+  });
+}
+/* END RIDER ARRIVAL */
+const orderMatch=p.match(/^\/api\/orders\/([^/]+)(?:\/(claim|status|events|feedback))?$/);
  if(orderMatch){const oid=orderMatch[1],action=orderMatch[2],o=get('SELECT * FROM orders WHERE id=?',oid);if(!o)fail(404,'ไม่พบงาน');
  if(!action&&method==='GET'){if(!canReadOrder(u,o))fail(403,'ไม่มีสิทธิ์ดูงาน');return send(res,200,orderView(o,u))}
  if(action==='events'&&method==='GET'){if(!canReadOrder(u,o))fail(403,'ไม่มีสิทธิ์ดูงาน');return send(res,200,all('SELECT status,note,created_at FROM order_events WHERE order_id=? ORDER BY id',oid))}
