@@ -290,15 +290,14 @@ categoryBar=function(){const items=[['ทั้งหมด','grid'],['อาห
       return;
     }
 
-    const card = event.target.closest?.(
-      '.kr-lite-order[data-order-id]'
-    );
+const card = event.target.closest?.(
+'.kr-lite-order[data-order-id]'
+);
 
-   if (card) {
-  krOpenOrderDetail(card.dataset.orderId);
+if (card) {
+krOpenOrderDetail(card.dataset.orderId);
 }
-    }
-  });
+});
 
 let krOrderDetailLoad = null;
 
@@ -344,12 +343,10 @@ async function krOpenOrderDetail(id) {
       '.kr-lite-order[data-order-id]'
     );
 
-    if (card && event.target === card) {
-      event.preventDefault();
-      window.KranuanOrderFocus?.open(
-        card.dataset.orderId
-      );
-    }
+if (card && event.target === card) {
+event.preventDefault();
+krOpenOrderDetail(card.dataset.orderId);
+}
   });
 })();
 /* Existing "เรียกไรเดอร์ / ส่งของ" screen: courier pickup and delivery, not passenger booking. */
