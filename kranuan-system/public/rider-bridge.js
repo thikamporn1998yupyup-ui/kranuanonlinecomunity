@@ -10,29 +10,41 @@ DB.presence=async on=>{if(riderConnected)await K.request('/presence',{method:'PO
 DB.log=async(kind,o)=>K.request('/reports',{method:'POST',body:JSON.stringify({kind,...o})});
 DB.getProfile=async()=>null;DB.saveProfile=async p=>{localStorage.setItem(PROF_KEY,JSON.stringify(p))};DB.photo=async(slot,data)=>data;
 
+
 actions.toggle = async () => {
   const next = !online;
 
-  await DB.presence(next);
-  online = next;
-
-  if (
-    online &&
-    window.Notification?.permission === 'default'
-  ) {
-    window.Notification.requestPermission().catch(() => {});
-  }
-
-  toast(
-    online
-      ? 'ออนไลน์ รับงานจากระบบกลางแล้ว'
-      : 'ปิดรับงานแล้ว'
+  const loading = window.KranuanRiderLoading?.start(
+    next ? 'กำลังเปิดรับงาน...' : 'กำลังปิดรับงาน...',
+    'กำลังบันทึกสถานะกับระบบกลาง'
   );
 
-  // ไม่ล้างประวัติออเดอร์ที่เคยแจ้ง
-  // ป้องกันออเดอร์เดิมเด้งซ้ำหลังเปิดออนไลน์
-  detect();
+  try {
+    // เปลี่ยนสถานะหลังระบบกลางยืนยันเท่านั้น
+    await DB.presence(next);
+    online = next;
+
+    if (
+      online &&
+      window.Notification?.permission === 'default'
+    ) {
+      window.Notification.requestPermission().catch(() => {});
+    }
+
+    toast(
+      online
+        ? 'ออนไลน์ รับงานจากระบบกลางแล้ว'
+        : 'ปิดรับงานแล้ว'
+    );
+
+    // ไม่ล้างประวัติออเดอร์ ป้องกันงานเดิมเด้งซ้ำ
+    detect();
+
+  } finally {
+    loading?.close();
+  }
 };
+
 
 actions.picked = async function(id) {
   const job = jobs.find(j => j.id === id);
