@@ -31,7 +31,25 @@ actions.delivered = async function(id) {
   window.krTransportCompleting = true;
 
   try {
-    // รอเซิร์ฟเวอร์บันทึกสถานะก่อน
+   
+    // งานส่งคน: ยืนยันถึงปลายทางก่อนจบงาน
+    if (job.type === 'ride') {
+      const confirmed = window.confirm(
+        'ยืนยันว่าถึงจุดหมายและผู้โดยสารลงจากรถเรียบร้อยแล้ว?'
+      );
+
+      if (!confirmed) return;
+
+      await K.request(
+        '/orders/' + encodeURIComponent(id) + '/arrive',
+        {
+          method: 'POST',
+          body: '{}'
+        }
+      );
+    }
+
+    // เซิร์ฟเวอร์บันทึกสถานะส่งสำเร็จ
     await DB.patch(id, { status: 'delivered' });
 
     toast('ส่งถึงปลายทางแล้ว กำลังเปิดหน้าชำระเงิน');
