@@ -10,71 +10,13 @@ const profileBadge = () =>
 const categoryBeforeRiderProfiles = categoryBar;
 
 categoryBar = function () {
- const helmet = `
-<svg
-  viewBox="0 0 64 64"
-  width="30"
-  height="30"
-  aria-hidden="true"
-  style="display:block;margin:0 auto;"
-  xmlns="http://www.w3.org/2000/svg"
->
-  <g
-    fill="none"
-    stroke="#C86A3A"
-    stroke-width="3.2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  >
-    <path d="M20 54v-4c0-7 5-13 12-15" />
-    <path d="M44 54v-4c0-7-5-13-12-15" />
-    <path d="M24 50h16" />
-    <path d="M22 22c0-10 7-16 10-16s10 6 10 16" />
-    <path d="M18 24c2-3 7-5 14-5s12 2 14 5" />
-    <path d="M19 25v8c0 6 6 11 13 11s13-5 13-11v-8" />
-    <path d="M23 28h18" />
-    <path d="M26 36h12" />
-    <path d="M29 44v6" />
-    <path d="M35 44v6" />
-    <path d="M27 13l3 3" />
-    <path d="M37 13l-3 3" />
-  </g>
-</svg>
-`;
 
-const wheelie = `
-<svg
-  viewBox="0 0 64 64"
-  width="30"
-  height="30"
-  aria-hidden="true"
-  style="display:block;margin:0 auto;"
-  xmlns="http://www.w3.org/2000/svg"
->
-  <g
-    fill="none"
-    stroke="#C86A3A"
-    stroke-width="3.2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  >
-    <circle cx="18" cy="46" r="6" />
-    <circle cx="46" cy="33" r="6" />
-    <path d="M14 52h30" />
-    <path d="M18 40l8-13h10l6 6" />
-    <path d="M36 27l7-8" />
-    <path d="M43 19l5 2" />
-    <path d="M26 27l-8-5h-8" />
-    <path d="M25 28l9 8 8-1" />
-    <path d="M34 36l-10 5" />
-    <path d="M13 23l10 6" />
-    <path d="M9 22h8" />
-    <path d="M46 27l4 6" />
-    <path d="M41 39l5-6" />
-    <path d="M18 40l0 0" />
-  </g>
-</svg>
-`;
+  const helmet =
+    '<img src="/rider-helmet.png" alt="" style="width:38px;height:38px;object-fit:contain;display:block;margin:auto">';
+
+  const wheelie =
+    '<img src="/rider-wheelie.png" alt="" style="width:38px;height:38px;object-fit:contain;display:block;margin:auto">';
+
   let html = categoryBeforeRiderProfiles();
 
   html = html.replace(
