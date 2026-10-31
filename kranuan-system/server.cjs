@@ -578,72 +578,14 @@ const orderMatch=p.match(/^\/api\/orders\/([^/]+)(?:\/(claim|status|events|feedb
  transaction(()=>{if(get("SELECT id FROM orders WHERE rider_id=? AND status IN ('assigned','picked')",u.id))fail(409,'ส่งงานปัจจุบันให้เสร็จก่อน');const r=run("UPDATE orders SET status='assigned',rider_id=?,updated_at=? WHERE id=? AND status='ready' AND rider_id IS NULL",u.id,now(),oid);if(!r.changes)fail(409,'งานถูกยกเลิกหรือไรเดอร์คนอื่นรับแล้ว');addEvent(oid,u,'assigned')});emit();return send(res,200,orderView(get('SELECT * FROM orders WHERE id=?',oid),u));
  }
  
-  // FOOD V2: ร้านต้องรับออเดอร์และเตรียมอาหารก่อนพร้อมส่ง
-  if (
-    action === 'status' &&
-    method === 'POST' &&
-    o.kind === 'food' &&
-    u.role === 'merchant' &&
-    u.shop_id === o.shop_id
-  ) {
-    const nextStage = text(b.status, 20);
-    const foodSnapshot = JSON.parse(o.snapshot);
-    const currentStage = foodSnapshot.food_stage || 'waiting';
-
-    const requiredPreviousStage = {
-      confirmed: 'waiting',
-      preparing: 'confirmed'
-    };
-
-    if (
-      Object.prototype.hasOwnProperty.call(
-        requiredPreviousStage, nextStage
-      )
-    ) {
+  // FOOD V3: ร้านต้องรับออเดอร์และเตรียมอาหารก่อนพร้อมส่ง
+ 
       if (
-        o.status !== 'waiting' ||
-        currentStage !== requiredPreviousStage[nextStage]
-      ) {
-        fail(409, 'กรุณาดำเนินการตามลำดับสถานะอาหาร');
-      }
+        K.user.role !== 'merchant' ||
+        !['waiting', 'ready', 'assigned'].includes(order.status) ||
+        K.user.shop_id !== order.shop_id
+      ) return;
 
-      foodSnapshot.food_stage = nextStage;
-
-      transaction(() => {
-        const result = run(
-          'UPDATE orders SET snapshot=?,updated_at=? ' +
-          'WHERE id=? AND status=? AND snapshot=?',
-          JSON.stringify(foodSnapshot),
-          now(),
-          oid,
-          'waiting',
-          o.snapshot
-        );
-
-        if (!result.changes) {
-          fail(409, 'สถานะออเดอร์เปลี่ยนแล้ว กรุณาโหลดใหม่');
-        }
-
-        addEvent(oid, u, nextStage);
-      });
-
-      emit();
-
-      return send(
-        res,
-        200,
-        orderView(get('SELECT * FROM orders WHERE id=?', oid), u)
-      );
-    }
-
-    // ห้ามกดพร้อมส่ง หากยังไม่ผ่านขั้นตอนเตรียมอาหาร
-    if (
-      nextStage === 'ready' &&
-      (o.status !== 'waiting' || currentStage !== 'preparing')
-    ) {
-      fail(409, 'ร้านต้องรับออเดอร์และเตรียมอาหารก่อน');
-    }
-    }
 if (action === 'status' && method === 'POST') {
   const next = text(b.status, 20);
   let allowed = false;
