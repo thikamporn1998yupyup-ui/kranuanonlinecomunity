@@ -896,3 +896,184 @@
   // เริ่มตรวจข้อความใหม่ แม้ยังไม่ได้เปิดแชทอำเภอ
   setTimeout(refresh, 700);
 })();
+
+/* FLOATING CHAT BUBBLE — KRANUAN */
+(() => {
+  'use strict';
+
+  if (window.__krFloatingChatBubble) return;
+  window.__krFloatingChatBubble = true;
+
+  const style = document.createElement('style');
+  style.textContent = `
+    #krCommunityDialog .floating-chat-layer {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 85px;
+      display: flex;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 20;
+      padding: 0 15px;
+    }
+
+    #krCommunityDialog .floating-chat-bubble {
+      max-width: 90%;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 11px 17px;
+      border-radius: 20px;
+      background: linear-gradient(135deg,#ec965c,#d96e38);
+      color: #fff;
+      box-shadow: 0 10px 26px #9c4c3250;
+      overflow-wrap: anywhere;
+      animation: krBubbleFloat 4s ease-out forwards;
+    }
+
+    #krCommunityDialog .floating-chat-bubble strong {
+      font-size: 11px;
+      opacity: .85;
+    }
+
+    #krCommunityDialog .floating-chat-bubble span {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    @keyframes krBubbleFloat {
+      0% {
+        opacity: 0;
+        transform: translateY(35px) scale(.8);
+      }
+      12% {
+        opacity: 1;
+        transform: translateY(0) scale(1.05);
+      }
+      23% {
+        transform: translateY(-8px) scale(1);
+      }
+      65% {
+        opacity: 1;
+        transform: translateY(-28px);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-105px) scale(.96);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #krCommunityDialog .floating-chat-bubble {
+        animation: krBubbleFade 4s ease-out forwards;
+      }
+      @keyframes krBubbleFade {
+        0% { opacity: 0; }
+        15%, 65% { opacity: 1; }
+        100% { opacity: 0; }
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+
+  const seen = new WeakSet();
+
+  function attach() {
+    const dialog = document.getElementById(
+      'krCommunityDialog'
+    );
+
+    if (!dialog || dialog.dataset.floatingReady) return;
+
+    const shell = dialog.querySelector('.kc-shell');
+    const list = dialog.querySelector('.kc-list');
+
+    if (!shell || !list) return;
+
+    dialog.dataset.floatingReady = '1';
+
+    const layer = document.createElement('div');
+    layer.className = 'floating-chat-layer';
+    shell.appendChild(layer);
+
+    list.querySelectorAll('.kc-row').forEach(row => {
+      seen.add(row);
+    });
+
+    function showBubble(row) {
+      const text = row.querySelector(
+        '.kc-bubble'
+      )?.textContent?.trim();
+
+      const name = row.querySelector(
+        '.kc-meta strong'
+      )?.textContent?.trim() || 'สมาชิก';
+
+      if (!text) return;
+
+      const bubble = document.createElement('div');
+      bubble.className = 'floating-chat-bubble';
+
+      const sender = document.createElement('strong');
+      sender.textContent = name;
+
+      const message = document.createElement('span');
+      message.textContent = text;
+
+      bubble.append(sender, message);
+
+      // แสดงเฉพาะข้อความล่าสุด
+      layer.replaceChildren(bubble);
+
+      // หายไปเองหลัง 4 วินาที
+      setTimeout(() => bubble.remove(), 4000);
+    }
+
+    const observer = new MutationObserver(changes => {
+      if (!dialog.open) return;
+
+      let newest = null;
+
+      for (const change of changes) {
+        for (const node of change.addedNodes) {
+          if (node.nodeType !== 1) continue;
+
+          const rows = node.matches('.kc-row')
+            ? [node]
+            : [...node.querySelectorAll('.kc-row')];
+
+          for (const row of rows) {
+            if (seen.has(row)) continue;
+            seen.add(row);
+            newest = row;
+          }
+        }
+      }
+
+      if (newest) showBubble(newest);
+    });
+
+    observer.observe(list, {
+      childList: true
+    });
+  }
+
+  if (document.body) {
+    new MutationObserver(attach).observe(
+      document.body,
+      { childList: true }
+    );
+    attach();
+  } else {
+    document.addEventListener('DOMContentLoaded', () => {
+      new MutationObserver(attach).observe(
+        document.body,
+        { childList: true }
+      );
+      attach();
+    });
+  }
+})();
+
