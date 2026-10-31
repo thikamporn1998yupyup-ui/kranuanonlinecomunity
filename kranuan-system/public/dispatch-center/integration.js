@@ -141,30 +141,16 @@ poll = async function(...args) {
   if (!unpaidOrder) return;
 
   S.auto.add(unpaidOrder.id);
-
+  
   try {
-    if (S.dialog?.open) {
-      if (S.room === unpaidOrder.id) {
-        await loadRoom(true);
-
-        if (
-          S.bill &&
-          Number(S.bill.due) > 0
-        ) {
-          openPayment();
-        }
-      } else {
-        await openRoom(unpaidOrder.id, true);
-      }
-    } else {
-      await open(unpaidOrder.id, 'payment');
-    }
+    await window.KranuanOpenOrderPayment(unpaidOrder.id);
 
     if (!S.pay?.open) {
       S.auto.delete(unpaidOrder.id);
     }
 
   } catch (error) {
+
     S.auto.delete(unpaidOrder.id);
     console.warn(
       'เปิดหน้าชำระเงินอัตโนมัติไม่สำเร็จ:',
@@ -597,124 +583,162 @@ window.KranuanOpenOrderChat = function(orderId) {
 };
       
 
-  // เปิดหน้าชำระเงินโดยไม่แสดงหน้าแชท
-  window.KranuanOpenOrderPayment =
-    async function(orderId) {
-      if (!orderId) return;
+ 
+  // QUICK PAYMENT: เปิดเฉพาะแถบล่าง ไม่เปิดแชท
+  let quickPayOpening = false;
+  let quickPayTimer = null;
 
-      const id = String(orderId);
-      // จดจำงานที่ต้องตรวจรับเงิน เพื่อกลับมาทำต่อได้
-      markPending(id);
+  window.KranuanOpenOrderPayment = async function(orderId) {
+    if (!orderId || quickPayOpening || S.pay?.open) return;
 
+    const id = String(orderId);
+    quickPayOpening = true;
+    clearInterval(quickPayTimer);
 
-      // ปิดหน้าติดตามเดิม
+    let sheet = null;
+
+    try {
       window.KranuanOrderFocus?.close();
 
-      const chatDialog = dialog();
+      // ปิดหน้าต่างแชทเดิมให้เสร็จก่อน
+      if (S.dialog?.open) {
+        const chat = S.dialog;
 
-      // ซ่อนหน้าแชทก่อนเปิดหน้าชำระเงิน
-      chatDialog.style.visibility = 'hidden';
-      chatDialog.style.pointerEvents = 'none';
+        await new Promise(resolve => {
+          chat.addEventListener('close', resolve, {
+            once: true
+          });
+          chat.close();
+        });
+      }
 
-      const cleanup = () => {
-        chatDialog.style.visibility = '';
-        chatDialog.style.pointerEvents = '';
+      // ใช้บัญชีที่ล็อกอินอยู่
+      if (window.K?.user) {
+        S.user = window.K.user;
+        S.csrf = window.K.csrf || S.csrf;
+      } else if (!S.user) {
+        const session = await req('/dispatch/session');
+        S.user = session.user;
+      }
 
-        if (chatDialog.open) {
-          chatDialog.close();
-        }
-      };
+      if (S.user?.role === 'rider') {
+        markPending(id);
+      }
 
-      try {
+      S.room = id;
+      S.detail = null;
+      S.bill = null;
+      S.tipPayments = [];
+      S.payFinger = '';
+      S.mode = 'cash';
 
-        // ใช้ข้อมูลบัญชีปัจจุบัน ลดการโหลดรายการทั้งหมด
-        if (window.K?.user) {
-          S.user = window.K.user;
-          S.csrf = window.K.csrf || S.csrf;
-        } else if (!S.user) {
-          const session = await req('/dispatch/session');
-          S.user = session.user;
-        }
+      // เปิดเฉพาะแถบชำระเงินทันที
+      sheet = paymentDialog();
 
-        // เปิดเฉพาะข้อมูลออเดอร์ที่ต้องชำระ
-        const paymentHost = dialog();
+      sheet.innerHTML =
+        '<div style="padding:26px;text-align:center">' +
+        '<h2>กำลังโหลดข้อมูลชำระเงิน...</h2>' +
+        '<p>ตรวจสอบยอดล่าสุดจากระบบ</p>' +
+        '</div>';
 
-        if (!paymentHost.open) {
-          paymentHost.showModal();
-        }
+      if (!sheet.open) sheet.showModal();
 
+      // โหลดเฉพาะข้อมูลที่จำเป็นต่อการชำระเงิน
+      const [detail, bill, payments] = await Promise.all([
+        req('/orders/' + encodeURIComponent(id)),
+        req(
+          '/dispatch/orders/' +
+          encodeURIComponent(id) +
+          '/settlement'
+        ),
+        S.user?.role === 'rider'
+          ? req(
+              '/dispatch/orders/' +
+              encodeURIComponent(id) +
+              '/payments'
+            )
+          : Promise.resolve([])
+      ]);
 
-        // เปิดหน้าชำระเงินทันที ระหว่างโหลดข้อมูลจริง
-        const loadingPay = paymentDialog();
+      if (!sheet.open || S.room !== id) return;
 
-        loadingPay.innerHTML = `
-          <div style="
-            padding:35px 20px;
-            text-align:center;
-            color:#252525;
-          ">
-            <div style="
-              width:42px;
-              height:42px;
-              border:4px solid #e8e8e8;
-              border-top-color:#e86b32;
-              border-radius:50%;
-              margin:0 auto 20px;
-              animation:krPaymentSpin .8s linear infinite;
-            "></div>
+      S.detail = detail;
+      S.bill = bill;
+      S.tipPayments = payments;
 
-            <h2>กำลังตรวจสอบยอดชำระ...</h2>
-            <p style="color:#777;font-size:14px">
-              กำลังโหลดข้อมูลล่าสุดจากระบบ
-            </p>
+      renderPayment(true);
 
-            <style>
-              @keyframes krPaymentSpin {
-                to { transform:rotate(360deg); }
-              }
-            </style>
-          </div>
-        `;
-
-        if (!loadingPay.open) {
-          loadingPay.showModal();
-        }
-
-        try {
-          // โหลดข้อมูลจริงแล้วแทนหน้ากำลังโหลด
-          await openRoom(id, true);
-
-          if (!S.detail || !S.bill || S.room !== id) {
-            throw Error('ไม่สามารถโหลดข้อมูลการชำระเงินได้');
-          }
-        } catch (loadError) {
-          if (loadingPay.open) {
-            loadingPay.close();
-          }
-
-          throw loadError;
-        }
-
-
-        const payDialog = S.pay;
-
-        if (!payDialog?.open) {
-          cleanup();
+      // ตรวจยอดล่าสุดทุก 5 วินาที
+      quickPayTimer = setInterval(async () => {
+        if (!sheet.open || S.room !== id) {
+          clearInterval(quickPayTimer);
           return;
         }
 
-        // ปิดหน้าชำระแล้วไม่ย้อนกลับไปหน้าแชท
-        payDialog.addEventListener(
-          'close',
-          cleanup,
-          { once: true }
-        );
+        if (
+          S.uploading ||
+          (
+            sheet.contains(document.activeElement) &&
+            document.activeElement.matches(
+              'input,textarea,select'
+            )
+          )
+        ) return;
 
-      } catch (error) {
-        cleanup();
-        console.error('Open payment failed:', error);
+        try {
+          const latest = await req(
+            '/dispatch/orders/' +
+            encodeURIComponent(id) +
+            '/settlement'
+          );
+
+          if (sheet.open && S.room === id) {
+            S.bill = latest;
+            renderPayment();
+          }
+        } catch (error) {
+          console.warn(
+            'อัปเดตยอดชำระไม่สำเร็จ:',
+            error.message
+          );
+        }
+      }, 5000);
+
+      sheet.addEventListener('close', () => {
+        clearInterval(quickPayTimer);
+        quickPayTimer = null;
+      }, { once: true });
+
+    } catch (error) {
+      console.warn('Quick payment failed:', error);
+
+      if (sheet?.open) {
+        sheet.innerHTML =
+          '<div style="padding:20px;text-align:center">' +
+          '<h2>โหลดหน้าชำระเงินไม่สำเร็จ</h2>' +
+          '<p>' + E(error.message) + '</p>' +
+          '<button type="button" data-close>ปิด</button>' +
+          '</div>';
+
+        sheet.querySelector('[data-close]').onclick =
+          () => sheet.close();
       }
-    };
+
+      S.auto.delete(id);
+
+    } finally {
+      quickPayOpening = false;
+    }
+  };
+
+  // เมื่อเปิดแค่แถบจ่ายเงิน ไม่ต้องโหลดแชทเต็มหน้า
+  const originalRoomLoader = loadRoom;
+
+  loadRoom = async function(...args) {
+    if (!S.dialog?.open) return;
+    return originalRoomLoader(...args);
+  };
+
 
 
   // FOOD V4: ฉลองเฉพาะหลังไรเดอร์ยืนยันรับเงินครบจริง
