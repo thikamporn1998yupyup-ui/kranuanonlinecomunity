@@ -54,11 +54,6 @@ actions.delivered = async function(id) {
 
     toast('ส่งถึงปลายทางแล้ว กำลังเปิดหน้าชำระเงิน');
 
-    window.dispatchEvent(
-      new CustomEvent('kranuan:delivery-completed', {
-        detail: { orderId: String(id) }
-      })
-    );
 
     // เปิดหน้าชำระเงินโดยตรง
     if (typeof window.KranuanOpenOrderPayment === 'function') {
