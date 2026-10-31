@@ -72,6 +72,322 @@ window.addEventListener('kranuan:delivery-completed',e=>{const id=e.detail?.orde
 const css=document.createElement('link');css.rel='stylesheet';css.href='/dispatch-center/integration.css?v=20261030-collection';document.head.append(css);let scheduled=false;new MutationObserver(()=>{if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;decorate()})}).observe(document.body,{subtree:true,childList:true});decorate();poll();setInterval(poll,5000);window.addEventListener('pagehide',()=>S.eventsSource?.close());window.addEventListener('pageshow',()=>{if(S.eventsSource?.readyState===2)S.eventsSource=null;poll()});
 })();
 
+/* KRANUAN — FAST ORDER CHAT */
+const krChatStreams = new WeakSet();
+let krChatReading = false;
+let krChatReadAgain = false;
+
+const krChatOldLoad = loadRoom;
+
+loadRoom = async function(...args) {
+  const id = S.room;
+  const before = [...document.querySelectorAll(
+    '#kranuanMessageArea [data-kr-pending]'
+  )];
+
+  const result = await krChatOldLoad(...args);
+
+  if (id === S.room && before.length) {
+    const area = document.getElementById(
+      'kranuanMessageArea'
+    );
+
+    const confirmed = new Set(
+      (S.chat?.messages || []).map(m => m.id)
+    );
+
+    for (const row of before) {
+      if (
+        row.dataset.krOrder === id &&
+        (!row.dataset.krSaved ||
+         !confirmed.has(row.dataset.krSaved))
+      ) {
+        area?.append(row);
+      }
+    }
+
+    if (area) area.scrollTop = area.scrollHeight;
+  }
+
+  return result;
+};
+
+async function krChatRead() {
+  if (!S.dialog?.open || !S.room || document.hidden) {
+    return;
+  }
+
+  if (krChatReading) {
+    krChatReadAgain = true;
+    return;
+  }
+
+  krChatReading = true;
+  const id = S.room;
+
+  try {
+    const chat = await req(
+      '/dispatch/orders/' +
+      encodeURIComponent(id) +
+      '/chat'
+    );
+
+    if (
+      id !== S.room ||
+      !S.dialog?.open ||
+      !Array.isArray(chat.messages)
+    ) return;
+
+    const changed = JSON.stringify([
+      S.chat?.messages,
+      S.chat?.open
+    ]) !== JSON.stringify([
+      chat.messages,
+      chat.open
+    ]);
+
+    S.chat = chat;
+    if (!changed) return;
+
+    const area = document.getElementById(
+      'kranuanMessageArea'
+    );
+
+    if (!area) return;
+
+    const near = area.scrollHeight -
+      area.scrollTop -
+      area.clientHeight < 100;
+
+    const pending = [
+      ...area.querySelectorAll('[data-kr-pending]')
+    ];
+
+    const saved = new Set(
+      chat.messages.map(m => m.id)
+    );
+
+    const systems = (S.events || [])
+      .filter(e =>
+        ['assigned','picked','done','cancelled']
+          .includes(e.status)
+      )
+      .map(e =>
+        '<div class="kranuan-sys-msg">' +
+        E(label(e.status)) +
+        ' · ' +
+        E(time(e.created_at)) +
+        '</div>'
+      ).join('');
+
+    area.innerHTML = systems +
+      chat.messages.map(m =>
+        '<div class="kranuan-bubble-wrap ' +
+        (m.sender_id === S.user?.id
+          ? 'me' : 'them') +
+        '">' +
+        '<div class="kranuan-bubble">' +
+        E(m.body) +
+        '</div>' +
+        '<time>' +
+        E(time(m.created_at)) +
+        '</time></div>'
+      ).join('') +
+      (!chat.open
+        ? '<div class="kranuan-sys-msg">ห้องแชทปิดแล้ว</div>'
+        : '');
+
+    for (const row of pending) {
+      if (
+        !row.dataset.krSaved ||
+        !saved.has(row.dataset.krSaved)
+      ) {
+        area.append(row);
+      }
+    }
+
+    if (near) {
+      area.scrollTop = area.scrollHeight;
+    }
+
+    const finished =
+      S.detail?.status === 'done' &&
+      S.bill?.due === 0 &&
+      S.bill?.received > 0;
+
+    S.messageFinger = JSON.stringify([
+      chat.messages,
+      S.events,
+      chat.open,
+      finished
+    ]);
+
+    const input = document.getElementById(
+      'kranuanChatInput'
+    );
+
+    if (input) {
+      input.disabled = !chat.open || finished;
+    }
+
+    const button = document.getElementById(
+      'kranuanSendBtn'
+    );
+
+    if (button && !button.dataset.krSending) {
+      button.disabled = !chat.open || finished;
+    }
+
+  } catch (error) {
+    console.warn(
+      'Fast order chat:',
+      error.message
+    );
+  } finally {
+    krChatReading = false;
+
+    if (krChatReadAgain) {
+      krChatReadAgain = false;
+      queueMicrotask(krChatRead);
+    }
+  }
+}
+
+/* ส่งข้อความแบบแสดงผลทันที */
+send = async function(event) {
+  event.preventDefault();
+
+  const id = S.room;
+
+  const input = document.getElementById(
+    'kranuanChatInput'
+  );
+
+  const button = document.getElementById(
+    'kranuanSendBtn'
+  );
+
+  const area = document.getElementById(
+    'kranuanMessageArea'
+  );
+
+  if (
+    !id ||
+    !S.chat?.open ||
+    !input ||
+    !button ||
+    !area ||
+    button.dataset.krSending
+  ) return;
+
+  const message = input.value.trim();
+  if (!message) return;
+
+  if (
+    !S.sendKey ||
+    S.sendKey.order !== id ||
+    S.sendKey.message !== message
+  ) {
+    S.sendKey = {
+      order: id,
+      message,
+      key: crypto.randomUUID()
+    };
+  }
+
+  const key = S.sendKey.key;
+
+  // แสดงข้อความทันทีโดยไม่รอเซิร์ฟเวอร์
+  const row = document.createElement('div');
+  row.className = 'kranuan-bubble-wrap me';
+  row.dataset.krPending = key;
+  row.dataset.krOrder = id;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'kranuan-bubble';
+  bubble.textContent = message;
+
+  const stamp = document.createElement('time');
+  stamp.textContent = 'กำลังส่ง…';
+
+  row.append(bubble, stamp);
+  area.append(row);
+
+  area.scrollTop = area.scrollHeight;
+  input.value = '';
+
+  button.dataset.krSending = '1';
+  button.disabled = true;
+
+  try {
+    const saved = await post(
+      '/dispatch/orders/' +
+      encodeURIComponent(id) +
+      '/chat',
+      {
+        message,
+        client_key: key
+      }
+    );
+
+    row.dataset.krSaved = saved.id || '';
+    stamp.textContent = '✓ ส่งแล้ว';
+
+    if (S.sendKey?.key === key) {
+      S.sendKey = null;
+    }
+
+    // โหลดเฉพาะข้อความ ไม่ต้องโหลดข้อมูลจ่ายเงินใหม่
+    krChatRead();
+
+  } catch (error) {
+    row.remove();
+
+    if (S.room === id) {
+      if (!input.value.trim()) {
+        input.value = message;
+      }
+
+      roomError(error);
+    }
+
+  } finally {
+    delete button.dataset.krSending;
+
+    button.disabled =
+      !S.chat?.open ||
+      (
+        S.detail?.status === 'done' &&
+        S.bill?.due === 0 &&
+        S.bill?.received > 0
+      );
+  }
+};
+
+/* รับข้อความใหม่จากเซิร์ฟเวอร์ทันที */
+function krChatBind() {
+  const source = S.eventsSource;
+
+  if (source && !krChatStreams.has(source)) {
+    krChatStreams.add(source);
+
+    source.addEventListener(
+      'refresh',
+      krChatRead
+    );
+  }
+}
+
+// ตรวจการเชื่อมต่อ SSE
+setInterval(krChatBind, 1000);
+
+// รีเฟรชสำรองเมื่อไม่มีเหตุการณ์ใหม่
+setInterval(krChatRead, 7000);
+
+krChatBind();
+
+/* END KRANUAN — FAST ORDER CHAT */
+
 
 /* KRANUAN COMMUNITY CHAT BUTTON FIX */
 (() => {
