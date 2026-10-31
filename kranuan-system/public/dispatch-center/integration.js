@@ -156,7 +156,16 @@ async function ensureCollection(id) {
     );
 
     // ไม่มีรายการค้างเก็บหรือค้างตรวจ
-    if (!collectionUnfinished(bill, [])) {
+    
+    // ตรวจรายการทิปที่ยังรอยืนยันก่อนปลดงาน
+    const payments = await req(
+      '/dispatch/orders/' +
+      encodeURIComponent(id) +
+      '/payments'
+    );
+
+    if (!collectionUnfinished(bill, payments)) {
+
       P.ids.delete(id);
       savePending();
       return;
