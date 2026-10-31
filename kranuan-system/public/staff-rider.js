@@ -2,7 +2,50 @@
 let centralStaffProfile=null,staffProfileBusy=false,staffProfileName='';
 function applyStaffProfile(p){centralStaffProfile=p;prof.name=p.name||K.user.name;staffProfileName=prof.name;prof.avatar_url=p.pending_avatar||p.avatar_url||'';prof.photos=p.photos||[null,null,null,null]}
 DB.getProfile=async()=>{if(!riderConnected)return null;const p=await K.request('/staff/profile');applyStaffProfile(p);return {...prof}};
-DB.saveProfile=async p=>{if(!riderConnected)throw Error('กรุณาเข้าสู่ระบบไรเดอร์');if(p.name!==staffProfileName){const result=await K.request('/staff/profile',{method:'POST',body:JSON.stringify({name:p.name})});applyStaffProfile(result);K.user.name=result.name}const prefs={...p,avatar_url:'',photos:[null,null,null,null]};try{localStorage.setItem(PROF_KEY,JSON.stringify(prefs))}catch{toast('บันทึกในระบบแล้ว แต่เครื่องนี้ไม่อนุญาตให้เก็บการตั้งค่า')}};
+
+DB.saveProfile = async function(p) {
+  if (!riderConnected) {
+    throw Error('กรุณาเข้าสู่ระบบไรเดอร์');
+  }
+
+  const loading = window.KranuanRiderLoading?.start(
+    'กำลังบันทึกโปรไฟล์...',
+    'กำลังจัดเก็บข้อมูลและการตั้งค่าของไรเดอร์'
+  );
+
+  try {
+    // ส่งชื่อใหม่ไประบบกลางเมื่อมีการเปลี่ยนชื่อ
+    if (p.name !== staffProfileName) {
+      const result = await K.request('/staff/profile', {
+        method: 'POST',
+        body: JSON.stringify({ name: p.name })
+      });
+
+      applyStaffProfile(result);
+      K.user.name = result.name;
+    }
+
+    // การตั้งค่าอื่นเก็บไว้บนอุปกรณ์เดิม
+    const prefs = {
+      ...p,
+      avatar_url: '',
+      photos: [null, null, null, null]
+    };
+
+    try {
+      localStorage.setItem(
+        PROF_KEY,
+        JSON.stringify(prefs)
+      );
+    } catch (error) {
+      toast('บันทึกการตั้งค่าลงเครื่องนี้ไม่ได้');
+    }
+
+  } finally {
+    // ปิด Loading ไม่ว่าทำงานสำเร็จหรือมีปัญหา
+    loading?.close();
+  }
+};
 DB.photo=async(slot,image)=>{if(!riderConnected)throw Error('กรุณาเข้าสู่ระบบไรเดอร์');const p=await K.request('/staff/photo',{method:'POST',body:JSON.stringify({slot,image})});applyStaffProfile({...p,name:K.user.name});return slot==='avatar'?p.pending_avatar||p.avatar_url:p.photos[Number(slot.slice(1))]};
 actions.rmPhoto=async slot=>{await DB.photo(slot,null);toast('นำภาพออกจากระบบแล้ว')};
 const beforeStaffRiderSync=riderSync;riderSync=async function(){if(riderConnected&&!staffProfileBusy&&!staffPhotoBusy&&!staffPickerOpen&&!(tab==='settings'&&document.activeElement?.matches('input,textarea,select'))){staffProfileBusy=true;try{const before=JSON.stringify(centralStaffProfile);await DB.getProfile();if(tab==='settings'&&before!==JSON.stringify(centralStaffProfile))render()}catch(e){toast('โหลดรูปบัญชีไม่ได้: '+e.message)}finally{staffProfileBusy=false}}await beforeStaffRiderSync()};
