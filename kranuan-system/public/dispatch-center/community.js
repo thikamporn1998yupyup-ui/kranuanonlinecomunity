@@ -763,7 +763,28 @@ function avatar(message) {
     dialog.innerHTML = `
       <div class="kc-shell">
         <header>
-          <h2>💬 แชทอำเภอกระนวน</h2>
+         
+<h2>💬 แชทอำเภอกระนวน</h2>
+${S.user?.role === 'admin' ? `
+  <button
+    type="button"
+    id="kcClearAll"
+    title="ล้างข้อความทั้งหมดในแชทอำเภอ"
+    style="
+      margin-left:auto;
+      padding:7px 11px;
+      border:1px solid #f1cccc;
+      border-radius:9px;
+      background:#fff3f3;
+      color:#b53c3c;
+      font-size:12px;
+      font-weight:700;
+      cursor:pointer;
+    ">
+    ล้างแชท
+  </button>
+` : ''}
+
           <button type="button" class="kc-close"
             data-close aria-label="ปิด">×</button>
         </header>
@@ -790,6 +811,78 @@ function avatar(message) {
 
     dialog.querySelector('[data-close]').onclick =
       () => dialog.close();
+
+const clearAllButton = dialog.querySelector('#kcClearAll');
+
+if (clearAllButton) {
+  clearAllButton.onclick = async () => {
+    const firstConfirm = window.confirm(
+      'คุณกำลังจะลบข้อความทั้งหมดในแชทอำเภอ\n\n' +
+      'ข้อความของสมาชิกทุกคน รวมถึงข้อความปักหมุด ' +
+      'จะถูกลบออกจากระบบ\n\n' +
+      'ต้องการดำเนินการต่อหรือไม่?'
+    );
+
+    if (!firstConfirm) return;
+
+    const typed = window.prompt(
+      'เพื่อยืนยันการลบถาวร กรุณาพิมพ์คำว่า ลบทั้งหมด'
+    );
+
+    if (typed !== 'ลบทั้งหมด') {
+      if (typed !== null) {
+        alert('คำยืนยันไม่ถูกต้อง ยกเลิกการลบ');
+      }
+      return;
+    }
+
+    clearAllButton.disabled = true;
+    clearAllButton.textContent = 'กำลังล้างแชท...';
+
+    try {
+      const result = await api('community/clear', {
+        confirm: 'CLEAR_ALL_COMMUNITY_MESSAGES'
+      });
+
+      S.messages.clear();
+      S.pending.clear();
+      S.lastMessage = null;
+      S.pinnedId = '';
+      S.initialized = false;
+
+      const list = S.dialog?.querySelector('.kc-list');
+
+      if (list) {
+        list.innerHTML = `
+          <div class="kc-empty">
+            <p>ยังไม่มีข้อความ</p>
+            <small>เริ่มพูดคุยกับคนกระนวนกันได้เลย</small>
+          </div>
+        `;
+      }
+
+      const pin = S.dialog?.querySelector('.kc-pin');
+      if (pin) {
+        pin.hidden = true;
+        pin.textContent = '';
+      }
+
+      updateBadge(0);
+
+      alert(
+        'ล้างแชทอำเภอสำเร็จ\n' +
+        'ลบข้อความทั้งหมด ' + result.deleted + ' รายการ'
+      );
+
+      await refresh();
+    } catch (error) {
+      showError('ล้างแชทไม่สำเร็จ: ' + error.message);
+    } finally {
+      clearAllButton.disabled = false;
+      clearAllButton.textContent = 'ล้างแชท';
+    }
+  };
+}
 
     dialog.querySelector('.kc-jump').onclick = () => {
       scrollBottom();
