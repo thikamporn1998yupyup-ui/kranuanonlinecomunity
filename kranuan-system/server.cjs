@@ -426,7 +426,8 @@ snapshot = {
   pickup_lat: shop.lat,
   pickup_lng: shop.lng,
   food_stage: 'waiting',
-  short_code: shortCode
+  short_code: shortCode,
+payment_method: foodPaymentMethod
 };
 
  }else {const pickupLat=coord(b.pickup_lat,-90,90),pickupLng=coord(b.pickup_lng,-180,180);if((pickupLat===null)!==(pickupLng===null))fail(400,'ระบุพิกัดจุดรับให้ครบทั้งสองค่า');const vehicle=b.vehicle===undefined?'bike':b.vehicle;if(!['bike','car'].includes(vehicle))fail(400,'ประเภทรถไม่ถูกต้อง');const passengers=isRide?Number(b.passenger_count??1):0;if(isRide&&(!Number.isInteger(passengers)||passengers<1||passengers>(vehicle==='car'?4:1)))fail(400,'จำนวนผู้โดยสารเกินความจุรถ');if(b.vehicle!==undefined){if(pickupLat===null||pickupLng===null||lat===null||lng===null)fail(400,'กรุณาปักหมุดจุดรับและจุดส่ง');if(!isRide&&b.inspection_consent!==true)fail(400,'กรุณายินยอมให้ตรวจสิ่งของก่อนรับส่ง');}snapshot={shop:isRide?'เรียกรถรับ–ส่งผู้โดยสาร':'เรียกไรเดอร์รับ–ส่งของ',vehicle,description:isRide?'ผู้โดยสาร '+passengers+' คน'+(text(b.description,200)?' · '+text(b.description,200):''):required(b.description,'รายละเอียดสิ่งของ',300),items:[],order_mode:'rider_purchase',pickup_lat:pickupLat,pickup_lng:pickupLng,passenger_count:isRide?passengers:null};}
