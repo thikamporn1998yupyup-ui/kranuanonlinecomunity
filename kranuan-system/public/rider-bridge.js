@@ -35,6 +35,7 @@ actions.toggle = async () => {
 };
 actions.picked=async id=>{await DB.patch(id,{status:'picked'});toast(jobs.find(j=>j.id===id)?.type==='ride'?'รับผู้โดยสารแล้ว เริ่มเดินทาง':'รับของแล้ว กำลังจัดส่ง')};
 
+
 actions.delivered = async function(id) {
   const job = jobs.find(j => j.id === id);
 
@@ -43,26 +44,35 @@ actions.delivered = async function(id) {
     return;
   }
 
-  // ฟังก์ชันนี้ใช้กับส่งคนและส่งของ
-  // งานอาหารมีระบบถ่ายรูปแยกอยู่แล้ว
+  // งานอาหารและพัสดุใช้หน้าถ่ายรูปหลักฐานแยก
+  // ฟังก์ชันนี้รองรับงานส่งคนและงานที่ยังใช้ระบบเดิม
   if (!['ride', 'parcel', 'market'].includes(job.type)) {
     throw Error('ประเภทงานไม่ถูกต้อง');
   }
 
-  // ป้องกันการกดส่งสำเร็จซ้ำ
   if (window.krTransportCompleting) return;
+
+  // ต้องยืนยันกับไรเดอร์ก่อน จึงเริ่มส่งข้อมูล
+  if (job.type === 'ride') {
+    const confirmed = window.confirm(
+      'ยืนยันว่าถึงจุดหมายและผู้โดยสารลงจากรถเรียบร้อยแล้ว?'
+    );
+
+    if (!confirmed) return;
+  }
+
   window.krTransportCompleting = true;
 
+  const loading = window.KranuanRiderLoading?.start(
+    job.type === 'ride'
+      ? 'กำลังยืนยันถึงปลายทาง...'
+      : 'กำลังบันทึกส่งสำเร็จ...',
+    'กำลังส่งข้อมูลให้ระบบกลาง กรุณารอสักครู่'
+  );
+
   try {
-   
-    // งานส่งคน: ยืนยันถึงปลายทางก่อนจบงาน
+    // งานส่งคนต้องบันทึกการถึงจุดหมายก่อนปิดงาน
     if (job.type === 'ride') {
-      const confirmed = window.confirm(
-        'ยืนยันว่าถึงจุดหมายและผู้โดยสารลงจากรถเรียบร้อยแล้ว?'
-      );
-
-      if (!confirmed) return;
-
       await K.request(
         '/orders/' + encodeURIComponent(id) + '/arrive',
         {
@@ -70,28 +80,55 @@ actions.delivered = async function(id) {
           body: '{}'
         }
       );
+
+      loading?.update(
+        'กำลังบันทึกส่งสำเร็จ...',
+        'ยืนยันปลายทางแล้ว กำลังปิดงานในระบบกลาง'
+      );
     }
 
-    // เซิร์ฟเวอร์บันทึกสถานะส่งสำเร็จ
+    // รอเซิร์ฟเวอร์ยืนยันก่อนแจ้งว่าสำเร็จ
     await DB.patch(id, { status: 'delivered' });
 
-    toast('ส่งถึงปลายทางแล้ว กำลังเปิดหน้าชำระเงิน');
+    // ปิด Loading ก่อนเปิดหน้าชำระเงิน
+    loading?.close();
 
+    toast('ส่งสำเร็จแล้ว กำลังเปิดหน้าชำระเงิน');
 
-    // เปิดหน้าชำระเงินโดยตรง
-    if (typeof window.KranuanOpenOrderPayment === 'function') {
-      await window.KranuanOpenOrderPayment(id);
-    } else {
-      toast('บันทึกส่งสำเร็จแล้ว กรุณาเปิดเมนูชำระเงิน');
+    // โหลดรายการใหม่เงียบ ๆ เบื้องหลัง
+    if (typeof riderSync === 'function') {
+      riderSync().catch(() => {});
     }
 
-    await riderSync();
+    // หน้าชำระเงินมีข้อผิดพลาด ต้องไม่ส่งงานซ้ำ
+    if (
+      typeof window.KranuanOpenOrderPayment === 'function'
+    ) {
+      try {
+        await window.KranuanOpenOrderPayment(id);
+      } catch (paymentError) {
+        toast(
+          'บันทึกส่งสำเร็จแล้ว แต่เปิดหน้าชำระเงินไม่ได้: ' +
+          paymentError.message
+        );
+      }
+    } else {
+      toast(
+        'บันทึกส่งสำเร็จแล้ว กรุณาเปิดเมนูชำระเงิน'
+      );
+    }
+
   } catch (error) {
-    toast('ดำเนินการไม่สำเร็จ: ' + error.message);
+    toast(
+      'ยังบันทึกส่งสำเร็จไม่ได้: ' + error.message
+    );
+
   } finally {
+    loading?.close();
     window.krTransportCompleting = false;
   }
 };
+
 actions.doCancel=async()=>{sh.msg='งานที่รับแล้วต้องให้ผู้ดูแลช่วยยกเลิก กรุณาติดต่อฝ่ายดูแลผ่านเมนูร้องเรียน';};
 actions.sendSos=async()=>{await DB.log('sos',{lat:pos?.lat,lng:pos?.lng,detail:'ไรเดอร์กด SOS'});sh.msg='บันทึกในหน้าเรื่องแจ้งของผู้ดูแลแล้ว ยังไม่โทรหรือแจ้งหน่วยฉุกเฉินอัตโนมัติ โทรขอความช่วยเหลือได้ทันที'};
 
