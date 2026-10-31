@@ -386,6 +386,19 @@ setInterval(krChatRead, 7000);
 
 krChatBind();
 
+
+/* Open existing private rider chat */
+window.KranuanOpenOrderChat = function(orderId) {
+  if (!orderId) return;
+
+  const focus = document.getElementById('krOrderFocus');
+
+  if (focus?.open) {
+    window.KranuanOrderFocus?.close();
+  }
+
+  open(String(orderId), 'chat');
+};
 /* END KRANUAN — FAST ORDER CHAT */
 })();
 
