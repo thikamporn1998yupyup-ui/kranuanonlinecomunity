@@ -14,7 +14,54 @@ actions.picked=async id=>{await DB.patch(id,{status:'picked'});toast(jobs.find(j
 actions.delivered=async id=>{await DB.patch(id,{status:'delivered'});window.dispatchEvent(new CustomEvent('kranuan:delivery-completed',{detail:{orderId:id}}));toast('ส่งสำเร็จ กรุณาดำเนินการชำระเงินให้ครบ')};
 actions.doCancel=async()=>{sh.msg='งานที่รับแล้วต้องให้ผู้ดูแลช่วยยกเลิก กรุณาติดต่อฝ่ายดูแลผ่านเมนูร้องเรียน';};
 actions.sendSos=async()=>{await DB.log('sos',{lat:pos?.lat,lng:pos?.lng,detail:'ไรเดอร์กด SOS'});sh.msg='บันทึกในหน้าเรื่องแจ้งของผู้ดูแลแล้ว ยังไม่โทรหรือแจ้งหน่วยฉุกเฉินอัตโนมัติ โทรขอความช่วยเหลือได้ทันที'};
-async function riderSync(){if(riderLoading||!riderConnected)return;riderLoading=true;try{jobs=await DB.jobs();lastErr='';detect();if(tab!=='settings')render()}catch(e){lastErr='เชื่อมระบบกลางไม่ได้: '+e.message;toast(lastErr)}finally{riderLoading=false}}
+
+let riderSyncPending = false;
+let riderJobsFingerprint = '';
+
+async function riderSync() {
+  if (!riderConnected) return;
+
+  if (riderLoading) {
+    riderSyncPending = true;
+    return;
+  }
+
+  riderLoading = true;
+
+  try {
+    const nextJobs = await DB.jobs();
+
+    // ไม่ใช้ระยะทาง GPS เป็นเหตุให้วาดหน้าจอใหม่ทั้งหมด
+    const fingerprint = JSON.stringify(
+      nextJobs.map(({ distance_km, ...order }) => order)
+    );
+
+    const changed = fingerprint !== riderJobsFingerprint;
+
+    jobs = nextJobs;
+    lastErr = '';
+
+    if (changed) {
+      riderJobsFingerprint = fingerprint;
+      detect();
+
+      if (tab !== 'settings') {
+        render();
+      }
+    }
+  } catch (error) {
+    lastErr = 'เชื่อมระบบกลางไม่ได้: ' + error.message;
+    toast(lastErr);
+  } finally {
+    riderLoading = false;
+
+    // หากมีเหตุการณ์เข้ามาระหว่างโหลด ให้ตรวจอีกหนึ่งรอบ
+    if (riderSyncPending) {
+      riderSyncPending = false;
+      queueMicrotask(riderSync);
+    }
+  }
+}
 async function riderLogout(){if(riderConnected)await DB.presence(false);await K.logout();location.reload()}
 
 function riderItems(j){const passenger=j.type==='ride';return '<div style="font-size:12px;padding:12px;background:var(--s2);border-radius:12px;margin:10px 0;overflow-wrap:anywhere"><strong style="color:'+ (passenger?'#ffcf5c':'var(--ac2)')+'">'+esc(passenger?'งานส่งคน · ผู้โดยสาร '+(j.passenger_count||1)+' คน · '+(j.vehicle==='car'?'รถยนต์':'รถจักรยานยนต์'):j.type==='market'?'รับสินค้าตลาด':j.type==='parcel'?'งานส่งของ · '+(j.vehicle==='car'?'รถยนต์':'รถจักรยานยนต์'):'งานอาหาร')+'</strong><div>'+esc(j.item||'')+'</div><div>'+(passenger?'ค่าเดินทาง ':'ค่าสินค้า '+baht(j.goods_total)+' · ค่าส่ง ')+baht(j.fee)+'</div>'+(j.note?'<div>หมายเหตุ: '+esc(j.note)+'</div>':'')+'</div>'}
