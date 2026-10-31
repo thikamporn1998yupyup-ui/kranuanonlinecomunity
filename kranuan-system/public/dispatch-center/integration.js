@@ -70,7 +70,7 @@ async function ensureCollection(id){if(!pendingState()||P.opening)return;if(!id)
 window.addEventListener('kranuan:delivery-completed',e=>{const id=e.detail?.orderId;if(typeof id!=='string')return;if(!S.user&&window.K?.user)S.user=window.K.user;markPending(id);ensureCollection(id).catch(()=>{})});
 
 const css=document.createElement('link');css.rel='stylesheet';css.href='/dispatch-center/integration.css?v=20261030-collection';document.head.append(css);let scheduled=false;new MutationObserver(()=>{if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;decorate()})}).observe(document.body,{subtree:true,childList:true});decorate();poll();setInterval(poll,5000);window.addEventListener('pagehide',()=>S.eventsSource?.close());window.addEventListener('pageshow',()=>{if(S.eventsSource?.readyState===2)S.eventsSource=null;poll()});
-})();
+
 
 /* KRANUAN — FAST ORDER CHAT */
 const krChatStreams = new WeakSet();
@@ -387,7 +387,7 @@ setInterval(krChatRead, 7000);
 krChatBind();
 
 /* END KRANUAN — FAST ORDER CHAT */
-
+})();
 
 /* KRANUAN COMMUNITY CHAT BUTTON FIX */
 (() => {
