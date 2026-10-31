@@ -112,10 +112,13 @@
   actions.picked = async function(orderId) {
     const job = jobs.find(item => item.id === orderId);
 
-    // งานเรียกรถและส่งพัสดุยังใช้ระบบเดิม
-    if (!job || job.type !== 'food') {
+    
+    // งานอาหารและพัสดุต้องถ่ายรูปตอนรับสินค้า
+    // งานส่งคนยังใช้ขั้นตอนรับผู้โดยสารเดิม
+    if (!job || !['food', 'parcel'].includes(job.type)) {
       return originalPicked(orderId);
     }
+
 
     if (document.getElementById('krPickupDialog')) return;
 
