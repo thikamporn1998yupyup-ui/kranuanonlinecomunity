@@ -99,15 +99,21 @@ async function persistHistoricalUserRepair(ref, saved, repairedTables, count) {
   await backup.set({created_at:new Date().toISOString(),reason:'missing historical order user references',snapshot:saved});
   console.log('[KRANUAN REPAIR BACKUP OK] Original snapshot saved before repair.');
   // Refuse to overwrite another running instance's changes since this snapshot was read.
+  let applied = false;
   const result = await ref.transaction(current => {
+    applied = false;
+    // The SDK may first call this with an empty local cache. A null proposal
+    // is a no-op if the server is empty, and is retried if the server has data.
+    if (current === null) return null;
     if (!require('node:util').isDeepStrictEqual(current,saved)) return undefined;
+    applied = true;
     return {...current,tables:{...current.tables,
       users:JSON.parse(repairedTables.users),
       member_profiles:JSON.parse(repairedTables.member_profiles),
       sessions:JSON.parse(repairedTables.sessions)
     }};
   },undefined,false);
-  if (!result.committed) throw Error('[KRANUAN REPAIR RETRY] Data changed during repair. Original backup kept; repair was not applied. Retry deployment.');
+  if (!result.committed || !applied) throw Error('[KRANUAN REPAIR RETRY] State did not match the saved snapshot. Original backup kept; repair was not applied. Retry deployment.');
   console.log('[KRANUAN REPAIR SAVED] '+count+' disabled historical user reference(s) added. Orders and order events preserved.');
 }
 
@@ -1036,6 +1042,7 @@ if(require.main===module)process.once('SIGTERM',()=>{for(const [res]of clients)r
 const heartbeat=setInterval(()=>{for(const [res,s] of clients){if(!get('SELECT token_hash FROM sessions WHERE token_hash=? AND expires>?',s.token,Date.now())){res.end();clients.delete(res)}else res.write(': heartbeat\n\n')}for(const [k,b]of buckets)if(b.until<Date.now())buckets.delete(k);run('DELETE FROM sessions WHERE expires<?',Date.now())},25000);heartbeat.unref();
 if(require.main===module)initialize().then(()=>server.listen(Number(process.env.PORT||3000),'0.0.0.0',()=>console.log('Kranuan server listening on '+(process.env.PORT||3000)))).catch(e=>{console.error('Startup failed:',e.message);process.exit(1)});
 module.exports={server,db,initialize};
+
 
 
 
