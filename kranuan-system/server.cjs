@@ -15,7 +15,7 @@ let firebaseRef=null,saveQueue=Promise.resolve(),firebaseBaseline={};
 function serializeTables(){const tables={};for(const table of FIREBASE_TABLES){const rows=all('SELECT * FROM '+table);tables[table]=JSON.stringify(Object.fromEntries(rows.map((r,i)=>[String(r.id??i),r])))}return tables}
 async function persistState(){if(!firebaseRef)return;const current=serializeTables(),updates={};for(const table of FIREBASE_TABLES)if(current[table]!==firebaseBaseline[table])updates['tables/'+table]=JSON.parse(current[table]);if(!Object.keys(updates).length)return;updates.version=1;/* update() touches only the listed tables, so tables this version does not know are never deleted */await firebaseRef.update(updates);firebaseBaseline=current}
 function restoreFirebaseTables(saved) {
-  if (saved?.version !== 1 || !saved.tables) return;
+  if (saved?.version !== 1 || !saved.tables) return {repairedUsers:0};
   let stage = 'begin';
   db.exec('BEGIN IMMEDIATE');
   try {
@@ -44,6 +44,26 @@ function restoreFirebaseTables(saved) {
         db.prepare(sql).run(...columns.map(c => row[c]));
       }
     }
+    stage = 'repair historical user references';
+    const missingUsers = new Set();
+    // Only the two relationships identified in the production restore log.
+    for (const [table,column] of [['orders','customer_id'],['order_events','actor_id']]) {
+      for (const row of db.prepare('SELECT DISTINCT t."'+column+'" AS missing_id FROM "'+table+'" t LEFT JOIN users u ON u.id=t."'+column+'" WHERE t."'+column+'" IS NOT NULL AND u.id IS NULL').all()) {
+        if (typeof row.missing_id !== 'string' || !row.missing_id.length) {
+          throw Error('Invalid historical user reference');
+        }
+        missingUsers.add(row.missing_id);
+      }
+    }
+    const repairedAt = new Date().toISOString();
+    for (const userId of missingUsers) {
+      // A disabled historical reference, NOT a recovered person or a usable account.
+      db.prepare('INSERT INTO users(id,username,password_hash,role,name,online,accepts_rides,created_at) VALUES(?,NULL,NULL,?,?,0,0,?)')
+        .run(userId,'customer','บัญชีเดิมไม่พร้อมใช้งาน',repairedAt);
+      db.prepare("INSERT INTO member_profiles(id,status,verified,setup_complete,created_at,updated_at) VALUES(?,'suspended',0,0,?,?) ON CONFLICT(id) DO UPDATE SET status='suspended',verified=0,setup_complete=0,updated_at=excluded.updated_at")
+        .run(userId,repairedAt,repairedAt);
+      db.prepare('UPDATE sessions SET expires=0 WHERE user_id=?').run(userId);
+    }
     stage = 'validate relationships';
     const issues = db.prepare('PRAGMA foreign_key_check').all();
     if (issues.length) {
@@ -64,11 +84,31 @@ function restoreFirebaseTables(saved) {
     stage = 'commit';
     db.exec('COMMIT');
     console.log('[KRANUAN RESTORE OK] All saved tables restored; foreign-key validation passed.');
+    return {repairedUsers:missingUsers.size};
   } catch (error) {
     db.exec('ROLLBACK');
     const detail = /broken reference\(s\)/.test(error.message) ? error.message : 'Restore failed during ' + stage + ' (' + (error.code || 'validation error') + '). No Firebase data was changed.';
     throw new Error('[KRANUAN RESTORE FAILED] ' + detail);
   }
+}
+
+async function persistHistoricalUserRepair(ref, saved, repairedTables, count) {
+  if (!count) return;
+  const backup = ref.parent.child('restore_backups').push();
+  // A failed backup stops startup before any production state is modified.
+  await backup.set({created_at:new Date().toISOString(),reason:'missing historical order user references',snapshot:saved});
+  console.log('[KRANUAN REPAIR BACKUP OK] Original snapshot saved before repair.');
+  // Refuse to overwrite another running instance's changes since this snapshot was read.
+  const result = await ref.transaction(current => {
+    if (!require('node:util').isDeepStrictEqual(current,saved)) return undefined;
+    return {...current,tables:{...current.tables,
+      users:JSON.parse(repairedTables.users),
+      member_profiles:JSON.parse(repairedTables.member_profiles),
+      sessions:JSON.parse(repairedTables.sessions)
+    }};
+  },undefined,false);
+  if (!result.committed) throw Error('[KRANUAN REPAIR RETRY] Data changed during repair. Original backup kept; repair was not applied. Retry deployment.');
+  console.log('[KRANUAN REPAIR SAVED] '+count+' disabled historical user reference(s) added. Orders and order events preserved.');
 }
 
 async function initialize(){
@@ -108,8 +148,10 @@ async function initialize(){
     }
   }
 
- restoreFirebaseTables(saved);
- firebaseBaseline=serializeTables();seedAdmin();await persistState();
+ const restored=restoreFirebaseTables(saved);
+ const restoredTables=serializeTables();
+ await persistHistoricalUserRepair(firebaseRef,saved,restoredTables,restored.repairedUsers);
+ firebaseBaseline=restoredTables;seedAdmin();await persistState();
 }
 function seedAdmin(){if(!get("SELECT id FROM users WHERE role='admin'")){const pass=process.env.ADMIN_PASSWORD;if(!pass||pass.length<12)throw Error('Set ADMIN_PASSWORD to at least 12 characters before first start.');run('INSERT INTO users(id,username,password_hash,role,name,created_at) VALUES(?,?,?,?,?,?)',id(),process.env.ADMIN_USERNAME||'admin',passHash(pass),'admin','ผู้ดูแลกระนวน',now())}}
 function fail(status,message){throw Object.assign(new Error(message),{status})}
@@ -994,5 +1036,6 @@ if(require.main===module)process.once('SIGTERM',()=>{for(const [res]of clients)r
 const heartbeat=setInterval(()=>{for(const [res,s] of clients){if(!get('SELECT token_hash FROM sessions WHERE token_hash=? AND expires>?',s.token,Date.now())){res.end();clients.delete(res)}else res.write(': heartbeat\n\n')}for(const [k,b]of buckets)if(b.until<Date.now())buckets.delete(k);run('DELETE FROM sessions WHERE expires<?',Date.now())},25000);heartbeat.unref();
 if(require.main===module)initialize().then(()=>server.listen(Number(process.env.PORT||3000),'0.0.0.0',()=>console.log('Kranuan server listening on '+(process.env.PORT||3000)))).catch(e=>{console.error('Startup failed:',e.message);process.exit(1)});
 module.exports={server,db,initialize};
+
 
 
