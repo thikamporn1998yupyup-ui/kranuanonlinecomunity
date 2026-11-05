@@ -2,8 +2,12 @@
 'use strict';
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {DatabaseSync}=require('node:sqlite');
+const gzipPublic=require('node:util').promisify(require('node:zlib').gzip);
 const publicDir=path.join(__dirname,'public');
+const servePerformance=require('./performance.cjs').createPerformance(publicDir);
 const db=new DatabaseSync(':memory:');db.exec(fs.readFileSync(path.join(__dirname,'schema.sql'),'utf8'));db.exec('PRAGMA busy_timeout=5000');
+// Cover frequent merchant/rider catalog and profile lookups without changing rows.
+db.exec('CREATE INDEX IF NOT EXISTS perf_orders_shop ON orders(shop_id,created_at); CREATE INDEX IF NOT EXISTS perf_orders_rider ON orders(rider_id,created_at); CREATE INDEX IF NOT EXISTS perf_menus_shop ON menus(shop_id,name); CREATE INDEX IF NOT EXISTS perf_reports_user_kind ON reports(user_id,kind,created_at)');
 const now=()=>new Date().toISOString(),id=()=>crypto.randomUUID(),hash=s=>crypto.createHash('sha256').update(s).digest('hex');
 const get=(sql,...v)=>db.prepare(sql).get(...v),all=(sql,...v)=>db.prepare(sql).all(...v),run=(sql,...v)=>db.prepare(sql).run(...v);
 const FIREBASE_TABLES=['users','shops','menus','sessions','orders','order_events','reports','audit','market_listings','market_comments','market_reports','staff_profiles','shop_reviews','rider_gallery','ads','member_profiles','member_identities'];
@@ -74,7 +78,7 @@ function orderView(o,u){const snap=JSON.parse(o.snapshot);return {rider:staffApi
 
 function transportConfig(){const value=(key,fallback)=>{const n=Number(process.env[key]??fallback);if(!Number.isFinite(n)||n<0||n>10000)fail(500,'ตั้งค่าบริการรถไม่ถูกต้อง');return Math.round(n*100)/100};return {bike_base:value('DELIVERY_FEE_THB',25),bike_ride_base:value('RIDE_FEE_THB',process.env.DELIVERY_FEE_THB||25),car_base:value('TRANSPORT_CAR_BASE_THB',55),passenger_extra:value('TRANSPORT_PASSENGER_THB',15),bike_limit:1,car_limit:4}}
 function transportVehicle(uid){const r=get("SELECT payload FROM reports WHERE user_id=? AND kind='transport_vehicle' ORDER BY created_at DESC LIMIT 1",uid);try{return JSON.parse(r?.payload||'{}').vehicle==='car'?'car':'bike'}catch{return 'bike'}}
-function visibleOrders(u){if(u.role==='admin')return all('SELECT * FROM orders ORDER BY created_at DESC LIMIT 300');if(u.role==='merchant')return all("SELECT * FROM orders WHERE shop_id=? OR (kind='market' AND json_extract(snapshot,'$.seller_id')=?) ORDER BY created_at DESC LIMIT 100",u.shop_id,u.id);if(u.role==='rider')return all("SELECT * FROM orders WHERE rider_id=? OR (status='ready' AND rider_id IS NULL AND (kind<>'ride' OR ?=1)) ORDER BY created_at DESC LIMIT 100",u.id,u.accepts_rides?1:0).filter(o=>!['ride','parcel'].includes(o.kind)||(JSON.parse(o.snapshot).vehicle||'bike')===transportVehicle(u.id));return all("SELECT * FROM orders WHERE customer_id=? OR (kind='market' AND json_extract(snapshot,'$.seller_id')=?) ORDER BY created_at DESC LIMIT 100",u.id,u.id)}
+function visibleOrders(u){if(u.role==='admin')return all('SELECT * FROM orders ORDER BY created_at DESC LIMIT 300');if(u.role==='merchant')return all("SELECT * FROM orders WHERE shop_id=? OR (kind='market' AND json_extract(snapshot,'$.seller_id')=?) ORDER BY created_at DESC LIMIT 100",u.shop_id,u.id);if(u.role==='rider'){const vehicle=transportVehicle(u.id);return all("SELECT * FROM orders WHERE rider_id=? OR (status='ready' AND rider_id IS NULL AND (kind<>'ride' OR ?=1)) ORDER BY created_at DESC LIMIT 100",u.id,u.accepts_rides?1:0).filter(o=>!['ride','parcel'].includes(o.kind)||(JSON.parse(o.snapshot).vehicle||'bike')===vehicle);}return all("SELECT * FROM orders WHERE customer_id=? OR (kind='market' AND json_extract(snapshot,'$.seller_id')=?) ORDER BY created_at DESC LIMIT 100",u.id,u.id)}
 function canReadOrder(u,o){return u.role==='admin'||o.customer_id===u.id||o.rider_id===u.id||(u.role==='merchant'&&o.shop_id===u.shop_id)||(o.kind==='market'&&JSON.parse(o.snapshot).seller_id===u.id)}
 const clients=new Map();function emit(){for(const [res] of clients){try{res.write('event: refresh\ndata: {}\n\n')}catch{clients.delete(res)}}}
 function transaction(fn){db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result}catch(e){db.exec('ROLLBACK');throw e}}
@@ -82,27 +86,24 @@ function addEvent(orderId,u,status,note=''){run('INSERT INTO order_events(order_
 const buckets=new Map();function limit(req,key,max=200){const ip=req.socket.remoteAddress;const k=ip+':'+key;let b=buckets.get(k);if(!b||b.until<Date.now()){b={n:0,until:Date.now()+60000};buckets.set(k,b)}if(++b.n>max)fail(429,'ทำรายการบ่อยเกินไป กรุณารอสักครู่')}
 
 function send(res, status, value) {
-  const readOnly = ['GET', 'HEAD'].includes(
-    res.req?.method
-  );
-
-  const task = saveQueue.then(async () => {
-    // ไม่จำเป็นต้องบันทึกฐานข้อมูลซ้ำเมื่อแค่อ่าน
-    if (!readOnly) {
-      await persistState();
+  const reply = async () => {
+    if (res.destroyed) return;
+    const payload=JSON.stringify(value);
+    const headers={'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'};
+    const pathname=new URL(res.req.url,'http://localhost').pathname;
+    if(res.req.method==='GET'&&status===200&&['/api/shops','/api/menus','/api/config'].includes(pathname)) {
+      headers.Vary='Accept-Encoding';
+      headers.ETag='W/"'+hash(payload)+'"';
+      if(res.req.headers['if-none-match']===headers.ETag){res.writeHead(304,headers);res.end();return;}
     }
-
-    if (!res.destroyed) {
-      res.writeHead(status, {
-        'Content-Type': 'application/json; charset=utf-8',
-        'Cache-Control': 'no-store'
-      });
-      res.end(JSON.stringify(value));
-    }
-  });
-
-  saveQueue = task.catch(() => {});
-  return task;
+    let bytes=payload;
+    if(headers.ETag && Buffer.byteLength(payload)>1024 && /(?:^|,)\s*gzip\s*(?:,|$)/i.test(res.req.headers['accept-encoding']||'')){bytes=await gzipPublic(payload);headers['Content-Encoding']='gzip';}
+    if(res.destroyed)return;
+    res.writeHead(status,headers);res.end(bytes);
+  };
+  if(['GET','HEAD'].includes(res.req?.method)) return reply();
+  const task=saveQueue.then(async()=>{await persistState();await reply();});
+  saveQueue=task.catch(()=>{});return task;
 }
 
 async function body(req){let size=0,chunks=[];for await(const chunk of req){size+=chunk.length;if(size>3500000)fail(413,'รูปหรือข้อมูลใหญ่เกินไป');chunks.push(chunk)}try{return JSON.parse(Buffer.concat(chunks).toString()||'{}')}catch{fail(400,'JSON ไม่ถูกต้อง')}}
@@ -930,9 +931,10 @@ if (action === 'status' && method === 'POST') {
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.woff2':'font/woff2','.json':'application/json'};
 const server=http.createServer(async(req,res)=>{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','same-origin');res.setHeader('X-Frame-Options','SAMEORIGIN');res.setHeader('Permissions-Policy','geolocation=(self), camera=(self)');try{
  const url=new URL(req.url,'http://localhost');if(url.pathname.startsWith('/api/'))return await api(req,res,url);
- if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed');let file=decodeURIComponent(url.pathname);if(file.endsWith('/'))file+='index.html';file=path.resolve(publicDir,'.'+file);if(!file.startsWith(publicDir+path.sep))fail(403,'Forbidden');if(!fs.existsSync(file)||!fs.statSync(file).isFile())fail(404,'File not found');res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream','Cache-Control':'no-cache'});if(req.method==='HEAD')res.end();else fs.createReadStream(file).pipe(res);
+ if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed');if(await servePerformance(req,res,url))return;let file=decodeURIComponent(url.pathname);if(file.endsWith('/'))file+='index.html';file=path.resolve(publicDir,'.'+file);if(!file.startsWith(publicDir+path.sep))fail(403,'Forbidden');if(!fs.existsSync(file)||!fs.statSync(file).isFile())fail(404,'File not found');res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream','Cache-Control':'no-cache'});if(req.method==='HEAD')res.end();else fs.createReadStream(file).pipe(res);
  }catch(e){if(!res.headersSent){if(!e.status)console.error('Request failed:',e.message);send(res,e.status||500,{error:e.status?e.message:'ระบบขัดข้อง กรุณาลองใหม่'})}else res.end()}});
 if(require.main===module)process.once('SIGTERM',()=>{for(const [res]of clients)res.end();server.close(()=>{db.close();process.exit(0)});setTimeout(()=>process.exit(0),10000).unref()});
 const heartbeat=setInterval(()=>{for(const [res,s] of clients){if(!get('SELECT token_hash FROM sessions WHERE token_hash=? AND expires>?',s.token,Date.now())){res.end();clients.delete(res)}else res.write(': heartbeat\n\n')}for(const [k,b]of buckets)if(b.until<Date.now())buckets.delete(k);run('DELETE FROM sessions WHERE expires<?',Date.now())},25000);heartbeat.unref();
 if(require.main===module)initialize().then(()=>server.listen(Number(process.env.PORT||3000),'0.0.0.0',()=>console.log('Kranuan server listening on '+(process.env.PORT||3000)))).catch(e=>{console.error('Startup failed:',e.message);process.exit(1)});
 module.exports={server,db,initialize};
+
