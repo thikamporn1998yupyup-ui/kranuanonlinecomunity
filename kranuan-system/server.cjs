@@ -521,6 +521,10 @@ const clean = {
  if(p==='/api/presence'&&method==='POST'){needUser(u,['rider']);if(b.accepts_rides!==undefined&&typeof b.accepts_rides!=='boolean')fail(400,'สถานะรับส่งคนไม่ถูกต้อง');const online=b.online===undefined?!!u.online:b.online===true,rides=b.accepts_rides===undefined?!!u.accepts_rides:b.accepts_rides;run('UPDATE users SET online=?,accepts_rides=? WHERE id=?',online?1:0,rides?1:0,u.id);return send(res,200,{ok:true,user:publicUser(get('SELECT * FROM users WHERE id=?',u.id))})}
  if(p==='/api/reports'&&method==='POST'){run('INSERT INTO reports VALUES(?,?,?,?,?)',id(),u.id,text(b.kind,50),JSON.stringify(b).slice(0,10000),now());return send(res,201,{ok:true,message:'บันทึกเรื่องแล้ว ยังไม่มีระบบโทรหรือแจ้งเจ้าหน้าที่ภายนอก'})}
 
+if (p === '/api/partner/stats' && method === 'GET') {
+  needUser(u, ['rider', 'merchant']);
+  return send(res, 200, require('./partner-stats.cjs')(db, u, url));
+}
 if (p === '/api/orders' && method === 'GET') {
   return send(res, 200, visibleOrders(u).map(o => {
     const v = orderView(o, u);
@@ -1042,6 +1046,7 @@ if(require.main===module)process.once('SIGTERM',()=>{for(const [res]of clients)r
 const heartbeat=setInterval(()=>{for(const [res,s] of clients){if(!get('SELECT token_hash FROM sessions WHERE token_hash=? AND expires>?',s.token,Date.now())){res.end();clients.delete(res)}else res.write(': heartbeat\n\n')}for(const [k,b]of buckets)if(b.until<Date.now())buckets.delete(k);run('DELETE FROM sessions WHERE expires<?',Date.now())},25000);heartbeat.unref();
 if(require.main===module)initialize().then(()=>server.listen(Number(process.env.PORT||3000),'0.0.0.0',()=>console.log('Kranuan server listening on '+(process.env.PORT||3000)))).catch(e=>{console.error('Startup failed:',e.message);process.exit(1)});
 module.exports={server,db,initialize};
+
 
 
 
